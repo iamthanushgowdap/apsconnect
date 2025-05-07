@@ -1,9 +1,11 @@
 
 export type UserRole = "student" | "admin" | "pending" | "faculty";
 
-export type Branch = "CSE" | "ISE" | "ECE" | "ME" | "CIVIL" | "OTHER";
+// Branch type is now string to allow admins to define custom branch names.
+export type Branch = string;
 
-export const branches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"];
+// defaultBranches provides a list of common/suggested branches for forms.
+export const defaultBranches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "AI & ML", "OTHER"];
 
 // This interface represents the more detailed user profile stored in localStorage.
 export interface UserProfile {

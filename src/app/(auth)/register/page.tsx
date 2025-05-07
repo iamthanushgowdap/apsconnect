@@ -29,7 +29,7 @@ import {
 import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, Branch } from "@/types";
-import { branches as availableBranches } from "@/types";
+import { defaultBranches } from "@/types"; // Updated import
 
 
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
@@ -45,7 +45,7 @@ const registerSchema = z.object({
     .transform(val => {
       return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
     }),
-  branch: z.enum(availableBranches, { required_error: "Please select your branch." }),
+  branch: z.string({ required_error: "Please select your branch." }), // Changed to z.string()
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -208,7 +208,7 @@ export default function RegisterPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableBranches.map((branchName) => (
+                        {defaultBranches.map((branchName) => ( // Updated to defaultBranches
                           <SelectItem key={branchName} value={branchName} className="text-sm sm:text-base">
                             {branchName}
                           </SelectItem>
@@ -263,3 +263,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

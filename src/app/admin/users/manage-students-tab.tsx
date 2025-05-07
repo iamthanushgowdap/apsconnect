@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch } from '@/types';
+import { UserProfile, Branch, defaultBranches } from '@/types';
 import type { User } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -44,14 +44,15 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     defaultValues: { reason: "" },
   });
 
-  const getBranchFromUsn = (usn?: string): Branch | undefined => {
+  // This function might be less critical if branch is directly set at registration
+  // and not derived from USN parts for management purposes.
+  const getBranchFromUsn = (usn?: string): string | undefined => {
     if (!usn || usn.length < 7) return undefined;
     const branchCode = usn.substring(5, 7).toUpperCase();
-    const validBranches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"];
-    if (validBranches.includes(branchCode as Branch)) {
-      return branchCode as Branch;
-    }
-    return undefined;
+    // Since Branch is now string, we might not need to validate against defaultBranches here
+    // unless there's a specific business rule.
+    // For now, just return the code.
+    return branchCode;
   };
 
   const fetchUsers = useCallback(() => {
@@ -74,7 +75,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
 
       if (actor.role === 'faculty' && actor.assignedBranches) {
         users = users.filter(user => {
-          const studentBranch = user.branch || getBranchFromUsn(user.usn);
+          const studentBranch = user.branch; // Directly use the stored branch
           return studentBranch && actor.assignedBranches!.includes(studentBranch);
         });
       }
@@ -113,7 +114,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           user.approvedByUid = actor.uid;
           user.approvedByDisplayName = actor.displayName || actor.email || 'System';
           user.approvalDate = new Date().toISOString();
-          user.rejectionReason = undefined; // Clear any previous rejection
+          user.rejectionReason = undefined; 
           user.rejectedByUid = undefined;
           user.rejectedByDisplayName = undefined;
           user.rejectedDate = undefined;
@@ -159,13 +160,13 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       if (userDataStr) {
         try {
           const user = JSON.parse(userDataStr) as UserProfile;
-          user.role = 'pending'; // Keep role as pending, but mark as rejected
+          user.role = 'pending'; 
           user.isApproved = false;
           user.rejectionReason = data.reason;
           user.rejectedByUid = actor.uid;
           user.rejectedByDisplayName = actor.displayName || actor.email || 'System';
           user.rejectedDate = new Date().toISOString();
-          user.approvedByUid = undefined; // Clear any previous approval
+          user.approvedByUid = undefined; 
           user.approvedByDisplayName = undefined;
           user.approvalDate = undefined;
 
@@ -174,10 +175,9 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
            const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr);
-                if (mockUser.usn === usn) { // Update if this user was the mockUser
+                if (mockUser.usn === usn) { 
                     mockUser.role = 'pending';
                     mockUser.isApproved = false; 
-                    // Potentially add rejection reason to mockUser if needed elsewhere
                     localStorage.setItem('mockUser', JSON.stringify(mockUser));
                 }
             }
@@ -205,7 +205,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   
   const filteredUsers = allUsers.filter(user => {
     const searchLower = searchTerm.toLowerCase();
-    const branch = user.branch || getBranchFromUsn(user.usn);
+    const branch = user.branch; // Use the stored branch directly
     return (
       user.displayName?.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
@@ -259,7 +259,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                     <TableCell>{student.displayName || 'N/A'}</TableCell>
                     <TableCell>{student.usn}</TableCell>
                     <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.branch || getBranchFromUsn(student.usn) || 'N/A'}</TableCell>
+                    <TableCell>{student.branch || 'N/A'}</TableCell>
                     <TableCell>{new Date(student.registrationDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button size="sm" variant="outline" onClick={() => openApproveDialog(student)} className="bg-green-500/10 hover:bg-green-500/20 text-green-700 border-green-500">
@@ -322,7 +322,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                     <TableCell>{student.displayName || 'N/A'}</TableCell>
                     <TableCell>{student.usn}</TableCell>
                     <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.branch || getBranchFromUsn(student.usn) || 'N/A'}</TableCell>
+                    <TableCell>{student.branch || 'N/A'}</TableCell>
                     <TableCell>
                       {student.isApproved && student.role === 'student' ? (
                         <Badge variant="default" className="bg-green-500/20 text-green-700 hover:bg-green-500/30">Approved</Badge>
@@ -438,3 +438,4 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     </TooltipProvider>
   );
 }
+

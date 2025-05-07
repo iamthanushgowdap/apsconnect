@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Branch, branches as availableBranches, PostCategory, postCategories, Post, PostAttachment } from '@/types';
+import { Branch, defaultBranches, PostCategory, postCategories, Post, PostAttachment } from '@/types'; // Updated import
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, Paperclip, Trash2, UploadCloud } from 'lucide-react';
@@ -35,18 +35,18 @@ const postFormSchema = z.object({
   content: z.string().min(20, "Content must be at least 20 characters.").max(5000, "Content cannot exceed 5000 characters."),
   category: z.enum(postCategories, { required_error: "Please select a category." }),
   targetAllBranches: z.boolean().default(false),
-  targetBranches: z.array(z.enum(availableBranches)).optional(),
+  targetBranches: z.array(z.string()).optional(), // Branch is now string
   attachments: z.custom<FileList>((val) => val instanceof FileList, "Please upload valid files.").optional()
-    .refine(files => { // Validate total size
+    .refine(files => { 
       if (!files) return true;
       const totalSize = Array.from(files).reduce((acc, file) => acc + file.size, 0);
       return totalSize <= MAX_TOTAL_SIZE;
     }, `Total file size should not exceed ${MAX_TOTAL_SIZE / (1024*1024)}MB.`)
-    .refine(files => { // Validate individual file size
+    .refine(files => { 
         if (!files) return true;
         return Array.from(files).every(file => file.size <= MAX_FILE_SIZE);
     }, `Each file should not exceed ${MAX_FILE_SIZE / (1024*1024)}MB.`)
-    .refine(files => { // Validate file types
+    .refine(files => { 
         if (!files) return true;
         return Array.from(files).every(file => ALLOWED_FILE_TYPES.includes(file.type));
     }, "Invalid file type. Allowed types: images, PDF, Office documents, text files, common video formats."),
@@ -64,7 +64,7 @@ export type PostFormValues = z.infer<typeof postFormSchema>;
 
 interface CreatePostFormProps {
   onFormSubmit: (data: Post, attachmentsToUpload: File[]) => Promise<void>;
-  initialData?: Post; // For editing
+  initialData?: Post; 
   isLoading: boolean;
   submitButtonText?: string;
   formTitle?: string;
@@ -80,8 +80,9 @@ export function CreatePostForm({
   formDescription = initialData ? 'Update the details of the post.' : 'Fill in the details to create a new post for the campus community.',
 }: CreatePostFormProps) {
   const { toast } = useToast();
-  const { user } = useAuth(); // Call useAuth at the top level
-  const [selectedFiles, setSelectedFiles] = useState<File[]>(initialData?.attachments.map(att => new File([], att.name, {type: att.type})) ?? []); // For displaying names
+  const { user } = useAuth(); 
+  const [selectedFiles, setSelectedFiles] = useState<File[]>(initialData?.attachments.map(att => new File([], att.name, {type: att.type})) ?? []); 
+  const [managedBranches, setManagedBranches] = useState<string[]>(defaultBranches);
   
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postFormSchema),
@@ -94,6 +95,16 @@ export function CreatePostForm({
       attachments: undefined,
     },
   });
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedBranches = localStorage.getItem('campus_connect_managed_branches');
+      if (storedBranches) {
+        setManagedBranches(JSON.parse(storedBranches));
+      }
+      // If no stored branches, managedBranches defaults to defaultBranches
+    }
+  }, []);
 
   const targetAllBranches = form.watch("targetAllBranches");
 
@@ -107,14 +118,13 @@ export function CreatePostForm({
     const files = event.target.files;
     if (files) {
       const newFilesArray = Array.from(files);
-       // Basic client-side validation (Zod will do more thorough)
       const currentTotalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
       const newFilesTotalSize = newFilesArray.reduce((acc, file) => acc + file.size, 0);
 
       if (currentTotalSize + newFilesTotalSize > MAX_TOTAL_SIZE) {
         toast({ title: "File Limit Exceeded", description: `Total attachment size cannot exceed ${MAX_TOTAL_SIZE / (1024*1024)}MB.`, variant: "destructive" });
-        form.setValue('attachments', undefined); // Clear the input
-        event.target.value = ""; // Clear the file input visually
+        form.setValue('attachments', undefined); 
+        event.target.value = ""; 
         return;
       }
       if (newFilesArray.some(file => file.size > MAX_FILE_SIZE)) {
@@ -129,20 +139,12 @@ export function CreatePostForm({
          event.target.value = "";
         return;
       }
-      setSelectedFiles(prev => [...prev, ...newFilesArray]); // Add to display list
-      // For react-hook-form, FileList is tricky. Let's update it if needed or just pass selectedFiles on submit.
-      // For now, we'll manage `selectedFiles` and pass it separately. Zod handles FileList from input.
-      // The form will receive the FileList directly if a new selection is made.
-      // If editing, initial attachments are just names. New files are added via input.
+      setSelectedFiles(prev => [...prev, ...newFilesArray]); 
     }
   };
 
   const removeFile = (fileName: string) => {
     setSelectedFiles(prev => prev.filter(file => file.name !== fileName));
-    // If react-hook-form holds a FileList in `attachments`, we'd need to update it.
-    // This simple removal is for the display list. Actual form state for `attachments` comes from input.
-    // To clear the actual file input's FileList is tricky.
-    // Best to rely on Zod validation on submit.
     const currentFormFiles = form.getValues('attachments');
     if (currentFormFiles) {
         const newFileList = new DataTransfer();
@@ -167,7 +169,6 @@ export function CreatePostForm({
       size: file.size,
     }));
     
-    // For edit, merge existing attachments if not replaced
     let finalAttachments = newAttachments;
     if (initialData && initialData.attachments) {
       const existingAttachmentsNotReplaced = initialData.attachments.filter(
@@ -182,7 +183,7 @@ export function CreatePostForm({
       title: data.title,
       content: data.content,
       category: data.category,
-      targetBranches: data.targetAllBranches ? [] : data.targetBranches || [], // Empty array for "All Branches"
+      targetBranches: data.targetAllBranches ? [] : data.targetBranches || [], 
       attachments: finalAttachments,
       authorId: user.uid,
       authorName: user.displayName || user.email || "CampusConnect User",
@@ -260,9 +261,12 @@ export function CreatePostForm({
                 render={() => (
                   <FormItem>
                     <FormLabel>Target Specific Branches</FormLabel>
-                    <FormDescription>Select the branches this post is relevant to. If none are selected, it will be considered a general post if "Target All Branches" is also unchecked (validation will catch this).</FormDescription>
+                    <FormDescription>
+                      {managedBranches.length === 0 && defaultBranches.length === 0 ? "No branches available for selection. Please add branches in Branch Management first or select 'Target All Branches'." : 
+                       "Select the branches this post is relevant to."}
+                    </FormDescription>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 p-2 border rounded-md">
-                      {availableBranches.map((branch) => (
+                      {(managedBranches.length > 0 ? managedBranches : defaultBranches).map((branch) => (
                         <FormField
                           key={branch}
                           control={form.control}
@@ -298,7 +302,7 @@ export function CreatePostForm({
             <FormField
               control={form.control}
               name="attachments"
-              render={({ field: { onChange, value, ...restField } }) => ( // Exclude value from restField for input type="file"
+              render={({ field: { onChange, value, ...restField } }) => ( 
                 <FormItem>
                   <FormLabel>Attachments (Optional)</FormLabel>
                    <FormControl>
@@ -315,10 +319,10 @@ export function CreatePostForm({
                                 multiple 
                                 className="sr-only" 
                                 onChange={(e) => {
-                                    onChange(e.target.files); // Update form state
-                                    handleFileChange(e);    // Update local state for display
+                                    onChange(e.target.files); 
+                                    handleFileChange(e);    
                                 }}
-                                {...restField} // Pass name, ref, onBlur
+                                {...restField} 
                             />
                         </label>
                     </div>
@@ -359,3 +363,4 @@ export function CreatePostForm({
     </Card>
   );
 }
+

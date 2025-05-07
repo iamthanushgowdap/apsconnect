@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch, branches as availableBranches } from '@/types';
+import { UserProfile, Branch, defaultBranches } from '@/types'; // Updated import
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox'; // For multi-branch selection
+import { Checkbox } from '@/components/ui/checkbox'; 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
@@ -38,12 +38,12 @@ const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
   phoneNumber: z.string().min(10, "Phone number must be at least 10 digits.").optional().or(z.literal('')),
-  password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')), // Optional for edit
+  password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')), 
   confirmPassword: z.string().optional().or(z.literal('')),
-  assignedBranches: z.array(z.enum(availableBranches)).min(1, "At least one branch must be selected."),
+  assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."), // Branch is now string
   facultyTitle: z.string().optional().or(z.literal('')),
 }).refine(data => {
-  if (data.password || data.confirmPassword) { // Only validate confirmPassword if password is being set/changed
+  if (data.password || data.confirmPassword) { 
     return data.password === data.confirmPassword;
   }
   return true;
@@ -61,6 +61,7 @@ export default function ManageFacultyTab() {
   const [editingFaculty, setEditingFaculty] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [managedBranches, setManagedBranches] = useState<string[]>(defaultBranches); // Initialize with default, can be fetched
 
   const form = useForm<FacultyFormValues>({
     resolver: zodResolver(facultyFormSchema),
@@ -74,6 +75,22 @@ export default function ManageFacultyTab() {
       facultyTitle: "",
     },
   });
+  
+  // In a real app, fetch managed branches from backend/localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedBranches = localStorage.getItem('campus_connect_managed_branches');
+      if (storedBranches) {
+        setManagedBranches(JSON.parse(storedBranches));
+      } else {
+        // If no managed branches are stored, use the default ones as a fallback
+        // Or, ideally, admins should define branches first.
+        // For this component, we'll allow selection from defaultBranches if nothing else is set.
+        setManagedBranches(defaultBranches); 
+      }
+    }
+  }, []);
+
 
   const fetchFaculty = useCallback(() => {
     setIsLoading(true);
@@ -126,7 +143,6 @@ export default function ManageFacultyTab() {
         displayName: data.displayName,
         email: data.email.toLowerCase(),
         phoneNumber: data.phoneNumber || undefined,
-        // Password logic: update if provided, otherwise keep existing (for edit) or set (for new)
         password: data.password ? data.password : (editingFaculty && existingProfile?.password ? existingProfile.password : data.password!),
         assignedBranches: data.assignedBranches,
         facultyTitle: data.facultyTitle || undefined,
@@ -163,7 +179,7 @@ export default function ManageFacultyTab() {
   
   const openCreateDialog = () => {
     setEditingFaculty(null);
-    form.reset(); // Reset to default values including empty assignedBranches
+    form.reset(); 
     setIsFormOpen(true);
   }
 
@@ -276,8 +292,11 @@ export default function ManageFacultyTab() {
                 render={() => (
                   <FormItem>
                     <FormLabel>Assigned Branches</FormLabel>
+                     <FormDescription>
+                      {managedBranches.length === 0 ? "No branches defined by admin yet. Please add branches in Branch Management." : "Select branches."}
+                    </FormDescription>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md">
-                      {availableBranches.map((branch) => (
+                      {(managedBranches.length > 0 ? managedBranches : defaultBranches).map((branch) => ( // Use managedBranches or fallback
                         <FormField
                           key={branch}
                           control={form.control}
@@ -300,6 +319,7 @@ export default function ManageFacultyTab() {
                                             )
                                           );
                                     }}
+                                    disabled={managedBranches.length === 0 && !defaultBranches.includes(branch)}
                                   />
                                 </FormControl>
                                 <FormLabel className="font-normal">
@@ -416,3 +436,4 @@ export default function ManageFacultyTab() {
     </div>
   );
 }
+

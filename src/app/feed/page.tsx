@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Post, Branch, UserRole } from '@/types';
+import { Post, Branch, UserRole, defaultBranches } from '@/types'; // Updated import
 import { useAuth } from '@/components/auth-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,22 +13,21 @@ import Link from 'next/link';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Loader2, FileText, Paperclip, Download, Search, Filter, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useToast } from '@/hooks/use-toast'; 
 
-const getBranchFromUsn = (usn?: string): Branch | undefined => {
-  if (!usn || usn.length < 7) return undefined;
-  const branchCode = usn.substring(5, 7).toUpperCase();
-  const validBranches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"];
-  if (validBranches.includes(branchCode as Branch)) {
-    return branchCode as Branch;
-  }
-  return undefined;
-};
+// getBranchFromUsn might be deprecated if branch is always directly assigned
+// const getBranchFromUsn = (usn?: string): Branch | undefined => {
+//   if (!usn || usn.length < 7) return undefined;
+//   const branchCode = usn.substring(5, 7).toUpperCase();
+//   // Since Branch is now string, direct validation against defaultBranches might not be needed
+//   // unless for specific display rules or initial population.
+//   return branchCode;
+// };
 
 
 export default function FeedPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { toast } = useToast(); // Initialize toast
+  const { toast } = useToast(); 
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
@@ -36,15 +35,24 @@ export default function FeedPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [branchFilter, setBranchFilter] = useState<string>('all');
   
-  const availableBranches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"]; // Should come from types
-  const postCategories: Post['category'][] = ["event", "news", "link", "note", "schedule"]; // Should come from types
+  const [managedBranches, setManagedBranches] = useState<string[]>(defaultBranches); // Use default as fallback
+  const postCategories: Post['category'][] = ["event", "news", "link", "note", "schedule"]; 
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedBranches = localStorage.getItem('campus_connect_managed_branches');
+      if (storedBranches) {
+        setManagedBranches(JSON.parse(storedBranches));
+      }
+      // If no stored branches, managedBranches remains defaultBranches.
+    }
+  }, []);
 
   useEffect(() => {
     setIsLoadingPosts(true);
     if (typeof window !== 'undefined') {
       const postsStr = localStorage.getItem('campus_connect_posts');
       const loadedPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
-      // Sort by most recent first
       loadedPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime());
       setAllPosts(loadedPosts);
     }
@@ -54,28 +62,23 @@ export default function FeedPage() {
   useEffect(() => {
     let postsToFilter = allPosts;
 
-    // Filter by user role and branch relevance
     if (user) {
       if (user.role === 'student') {
-        const studentBranch = user.branch || getBranchFromUsn(user.usn);
+        const studentBranch = user.branch; // Directly use stored branch
         postsToFilter = postsToFilter.filter(post => 
-          post.targetBranches.length === 0 || // General post
-          (studentBranch && post.targetBranches.includes(studentBranch)) // Targeted to student's branch
+          post.targetBranches.length === 0 || 
+          (studentBranch && post.targetBranches.includes(studentBranch)) 
         );
       } else if (user.role === 'faculty' && user.assignedBranches) {
         postsToFilter = postsToFilter.filter(post =>
-          post.targetBranches.length === 0 || // General post
-          user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch)) // Targeted to one of faculty's branches
+          post.targetBranches.length === 0 || 
+          user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch)) 
         );
       }
-      // Admin sees all posts by default, no specific branch filter here unless manually selected
     } else {
-      // Non-logged in users see only general posts
        postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
     }
 
-
-    // Filter by search term
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
       postsToFilter = postsToFilter.filter(post =>
@@ -85,16 +88,17 @@ export default function FeedPage() {
       );
     }
 
-    // Filter by category
     if (categoryFilter !== 'all') {
       postsToFilter = postsToFilter.filter(post => post.category === categoryFilter);
     }
     
-    // Filter by selected branch (manual filter)
     if (branchFilter !== 'all') {
-        postsToFilter = postsToFilter.filter(post => post.targetBranches.includes(branchFilter as Branch) || post.targetBranches.length === 0);
+        if (branchFilter === 'general') { // Handle 'General' filter
+            postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
+        } else {
+            postsToFilter = postsToFilter.filter(post => post.targetBranches.includes(branchFilter as Branch) || post.targetBranches.length === 0);
+        }
     }
-
 
     setFilteredPosts(postsToFilter);
   }, [allPosts, user, searchTerm, categoryFilter, branchFilter]);
@@ -107,7 +111,6 @@ export default function FeedPage() {
     );
   }
   
-  // Mock download - in real app, files would be URLs
   const handleDownload = (attachmentName: string) => {
       toast({ title: "Download Started (Mock)", description: `Downloading ${attachmentName}...` });
   }
@@ -143,14 +146,14 @@ export default function FeedPage() {
                         {postCategories.map(cat => <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                { (user?.role === 'admin' || user?.role === 'faculty') && // Branch filter for admin/faculty
+                { (user?.role === 'admin' || user?.role === 'faculty') && 
                     <Select value={branchFilter} onValueChange={setBranchFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Filter by branch" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Branches</SelectItem>
-                            {availableBranches.map(branch => <SelectItem key={branch} value={branch}>{branch}</SelectItem>)}
+                            {(managedBranches.length > 0 ? managedBranches : defaultBranches).map(branch => <SelectItem key={branch} value={branch}>{branch}</SelectItem>)}
                             <SelectItem value="general">General (No Specific Branch)</SelectItem> 
                         </SelectContent>
                     </Select>
@@ -172,7 +175,6 @@ export default function FeedPage() {
               <CardHeader>
                 <div className="flex justify-between items-start mb-1">
                     <CardTitle className="text-lg font-semibold text-primary leading-tight">
-                        {/* <Link href={`/feed/${post.id}`} className="hover:underline">{post.title}</Link> */}
                         {post.title}
                     </CardTitle>
                     <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-2">
@@ -205,7 +207,6 @@ export default function FeedPage() {
                             <Paperclip className="inline h-3 w-3 mr-1.5 text-primary" />
                             {att.name} ({(att.size / (1024 * 1024)).toFixed(2)} MB)
                           </span>
-                          {/* For mock, button won't actually download a file unless it's a data URI */}
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDownload(att.name)}>
                              <Download className="h-3.5 w-3.5 text-primary" />
                           </Button>
@@ -215,28 +216,20 @@ export default function FeedPage() {
                   </div>
                 )}
               </CardContent>
-               <CardFooter className="flex-col items-start"> {/* Changed to flex-col and items-start */}
-                {/* Placeholder for placeholder image, actual images if available */}
+               <CardFooter className="flex-col items-start"> 
                 <Image
                     src={`https://picsum.photos/seed/${post.id}/400/200`}
                     alt={post.title}
                     width={400}
                     height={200}
-                    className="rounded-md object-cover w-full aspect-video mb-2" // Added mb-2
+                    className="rounded-md object-cover w-full aspect-video mb-2" 
                     data-ai-hint={`${post.category} ${post.targetBranches.length > 0 ? post.targetBranches[0].toLowerCase() : 'general'}`}
                 />
-                {/* Removed Link to individual post page for now, as it is not implemented */}
-                {/* <Link href={`/feed/${post.id}`} className="w-full">
-                   <Button variant="outline" className="w-full text-sm">
-                        View Details <ChevronRight className="ml-1 h-4 w-4"/>
-                    </Button>
-                </Link> */}
               </CardFooter>
             </Card>
           ))}
         </div>
       )}
-       {/* TODO: Add pagination if many posts */}
     </div>
   );
 }
