@@ -181,13 +181,6 @@ export default function AdminDashboardPage() {
                 link="/admin/posts/new"
                 actionText="Create New Post"
             />
-             <StyledActionCard
-                title="Campus Feed"
-                description="See the latest news, events, and announcements."
-                icon={<Newspaper />}
-                link="/feed"
-                actionText="View Campus Feed"
-            />
             <StyledActionCard
                 title="Branch Management"
                 description="Define and manage college branches (CSE, ISE, etc.)."

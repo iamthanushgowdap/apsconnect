@@ -52,7 +52,10 @@ export function Navbar() {
         user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch))
       );
     } else { 
-      viewablePosts = allPosts.filter(post => post.targetBranches.length === 0);
+      // For other roles (like admin) or if no branch info, show all posts. 
+      // Or, if if non-student/faculty shouldn't see badge, handle here.
+      // Current logic: admin won't show badge as per initial useCallback condition.
+      viewablePosts = allPosts; // Admin sees all posts for count if logic were to change
     }
     
     const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
@@ -130,22 +133,17 @@ export function Navbar() {
         <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
             if (isLoading) {
+              // Hide protected/role-specific links while loading auth state
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
             } else { 
               if (item.hideWhenLoggedIn && user) return null;
               if (item.protected && !user) return null;
               if (item.adminOnly && user?.role !== 'admin') return null;
               if (item.facultyOnly && user?.role !== 'faculty') return null;
+              // StudentOnly also applies to 'pending' users for the student dashboard link
               if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
-              // Specifically hide 'Campus Feed' for students and pending users
-              if (item.href === '/feed' && (user?.role === 'student' || user?.role === 'pending')) return null;
             }
             
-            const isCampusFeed = item.href === '/feed';
-             // Show badge only for faculty, not for admin, student, or pending
-            const showBadge = isCampusFeed && user && user.role === 'faculty' && unseenPostsCount > 0;
-
-
             return (
               <Link
                 key={item.href}
@@ -155,19 +153,9 @@ export function Navbar() {
                   pathname === item.href ? "text-primary" : "text-foreground/60",
                   "text-xs sm:text-sm" 
                 )}
-                onClick={() => {
-                  // if (isCampusFeed) {
-                  //   // Optimistically reduce count or let FeedPage handle it
-                  //   }
-                }}
               >
                 {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                 {item.title}
-                {showBadge && (
-                  <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
-                    {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -205,6 +193,19 @@ export function Navbar() {
                   <Link href={getDashboardLink()} className="flex items-center">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/feed" className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Newspaper className="mr-2 h-4 w-4" />
+                      <span>Campus Feed</span>
+                    </div>
+                    {(user.role === 'student' || user.role === 'faculty') && unseenPostsCount > 0 && (
+                       <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                         {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                       </span>
+                    )}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

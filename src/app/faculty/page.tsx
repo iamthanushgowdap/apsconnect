@@ -76,7 +76,7 @@ export default function FacultyDashboardPage() {
             <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Key Actions</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Adjusted grid columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StyledActionCard
                 title="Manage Students"
                 description="View, approve, and manage student accounts within your assigned branches."
@@ -92,20 +92,12 @@ export default function FacultyDashboardPage() {
                 actionText="Create New Post"
             />
             <StyledActionCard
-                title="Campus Feed"
-                description="See the latest news, events, and announcements."
-                icon={<Newspaper />}
-                link="/feed"
-                actionText="View Campus Feed"
-            />
-            <StyledActionCard
                 title="My Profile"
                 description="View and edit your faculty profile details."
                 icon={<UserCircle />}
                 link="/profile/settings" 
                 actionText="View Profile"
             />
-            {/* Removed the "View Content Feed" card as "Campus Feed" is more general */}
             </div>
         </CardContent>
       </Card>

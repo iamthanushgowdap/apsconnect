@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -210,7 +211,7 @@ const StudentDashboardPage = () => {
             actionText="Manage Profile"
             disabled={isRejected}
           />
-           {/* Campus Feed card removed from here */}
+          {/* Campus Feed card removed as it's in the user dropdown now */}
         </div>
       </section>
       
