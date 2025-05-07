@@ -43,17 +43,17 @@ export const SiteConfig: SiteConfig = {
       // protected: true, 
     },
     // {
-    //   title: "Admin Dashboard", // Removed as per user request to remove from Navbar
+    //   title: "Admin Dashboard", // This was already removed based on previous request context.
     //   href: "/admin",
     //   protected: true,
     //   adminOnly: true,
     // },
-    {
-      title: "Faculty Dashboard", 
-      href: "/faculty", 
-      protected: true,
-      facultyOnly: true, 
-    }
+    // {
+    //   title: "Faculty Dashboard", // Removing this link as per user request
+    //   href: "/faculty", 
+    //   protected: true,
+    //   facultyOnly: true, 
+    // }
     // {
     //   title: "Create Post (Admin)", // Example of a more specific link if needed
     //   href: "/admin/posts/new",
