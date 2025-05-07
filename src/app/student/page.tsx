@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -7,8 +6,8 @@ import Link from "next/link";
 import { useAuth, User } from "@/components/auth-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ShieldCheck, UserCircle, Bell, AlertTriangle, Newspaper, BookOpen, CalendarDays, FileText } from "lucide-react";
-import type { Post, Branch } from "@/types";
+import { Loader2, ShieldCheck, UserCircle, Bell, AlertTriangle, Newspaper, BookOpen, CalendarDays, FileText, ArrowRight } from "lucide-react";
+import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 
@@ -17,14 +16,26 @@ interface RecentPostItemProps {
 }
 
 function RecentPostItem({ post }: RecentPostItemProps) {
+  const categoryIcons: Record<Post['category'], React.ElementType> = {
+    event: CalendarDays,
+    news: Newspaper,
+    link: Paperclip, // Assuming Paperclip for links
+    note: BookOpen,
+    schedule: CalendarDays,
+  };
+  const IconComponent = categoryIcons[post.category] || FileText;
+
   return (
-    <Card className="shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col h-full">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start mb-1">
-          <CardTitle className="text-md font-semibold text-primary leading-tight line-clamp-2">
-            {post.title}
-          </CardTitle>
-          <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-2 shrink-0">
+    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col h-full bg-card border border-border/70 rounded-xl overflow-hidden">
+      <CardHeader className="pb-3 pt-4 px-4">
+        <div className="flex justify-between items-start mb-1.5">
+          <div className="flex items-center gap-2">
+            <IconComponent className="h-5 w-5 text-primary flex-shrink-0" />
+            <CardTitle className="text-md font-semibold text-primary leading-snug line-clamp-2">
+              {post.title}
+            </CardTitle>
+          </div>
+          <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-2 shrink-0 py-1 px-2.5">
             {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
           </Badge>
         </div>
@@ -32,13 +43,14 @@ function RecentPostItem({ post }: RecentPostItemProps) {
           By {post.authorName} - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-sm text-foreground line-clamp-3 whitespace-pre-wrap">{post.content}</p>
+      <CardContent className="flex-grow px-4">
+        <p className="text-sm text-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed">{post.content}</p>
       </CardContent>
-      <CardFooter className="pt-3">
-        {/* Link to full post view could be added here, e.g., /feed#post-id or /post/[id] if a dedicated page exists */}
+      <CardFooter className="pt-3 px-4 pb-4 border-t border-border/50">
         <Link href="/feed" className="w-full">
-          <Button variant="outline" size="sm" className="w-full">Read More on Feed</Button>
+          <Button variant="ghost" size="sm" className="w-full text-primary hover:bg-primary/10 justify-between group">
+            Read More on Feed <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </Button>
         </Link>
       </CardFooter>
     </Card>
@@ -58,7 +70,6 @@ export default function StudentDashboardPage() {
       if (authUser && (authUser.role === 'student' || authUser.role === 'pending')) {
         setStudentUser(authUser);
         
-        // Fetch and filter recent posts
         if (typeof window !== 'undefined') {
           const postsStr = localStorage.getItem('campus_connect_posts');
           const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
@@ -70,7 +81,7 @@ export default function StudentDashboardPage() {
               post.targetBranches.length === 0 || 
               post.targetBranches.includes(studentBranch)
             );
-          } else { // For pending users or users without a branch (though should have one)
+          } else { 
             relevantPosts = allPosts.filter(post => post.targetBranches.length === 0);
           }
 
@@ -78,9 +89,9 @@ export default function StudentDashboardPage() {
           setRecentPosts(relevantPosts.slice(0, 3));
         }
 
-      } else if (authUser) { // User exists but not student/pending, redirect
+      } else if (authUser) { 
         router.push('/dashboard'); 
-      } else { // No user
+      } else { 
         router.push('/login');
       }
       setPageLoading(false);
@@ -90,7 +101,7 @@ export default function StudentDashboardPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
@@ -98,15 +109,15 @@ export default function StudentDashboardPage() {
   if (!studentUser) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto shadow-lg">
+        <Card className="max-w-md mx-auto shadow-2xl border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
           </CardHeader>
           <CardContent>
-            <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+            <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
             <Link href="/dashboard">
-              <Button variant="outline" className="mt-6">Go to Dashboard</Button>
+              <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">Go to Dashboard</Button>
             </Link>
           </CardContent>
         </Card>
@@ -119,74 +130,83 @@ export default function StudentDashboardPage() {
   const isApprovedStudent = studentUser.role === 'student';
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">Student Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Welcome, {studentUser.displayName || studentUser.usn}! Access your resources and campus updates.
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <header className="mb-10 text-center sm:text-left">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">
+          Hello, {studentUser.displayName || studentUser.usn}!
+        </h1>
+        <p className="text-md sm:text-lg text-muted-foreground">
+          Welcome to your Student Dashboard. Access resources and stay updated.
         </p>
-        {studentUser.branch && <p className="text-xs sm:text-sm text-muted-foreground mt-1">Branch: {studentUser.branch}</p>}
-      </div>
+        {studentUser.branch && <p className="text-sm text-muted-foreground mt-1">Branch: <span className="font-semibold">{studentUser.branch}</span></p>}
+      </header>
 
       {isPendingApproval && (
-        <Card className="mb-6 bg-yellow-50 border-yellow-300 shadow-md dark:bg-yellow-900/30 dark:border-yellow-700">
-          <CardHeader className="flex flex-row items-center gap-3 pb-3">
-            <Bell className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            <CardTitle className="text-lg text-yellow-700 dark:text-yellow-300">Account Pending Approval</CardTitle>
+        <Card className="mb-8 bg-yellow-50 border-2 border-yellow-400 shadow-lg dark:bg-yellow-900/30 dark:border-yellow-600 rounded-xl">
+          <CardHeader className="flex flex-row items-center gap-4 pb-3 pt-5 px-5">
+            <Bell className="h-8 w-8 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+            <div>
+              <CardTitle className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">Account Pending Approval</CardTitle>
+              <CardDescription className="text-sm text-yellow-600 dark:text-yellow-400">
+                Your registration is under review. Full access will be granted upon approval.
+              </CardDescription>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-yellow-700 dark:text-yellow-400">
-              Your registration is currently under review by the administration. 
-              Please check back later for an update on your account status. You will be able to access all features once approved.
-            </p>
-          </CardContent>
         </Card>
       )}
 
       {isRejected && (
-        <Card className="mb-6 bg-red-50 border-red-300 shadow-md dark:bg-red-900/30 dark:border-red-700">
-          <CardHeader className="flex flex-row items-center gap-3 pb-3">
-            <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
-            <CardTitle className="text-lg text-red-700 dark:text-red-300">Account Registration Rejected</CardTitle>
+        <Card className="mb-8 bg-red-50 border-2 border-red-400 shadow-lg dark:bg-red-900/30 dark:border-red-600 rounded-xl">
+          <CardHeader className="flex flex-row items-center gap-4 pb-3 pt-5 px-5">
+            <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 flex-shrink-0" />
+             <div>
+              <CardTitle className="text-lg font-semibold text-red-700 dark:text-red-300">Account Registration Rejected</CardTitle>
+               <CardDescription className="text-sm text-red-600 dark:text-red-400">
+                Reason: {studentUser.rejectionReason}
+              </CardDescription>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             <p className="text-sm text-red-700 dark:text-red-400">
-              Unfortunately, your registration could not be approved at this time.
-            </p>
-            <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-              <span className="font-semibold">Reason:</span> {studentUser.rejectionReason}
-            </p>
-            <p className="text-sm text-red-700 dark:text-red-400 mt-2">
-              If you believe this is an error, please contact the college administration.
+              If you believe this is an error, please contact the college administration for assistance.
             </p>
           </CardContent>
         </Card>
       )}
 
       {/* Quick Access Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <ActionCard
-          title="My Profile"
-          description="View and update your personal information and password."
-          icon={<UserCircle className="h-8 w-8 text-accent" />}
-          link="/profile/settings"
-          actionText="Manage Profile"
-          disabled={isRejected}
-        />
-        <ActionCard
-          title="Campus Feed"
-          description="See the latest news, events, and announcements."
-          icon={<Newspaper className="h-8 w-8 text-accent" />}
-          link="/feed"
-          actionText="View Feed"
-          disabled={isPendingApproval || isRejected}
-        />
-      </div>
+      <section className="mb-12">
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Quick Links</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ActionCard
+            title="My Profile"
+            description="View and update your personal information and password."
+            icon={<UserCircle className="h-10 w-10 text-accent" />}
+            link="/profile/settings"
+            actionText="Manage Profile"
+            disabled={isRejected}
+          />
+          <ActionCard
+            title="Campus Feed"
+            description="See the latest news, events, and announcements."
+            icon={<Newspaper className="h-10 w-10 text-accent" />}
+            link="/feed"
+            actionText="View Full Feed"
+            disabled={isPendingApproval || isRejected}
+          />
+        </div>
+      </section>
+      
 
       {/* Recent Posts Section */}
       {isApprovedStudent && (
         <section className="mt-10">
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-primary mb-6">Recent Updates</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-primary">Recent Updates</h2>
+            <Link href="/feed" className="text-sm text-primary hover:underline flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
           {recentPosts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recentPosts.map(post => (
@@ -194,30 +214,16 @@ export default function StudentDashboardPage() {
               ))}
             </div>
           ) : (
-            <Card className="shadow-sm">
-              <CardContent className="pt-6 text-center">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-                <p className="text-md text-muted-foreground">No recent posts available for you at the moment.</p>
-                <p className="text-sm text-muted-foreground">Check the full <Link href="/feed" className="text-primary hover:underline">Campus Feed</Link> for all updates.</p>
+            <Card className="shadow-lg border-border/50 rounded-xl">
+              <CardContent className="py-10 text-center">
+                <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-lg text-muted-foreground">No recent posts relevant to you.</p>
+                <p className="text-sm text-muted-foreground mt-1">The campus feed might have more updates.</p>
               </CardContent>
             </Card>
           )}
         </section>
       )}
-      
-      {/* Placeholder for other dashboard sections */}
-      {/* 
-      {isApprovedStudent && (
-        <section className="mt-12">
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-primary mb-6">My Resources</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ResourceCard title="My Courses" description="Access your course materials and schedules." icon={<BookOpen className="h-8 w-8 text-accent" />} link="#" />
-            <ResourceCard title="Events Calendar" description="Upcoming campus events and deadlines." icon={<CalendarDays className="h-8 w-8 text-accent" />} link="#" />
-          </div>
-        </section>
-      )}
-      */}
-
     </div>
   );
 }
@@ -233,54 +239,25 @@ interface ActionCardProps {
 
 function ActionCard({ title, description, icon, link, actionText, disabled = false }: ActionCardProps) {
   return (
-    <Card className={`shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col ${disabled ? 'opacity-60 bg-muted/50 dark:bg-muted/20' : 'bg-card'}`}>
-      <CardHeader className="pb-4">
-        <div className="flex items-start space-x-3 mb-3">
-          <div className={`p-2 sm:p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>{icon}</div>
+    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
+      <CardHeader className="pb-4 pt-5 px-5">
+        <div className="flex items-start space-x-4">
+          <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
+            {React.cloneElement(icon as React.ReactElement, { className: `h-8 w-8 ${disabled ? 'text-muted-foreground' : 'text-accent'}`})}
+          </div>
           <div>
-            <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
-            <CardDescription className="text-sm mt-1">{description}</CardDescription>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-foreground">{title}</CardTitle>
+            <CardDescription className="text-sm mt-1 text-muted-foreground">{description}</CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-end mt-auto">
+      <CardContent className="flex-grow flex flex-col justify-end mt-auto px-5 pb-5">
         <Link href={disabled ? "#" : link} className={`w-full ${disabled ? 'pointer-events-none' : ''}`}>
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base" disabled={disabled}>
-            {actionText}
+          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-3 rounded-lg" disabled={disabled}>
+            {actionText} <ArrowRight className="ml-2 h-4 w-4"/>
           </Button>
         </Link>
       </CardContent>
     </Card>
   );
 }
-
-/*
-interface ResourceCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  link: string;
-}
-
-function ResourceCard({ title, description, icon, link }: ResourceCardProps) {
-  return (
-    <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="flex flex-row items-center space-x-4 pb-3">
-        <div className="p-2 bg-primary/10 rounded-full text-primary">
-          {icon}
-        </div>
-        <div>
-          <CardTitle className="text-md font-semibold">{title}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-3">{description}</p>
-        <Link href={link} className="w-full">
-          <Button variant="outline" size="sm" className="w-full">Access Resource</Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-*/
-
