@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,15 +30,37 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth-provider"; 
 import type { UserRole } from "@/types";
 
+// USN format: 1APYYBBNNN (e.g., 1AP23CS001)
+// YY = 2 digits, BB = 2 letters, NNN = 3 digits
+const usnRegex = /^1AP\d{2}[A-Z]{2}\d{3}$/i; // i for case-insensitive input, will be uppercased
+
 const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }), // Min 1 for admin, can be more for users
-  mode: z.enum(["student", "admin"], { required_error: "Please select a login mode."})
+  identifier: z.string().min(1, { message: "This field is required." }), // Will hold USN or Email
+  password: z.string().min(1, { message: "Password is required." }),
+  mode: z.enum(["student", "admin"], { required_error: "Please select a login mode." })
+}).superRefine((data, ctx) => {
+  if (data.mode === "student") {
+    if (!usnRegex.test(data.identifier)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid USN format. Expected: 1APYYBBNNN (e.g., 1AP23CS001)",
+        path: ["identifier"],
+      });
+    }
+  } else if (data.mode === "admin") {
+    if (!z.string().email().safeParse(data.identifier).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid email address for admin.",
+        path: ["identifier"],
+      });
+    }
+  }
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const ADMIN_EMAIL = "admin@gmail.com";
+const ADMIN_EMAIL = "admin@gmail.com"; // Case-insensitive comparison later
 const ADMIN_PASSWORD = "admin123";
 
 export default function LoginPage() {
@@ -50,25 +72,33 @@ export default function LoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      identifier: "",
       password: "",
       mode: "student",
     },
   });
 
+  const loginMode = form.watch("mode");
+
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-      const { email, password, mode } = data;
+      const { identifier, password, mode } = data;
       let role: UserRole = mode;
       let displayName: string | undefined;
       let targetRoute = "/dashboard";
 
       if (mode === "admin") {
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        if (identifier.toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
           role = "admin";
           displayName = "Admin User";
           targetRoute = "/admin"; 
+          await signIn({ 
+            email: identifier.toLowerCase(), 
+            password, // Pass password for admin auth if signIn handles it
+            role,
+            displayName, 
+          });
         } else {
           toast({
             title: "Login Failed",
@@ -78,19 +108,19 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
-      } else {
-        // For student mode, password validation can be more strict if needed via schema
-        // For now, we use the generic signIn
+      } else { // Student mode
         role = "student";
-        // displayName will be derived in signIn or could be fetched
+        const usn = identifier.toUpperCase(); // Ensure USN is uppercase for consistency
+        // In a real app, you'd validate USN and password against a backend.
+        // For mock, we assume the USN is valid if it passes schema validation.
+        // The branch can be derived from USN if needed: usn.substring(3,5)
+        await signIn({ 
+          usn: usn, 
+          password, // Pass password for student auth if signIn handles it
+          role,
+          // displayName and branch could be fetched/derived by signIn if needed
+        });
       }
-
-      await signIn({ 
-        email, 
-        role,
-        displayName, 
-        // For students, branch could be part of their profile, not set at login
-      });
 
       toast({
         title: "Login Successful",
@@ -121,12 +151,47 @@ export default function LoginPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               <FormField
                 control={form.control}
-                name="email"
+                name="mode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Email</FormLabel>
+                    <FormLabel className="text-sm">Login as</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue("identifier", ""); // Clear identifier on mode change
+                        form.clearErrors("identifier"); // Clear validation errors
+                      }} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="text-sm sm:text-base">
+                          <SelectValue placeholder="Select login mode" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="student" className="text-sm sm:text-base">User (USN)</SelectItem>
+                        <SelectItem value="admin" className="text-sm sm:text-base">Admin (Email)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs sm:text-sm"/>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="identifier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">{loginMode === "student" ? "USN" : "Email"}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base"/>
+                      <Input 
+                        type={loginMode === "student" ? "text" : "email"} 
+                        placeholder={loginMode === "student" ? "e.g., 1AP23CS001" : "you@example.com"} 
+                        {...field} 
+                        className="text-sm sm:text-base"
+                        onInput={loginMode === "student" ? (e) => e.currentTarget.value = e.currentTarget.value.toUpperCase() : undefined}
+                        autoCapitalize={loginMode === "student" ? "characters" : "none"}
+                      />
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
@@ -141,27 +206,6 @@ export default function LoginPage() {
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage className="text-xs sm:text-sm"/>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="mode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Login as</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="text-sm sm:text-base">
-                          <SelectValue placeholder="Select login mode" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="student" className="text-sm sm:text-base">User</SelectItem>
-                        <SelectItem value="admin" className="text-sm sm:text-base">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}

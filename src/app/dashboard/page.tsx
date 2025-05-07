@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -14,18 +15,21 @@ import {
   CalendarDays,
   GraduationCap,
   LayoutGrid,
-  CheckSquare
+  CheckSquare,
+  UserCircle
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
+import { useAuth } from "@/components/auth-provider";
 
-interface MockUser {
+interface MockUserFromAuth { // Reflects structure from useAuth
   displayName: string | null;
   email: string | null;
   role: 'student' | 'admin' | 'pending';
   branch?: string;
+  usn?: string;
 }
 
 interface MockPost {
@@ -47,31 +51,26 @@ const mockPosts: MockPost[] = [
 
 export default function DashboardPage() {
   const router = useRouter(); 
-  const [user, setUser] = useState<MockUser | null>(null);
+  const { user: authUser, isLoading: authLoading } = useAuth();
+  const [user, setUser] = useState<MockUserFromAuth | null>(null); // Use the interface from useAuth
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('mockUser');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser({
-        displayName: parsedUser.displayName || "Student User",
-        email: parsedUser.email || "student@example.com",
-        role: parsedUser.role || "student",
-        branch: parsedUser.branch || "CSE",
-      });
-    } else {
-      setUser({
-        displayName: "Student User",
-        email: "student@example.com",
-        role: "student",
-        branch: "CSE",
-      });
+    if (!authLoading) {
+      if (authUser) {
+        setUser(authUser);
+        // Branch can be derived from USN if needed
+        // Example: authUser.usn?.substring(5,7) if USN format is 1APYYBBBNNN
+        // For now, relying on branch being set during login/registration mock
+      } else {
+        setUser(null); // Ensure user is null if authUser is null
+        router.push('/login'); // Redirect if not authenticated
+      }
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [authUser, authLoading, router]);
   
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-6">
@@ -89,6 +88,7 @@ export default function DashboardPage() {
   }
 
   if (!user) {
+    // This case should ideally be handled by the redirect in useEffect
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <p>You need to be logged in to view this page.</p>
@@ -118,6 +118,7 @@ export default function DashboardPage() {
             <p className="text-lg sm:text-xl text-foreground">
               Welcome, {user.displayName || "User"}!
             </p>
+            {user.usn && <p className="text-md text-muted-foreground">USN: {user.usn}</p>}
             <p className="mt-2 text-muted-foreground">
               Your account registration has been submitted and is currently awaiting admin approval. 
               You will be notified once your account is approved. Please check back later.
@@ -131,7 +132,8 @@ export default function DashboardPage() {
     );
   }
 
-  const userBranchPosts = mockPosts.filter(post => !post.branch || post.branch === "General" || post.branch === user.branch);
+  const userBranchFromUsn = user.usn ? user.usn.substring(5, 7) : user.branch; // Example: 1APYY<BB>NNN
+  const userBranchPosts = mockPosts.filter(post => !post.branch || post.branch === "General" || post.branch === userBranchFromUsn);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -140,7 +142,8 @@ export default function DashboardPage() {
           Hello, {user.displayName || "User"}!
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground mt-1">
-          Welcome to your {user.branch ? `${user.branch} ` : ''}Dashboard.
+          Welcome to your {userBranchFromUsn ? `${userBranchFromUsn} ` : ''}Dashboard. 
+          {user.usn && <span className="block text-sm sm:text-base">USN: {user.usn}</span>}
         </p>
       </div>
 
@@ -152,7 +155,7 @@ export default function DashboardPage() {
           description="Check your latest alerts"
           link="#" 
           dataAiHint="bell icon"
-          color="bg-red-500/10 text-red-500"
+          color="bg-red-500/10 text-red-500" // This is an example of direct color use, ideally use theme colors
         />
         <StatCard 
           title="Upcoming Deadlines" 
@@ -161,7 +164,7 @@ export default function DashboardPage() {
           description="Assignments & Submissions"
           link="#" 
           dataAiHint="checklist tasks"
-          color="bg-yellow-500/10 text-yellow-500"
+          color="bg-yellow-500/10 text-yellow-500" // This is an example of direct color use, ideally use theme colors
         />
         <StatCard 
           title="My Courses" 
@@ -170,7 +173,7 @@ export default function DashboardPage() {
           description="Access your course materials"
           link="#" 
           dataAiHint="graduation cap"
-          color="bg-green-500/10 text-green-500"
+          color="bg-green-500/10 text-green-500" // This is an example of direct color use, ideally use theme colors
         />
       </div>
       
@@ -178,7 +181,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl sm:text-2xl">Recent Updates for {user.branch}</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl">Recent Updates {userBranchFromUsn ? `for ${userBranchFromUsn}`: ''}</CardTitle>
               <CardDescription>Latest posts relevant to you and your branch.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -195,7 +198,7 @@ export default function DashboardPage() {
                 </div>
               )}
               <div className="mt-8 text-center">
-                <Link href="/feed" className={ButtonVariants({variant: "outline", className: "w-full sm:w-auto"})}>
+                <Link href="/feed" className={buttonVariants({variant: "outline", className: "w-full sm:w-auto"})}>
                   View All Campus Updates <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </div>
@@ -225,7 +228,7 @@ export default function DashboardPage() {
                 <QuickActionLink href="/admin/users" icon={<Users className="h-5 w-5 mr-2" />} label="Manage Users" />
                 <QuickActionLink href="/admin/posts/new" icon={<FileText className="h-5 w-5 mr-2" />} label="Create Post" />
                 <QuickActionLink href="/admin/approvals" icon={<Bell className="h-5 w-5 mr-2" />} label="Pending Approvals" />
-                <QuickActionLink href="/admin/settings" icon={<Settings className="h-5 w-5 mr-2" />} label="Site Settings" />
+                <QuickActionLink href="/admin" icon={<UserCircle className="h-5 w-5 mr-2"/>} label="Admin Dashboard" />
               </CardContent>
             </Card>
           )}
@@ -313,17 +316,6 @@ function QuickLinkItem({ href, icon, label }: QuickLinkItemProps) {
   );
 }
 
-const ButtonVariants = ({variant = "default", size= "default", className = ""}: {variant?: string, size?:string, className?: string}) => {
-  let baseClass = "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
-  if (variant === "outline") baseClass += " border border-input bg-background hover:bg-accent hover:text-accent-foreground";
-  else baseClass += " bg-primary text-primary-foreground hover:bg-primary/90";
-  
-  if(size === "sm") baseClass += " h-9 px-3 text-xs sm:text-sm";
-  else baseClass += " h-10 px-4 py-2";
-
-  return `${baseClass} ${className}`;
-}
-
 
 interface QuickActionLinkProps {
   href: string;
@@ -341,4 +333,3 @@ function QuickActionLink({ href, icon, label }: QuickActionLinkProps) {
     </Link>
   );
 }
-

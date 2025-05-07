@@ -1,42 +1,46 @@
+
 "use client";
 
-// import { useAuth } from "@/components/auth-provider"; // Replace with actual auth
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, BellDot, FilePlus2, Users, Settings, ShieldCheck, FileText } from "lucide-react";
+import { BarChart3, BellDot, FilePlus2, Users, Settings, ShieldCheck, FileText, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { useAuth } from "@/components/auth-provider";
 
-// Mock user data for UI development
-interface MockUser {
+interface MockUserFromAuth { // Reflects structure from useAuth
   displayName: string | null;
+  email: string | null; // Admins will have email as their identifier
   role: 'admin' | 'student' | 'pending';
+  usn?: string; // Admins won't have USN
 }
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  // const { user, isLoading } = useAuth(); // Replace with actual auth hook
-  const [user, setUser] = useState<MockUser | null>(null);
+  const { user: authUser, isLoading: authLoading } = useAuth();
+  const [user, setUser] = useState<MockUserFromAuth | null>(null); // Use the interface from useAuth
   const [isLoading, setIsLoading] = useState(true);
 
+
   useEffect(() => {
-    // Simulate fetching user data
-    const storedUser = localStorage.getItem('mockUser');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      // Forcing admin role for this page's UI dev
-      setUser({ displayName: parsedUser.name || "Admin User", role: 'admin' });
-    } else {
-       // If no mock user, default to admin for UI purposes of this page
-      setUser({ displayName: "Admin User", role: 'admin' });
+    if (!authLoading) {
+      if (authUser && authUser.role === 'admin') {
+        setUser(authUser);
+      } else if (authUser && authUser.role !== 'admin'){
+        setUser(null); // Not an admin
+        router.push('/dashboard'); // Redirect non-admins
+      } else { // No authUser
+        setUser(null);
+        router.push('/login'); // Redirect if not logged in
+      }
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [authUser, authLoading, router]);
 
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-8">
@@ -49,7 +53,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user) { // This covers both not logged in and not admin after initial checks
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -152,6 +156,14 @@ export default function AdminDashboardPage() {
           actionText="Manage Content"
           dataAiHint="files folder"
         />
+         <AdminActionCard
+          title="My Profile"
+          description="View and edit your admin profile details."
+          icon={<UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
+          link="/profile/settings" 
+          actionText="View Profile"
+          dataAiHint="user profile"
+        />
       </div>
     </div>
   );
@@ -194,4 +206,3 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     </Card>
   );
 }
-

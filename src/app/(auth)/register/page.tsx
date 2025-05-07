@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,24 +18,25 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { branches, Branch } from "@/types";
-// import { useAuth } from "@/components/auth-provider"; 
+// import { branches, Branch } from "@/types"; // Branch is now part of USN
+
+// Regex for YYBBBNNN: 2 digits, 2 letters, 3 digits
+const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
+  email: z.string().email({ message: "Invalid email address." }), // Retain email for communication/recovery
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
-  branch: z.enum(branches, { required_error: "Please select your branch." }),
+  usnSuffix: z.string()
+    .length(7, { message: "USN Suffix must be 7 characters (e.g., 23CS001)." })
+    .regex(usnSuffixRegex, { message: "Format: YYBBBNNN (e.g., 23CS001 where YY is year, BB branch, NNN roll no)." })
+    .transform(val => {
+      // Ensure branch code is uppercase
+      return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
+    }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -45,7 +47,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  // const { signUp } = useAuth(); 
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RegisterFormValues>({
@@ -55,30 +56,38 @@ export default function RegisterPage() {
       email: "",
       password: "",
       confirmPassword: "",
-      branch: undefined,
+      usnSuffix: "",
     },
   });
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
+    const fullUsn = `1AP${data.usnSuffix}`; // data.usnSuffix already has branch code in uppercase due to Zod transform
+    
     try {
-      console.log("Simulating registration with:", data);
+      console.log("Simulating registration with:", { ...data, usn: fullUsn });
       await new Promise(resolve => setTimeout(resolve, 1500)); 
       
+      // Store a more complete "profile" for mock purposes, which login could potentially use
+      if (typeof window !== 'undefined') {
+        const userProfileData = { 
+            displayName: data.displayName, 
+            email: data.email, 
+            role: 'pending', // Initial role
+            usn: fullUsn,
+            // branch: fullUsn.substring(3,5) // Example: "CS"
+        };
+        localStorage.setItem(`campus_connect_user_${fullUsn}`, JSON.stringify(userProfileData));
+        
+        // Set current session to pending user
+        localStorage.setItem('mockUser', JSON.stringify(userProfileData));
+      }
+
       toast({
         title: "Registration Submitted",
         description: "Your registration is pending admin approval. You will be notified once approved.",
       });
-      // Simulate setting a mock user with 'pending' state
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mockUser', JSON.stringify({ 
-            displayName: data.displayName, 
-            email: data.email, 
-            role: 'pending', 
-            branch: data.branch 
-        }));
-      }
-      router.push("/dashboard"); // Redirect to dashboard to show pending message
+      router.push("/dashboard"); 
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -126,26 +135,41 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
-                name="branch"
+                name="usnSuffix"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Branch</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel className="text-sm">University Seat Number (USN)</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm sm:text-base font-medium p-2.5 border border-input rounded-md bg-muted">1AP</span>
                       <FormControl>
-                        <SelectTrigger className="text-sm sm:text-base">
-                          <SelectValue placeholder="Select your branch" />
-                        </SelectTrigger>
+                        <Input 
+                          placeholder="YYBBBNNN (e.g., 23CS001)" 
+                          {...field} 
+                          className="text-sm sm:text-base"
+                          maxLength={7}
+                          onInput={(e) => { // Auto-uppercase for branch code part as user types
+                            const inputVal = e.currentTarget.value;
+                            if (inputVal.length >= 2 && inputVal.length <=4) {
+                                const yearPart = inputVal.substring(0,2);
+                                const branchPart = inputVal.substring(2,4);
+                                const rollPart = inputVal.substring(4);
+                                e.currentTarget.value = yearPart + branchPart.toUpperCase() + rollPart;
+                            } else if (inputVal.length > 4) {
+                                const yearPart = inputVal.substring(0,2);
+                                const branchPart = inputVal.substring(2,4).toUpperCase();
+                                const rollPart = inputVal.substring(4);
+                                e.currentTarget.value = yearPart + branchPart + rollPart;
+                            }
+                            field.onChange(e); // Ensure react-hook-form is updated
+                          }}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch} value={branch} className="text-sm sm:text-base">
-                            {branch}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    </div>
+                    <FormDescription className="text-xs sm:text-sm">
+                      YY: Year (e.g., 23), BB: Branch Code (e.g., CS), NNN: Roll No (e.g., 001)
+                    </FormDescription>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
@@ -194,4 +218,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

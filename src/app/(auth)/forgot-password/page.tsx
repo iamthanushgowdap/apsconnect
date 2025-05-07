@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +21,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 // import { useAuth } from "@/components/auth-provider"; 
 
+// For now, password reset will be based on email.
+// Resetting via USN would require fetching associated email from backend.
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
 });
@@ -42,7 +45,10 @@ export default function ForgotPasswordPage() {
   async function onSubmit(data: ForgotPasswordFormValues) {
     setIsLoading(true);
     try {
-      console.log("Simulating password reset request for:", data.email);
+      console.log("Simulating password reset request for email:", data.email);
+      // In a real app, this would interact with your auth service.
+      // If resetting via USN was supported, you'd need to find the user's email via their USN.
+      // For this mock, we assume only email-based reset.
       await new Promise(resolve => setTimeout(resolve, 1000)); 
 
       toast({
@@ -69,7 +75,7 @@ export default function ForgotPasswordPage() {
           <CardDescription className="text-sm sm:text-base">
             {isSubmitted 
               ? "Check your email for reset instructions." 
-              : "Enter your email address and we'll send you a link to reset your password."}
+              : "Enter your account's email address and we'll send you a link to reset your password."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -109,4 +115,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-
