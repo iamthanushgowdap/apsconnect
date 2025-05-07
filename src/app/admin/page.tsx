@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, FileText, UserCircle } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -162,14 +162,6 @@ export default function AdminDashboardPage() {
           link="/admin/settings" 
           actionText="Configure Settings"
           dataAiHint="gears settings"
-        />
-         <AdminActionCard
-          title="View All Content"
-          description="Browse and manage all posted content across branches."
-          icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/posts" 
-          actionText="Manage Content"
-          dataAiHint="files folder"
         />
          <AdminActionCard
           title="My Profile"
