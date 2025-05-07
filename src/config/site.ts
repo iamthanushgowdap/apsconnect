@@ -31,12 +31,10 @@ export const SiteConfig: SiteConfig = {
       title: "Home",
       href: "/",
     },
-    {
-      title: "Campus Feed",
-      href: "/feed",
-      // public or protected based on app logic, assume public for now or protected
-      // protected: true, 
-    },
+    // {
+    //   title: "Campus Feed", // Hidden as per user request
+    //   href: "/feed",
+    // },
     {
       title: "Admin Dashboard",
       href: "/admin",
@@ -49,12 +47,12 @@ export const SiteConfig: SiteConfig = {
       protected: true,
       facultyOnly: true, 
     },
-    // {
-    //   title: "Student Dashboard",
-    //   href: "/student",
-    //   protected: true,
-    //   studentOnly: true, // This will show for 'student' and 'pending' roles
-    // }
+    {
+      title: "Student Dashboard",
+      href: "/student",
+      protected: true,
+      studentOnly: true, // This will show for 'student' and 'pending' roles
+    }
   ],
   footerNav: [
     {
