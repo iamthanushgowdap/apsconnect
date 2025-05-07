@@ -19,9 +19,17 @@ import {
   FormDescription, 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast";
-import type { UserProfile } from "@/types";
+import type { UserProfile, Branch } from "@/types";
+import { branches as availableBranches } from "@/types";
 
 
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
@@ -37,6 +45,7 @@ const registerSchema = z.object({
     .transform(val => {
       return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
     }),
+  branch: z.enum(availableBranches, { required_error: "Please select your branch." }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -57,6 +66,7 @@ export default function RegisterPage() {
       password: "",
       confirmPassword: "",
       usnSuffix: "",
+      branch: undefined, // Initialize branch as undefined
     },
   });
 
@@ -75,7 +85,7 @@ export default function RegisterPage() {
             email: data.email, 
             role: 'pending', 
             usn: fullUsn,
-            // branch can be derived from USN: fullUsn.substring(5,7)
+            branch: data.branch, // Store selected branch
             registrationDate: new Date().toISOString(),
             isApproved: false,
             // Password is NOT stored in the UserProfile for students via registration for security mock.
@@ -89,6 +99,7 @@ export default function RegisterPage() {
             email: data.email,
             role: 'pending',
             usn: fullUsn,
+            branch: data.branch,
         }));
       }
 
@@ -180,6 +191,30 @@ export default function RegisterPage() {
                     <FormDescription className="text-xs sm:text-sm">
                       e.g., 23CS001
                     </FormDescription>
+                    <FormMessage className="text-xs sm:text-sm"/>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="branch"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Branch</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="text-sm sm:text-base">
+                          <SelectValue placeholder="Select your branch" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableBranches.map((branchName) => (
+                          <SelectItem key={branchName} value={branchName} className="text-sm sm:text-base">
+                            {branchName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
