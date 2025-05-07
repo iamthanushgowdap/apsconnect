@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -20,7 +19,7 @@ function RecentPostItem({ post }: RecentPostItemProps) {
   const categoryIcons: Record<Post['category'], React.ElementType> = {
     event: CalendarDays,
     news: Newspaper,
-    link: Paperclip,
+    link: Paperclip, 
     note: BookOpen,
     schedule: CalendarDays,
   };
@@ -28,11 +27,11 @@ function RecentPostItem({ post }: RecentPostItemProps) {
 
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col h-full bg-card border border-border/70 rounded-xl overflow-hidden">
-      <CardHeader className="pb-3 pt-5 px-5"> {/* Increased top padding */}
+      <CardHeader className="pb-3 pt-5 px-5"> 
         <div className="flex justify-between items-start mb-1.5">
-          <div className="flex items-center gap-2.5"> {/* Increased gap */}
-            <IconComponent className="h-6 w-6 text-primary flex-shrink-0" /> {/* Slightly larger icon */}
-            <CardTitle className="text-lg font-semibold text-primary leading-snug line-clamp-2"> {/* Increased title size */}
+          <div className="flex items-center gap-2.5"> 
+            <IconComponent className="h-6 w-6 text-primary flex-shrink-0" /> 
+            <CardTitle className="text-lg font-semibold text-primary leading-snug line-clamp-2"> 
               {post.title}
             </CardTitle>
           </div>
@@ -44,10 +43,10 @@ function RecentPostItem({ post }: RecentPostItemProps) {
           By {post.authorName} - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow px-5 py-4"> {/* Added py-4 for vertical padding */}
+      <CardContent className="flex-grow px-5 py-4"> 
         <p className="text-sm text-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed">{post.content}</p>
       </CardContent>
-      <CardFooter className="pt-3 px-5 pb-5 border-t border-border/50"> {/* Increased bottom padding */}
+      <CardFooter className="pt-3 px-5 pb-5 border-t border-border/50"> 
         <Link href="/feed" className="w-full">
           <Button variant="ghost" size="sm" className="w-full text-primary hover:bg-primary/10 justify-between group">
             Read More on Feed <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -244,7 +243,7 @@ function ActionCard({ title, description, icon, link, actionText, disabled = fal
       <CardHeader className="pb-4 pt-5 px-5">
         <div className="flex items-start space-x-4">
           <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
-            {React.cloneElement(icon as React.ReactElement, { className: `h-10 w-10 ${disabled ? 'text-muted-foreground' : 'text-accent'}`})} {/* Ensured icon size is consistent */}
+            {React.cloneElement(icon as React.ReactElement, { className: `h-10 w-10 ${disabled ? 'text-muted-foreground' : 'text-accent'}`})}
           </div>
           <div>
             <CardTitle className="text-lg sm:text-xl font-semibold text-foreground">{title}</CardTitle>
