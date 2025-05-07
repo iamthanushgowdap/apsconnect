@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/auth-provider";
+import type { UserProfile, Post } from "@/types";
 
 interface MockUserFromAuth { 
   displayName: string | null;
@@ -22,12 +23,35 @@ export default function AdminDashboardPage() {
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [user, setUser] = useState<MockUserFromAuth | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [contentPostsCount, setContentPostsCount] = useState(0);
 
 
   useEffect(() => {
     if (!authLoading) {
       if (authUser && authUser.role === 'admin') {
         setUser(authUser as MockUserFromAuth); 
+        // Fetch counts
+        if (typeof window !== 'undefined') {
+          let users = 0;
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('campus_connect_user_')) {
+              try {
+                const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
+                if (profile.role === 'student' || profile.role === 'faculty') {
+                  users++;
+                }
+              } catch (e) { /* ignore parse errors */ }
+            }
+          }
+          setTotalUsersCount(users);
+
+          const postsStr = localStorage.getItem('campus_connect_posts');
+          const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
+          setContentPostsCount(posts.length);
+        }
+
       } else if (authUser && authUser.role !== 'admin'){
         setUser(null); 
         router.push('/dashboard'); 
@@ -73,10 +97,8 @@ export default function AdminDashboardPage() {
   }
 
   const adminStats = [
-    { title: "Total Users", value: "1250", icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "group people" },
-    { title: "Content Posts", value: "280", icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "document plus" },
-    // Example of another stat if needed
-    // { title: "Active Sessions", value: "75", icon: <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "pulse chart" },
+    { title: "Total Users", value: totalUsersCount.toString(), icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "group people" },
+    { title: "Content Posts", value: contentPostsCount.toString(), icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "document plus" },
   ];
 
   return (
@@ -129,7 +151,7 @@ export default function AdminDashboardPage() {
           title="Branch Management"
           description="Define and manage college branches (CSE, ISE, etc.)."
           icon={<BarChart3 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/branches" // Assuming this route will exist
+          link="/admin/branches" 
           actionText="Manage Branches"
           dataAiHint="organization chart"
         />
@@ -137,7 +159,7 @@ export default function AdminDashboardPage() {
           title="Site Settings"
           description="Configure general application settings and preferences."
           icon={<Settings className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/settings" // Assuming this route will exist
+          link="/admin/settings" 
           actionText="Configure Settings"
           dataAiHint="gears settings"
         />
@@ -145,7 +167,7 @@ export default function AdminDashboardPage() {
           title="View All Content"
           description="Browse and manage all posted content across branches."
           icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/posts" // Assuming this route will exist
+          link="/admin/posts" 
           actionText="Manage Content"
           dataAiHint="files folder"
         />
