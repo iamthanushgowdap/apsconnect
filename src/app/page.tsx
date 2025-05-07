@@ -1,11 +1,17 @@
+"use client"; 
+
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SiteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
-import { ArrowRight, BookOpen, CalendarDays, Newspaper } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, Newspaper, Rocket } from "lucide-react"; 
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/components/auth-provider"; 
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
+  const { user, isLoading } = useAuth(); 
+
   return (
     <div className="container mx-auto px-4 py-8 md:py-16">
       <section className="text-center">
@@ -16,12 +22,28 @@ export default function Home() {
           Your central hub for all college-related information, events, and resources. Stay connected, stay informed.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
-          <Link href="/register" className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground" }))}>
-            Get Started <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
-          <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
-            Login
-          </Link>
+          {isLoading ? (
+            <>
+              <Skeleton className="h-12 w-40 rounded-md" />
+              <Skeleton className="h-12 w-28 rounded-md" />
+            </>
+          ) : user ? (
+            <Link 
+              href="/dashboard" 
+              className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground" }))}
+            >
+              Go to Dashboard <Rocket className="ml-2 h-5 w-5" />
+            </Link>
+          ) : (
+            <>
+              <Link href="/register" className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground" }))}>
+                Get Started <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+              <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
+                Login
+              </Link>
+            </>
+          )}
         </div>
       </section>
 

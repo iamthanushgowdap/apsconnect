@@ -30,22 +30,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Initialize user from localStorage on mount
     setIsLoading(true);
-    const mockUserStr = localStorage.getItem('mockUser');
-    if (mockUserStr) {
-      try {
+    try {
+      const mockUserStr = localStorage.getItem('mockUser');
+      if (mockUserStr) {
         const storedUser = JSON.parse(mockUserStr) as User;
         setUser(storedUser);
-      } catch (e) {
-        console.error("Failed to parse mockUser from localStorage", e);
-        localStorage.removeItem('mockUser');
+      } else {
+        setUser(null); // Explicitly set user to null if not found
       }
+    } catch (e) {
+      console.error("Failed to parse mockUser from localStorage", e);
+      localStorage.removeItem('mockUser');
+      setUser(null); // Explicitly set user to null on error
+    } finally {
+      setIsLoading(false); // Set loading to false once processing is done
     }
-    // Simulate async loading, even if user is found quickly or not at all
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500); // Reduced delay for better UX
-
-    return () => clearTimeout(timer);
   }, []);
 
   const signIn = async (credentials: { email: string; role?: UserRole, displayName?: string, branch?: Branch }) => {
