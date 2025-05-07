@@ -5,29 +5,17 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Bell, 
-  FileText, 
-  Users, 
-  Settings, 
   ArrowRight, 
-  ChevronRight, 
-  BookOpen, 
-  CalendarDays,
-  GraduationCap,
-  LayoutGrid,
-  CheckSquare,
-  UserCircle,
-  Briefcase, 
+  FileText, 
   MessageSquareWarning, 
   Info, 
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/components/auth-provider";
 import type { User } from "@/components/auth-provider"; 
-import type { Branch, Post } from "@/types"; // Assuming Post type is also needed from types
+import type { Post } from "@/types"; 
 
 export default function DashboardPage() {
   const router = useRouter(); 
@@ -40,11 +28,11 @@ export default function DashboardPage() {
     if (!authLoading) {
       if (authUser) {
         setUser(authUser);
-        if (authUser.role === 'admin') { // Redirect admin to their specific dashboard
+        if (authUser.role === 'admin') { 
           router.push('/admin');
-          return; // Important to prevent further execution for admin on this page
+          return; 
         }
-        // Fetch and filter posts for students/faculty
+        
         if (typeof window !== 'undefined') {
           const allPostsStr = localStorage.getItem('campus_connect_posts');
           const allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
@@ -61,9 +49,9 @@ export default function DashboardPage() {
               post.targetBranches.length === 0 || authUser.assignedBranches?.some(b => post.targetBranches.includes(b))
             );
           } else {
-            filtered = allPosts.filter(post => post.targetBranches.length === 0); // Default to general posts
+            filtered = allPosts.filter(post => post.targetBranches.length === 0); 
           }
-          setRelevantPosts(filtered.slice(0, 3)); // Show a few recent posts
+          setRelevantPosts(filtered.slice(0, 3)); 
         }
 
       } else {
@@ -74,14 +62,11 @@ export default function DashboardPage() {
     }
   }, [authUser, authLoading, router]);
   
-  if (isLoading || authLoading || (authUser?.role === 'admin' && !isLoading) ) { // Keep loading if admin is being redirected
+  if (isLoading || authLoading || (authUser?.role === 'admin' && !isLoading) ) { 
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-6">
           <div className="h-10 w-1/2 sm:w-1/3 rounded bg-muted mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => <div key={i} className="h-40 rounded-lg bg-muted"></div>)}
-          </div>
           <div className="h-12 w-1/3 sm:w-1/4 rounded bg-muted mt-8 mb-4"></div>
           <div className="space-y-4">
             {[1,2].map(i => <div key={i} className="h-32 rounded-lg bg-muted"></div>)}
@@ -154,7 +139,6 @@ export default function DashboardPage() {
     if (user.role === 'faculty') {
       return `Welcome to your Faculty Dashboard.`;
     }
-    // Student
     return `Welcome to your ${user.branch ? `${user.branch} ` : ''}Dashboard.`;
   }
 
@@ -170,39 +154,9 @@ export default function DashboardPage() {
            {user.email && user.role === 'faculty' && <span className="block text-sm sm:text-base">Email: {user.email}</span>}
         </p>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <StatCard 
-          title="Notifications" 
-          value="3 New" 
-          icon={<Bell className="h-5 w-5 sm:h-6 sm:w-6" />} 
-          description="Check your latest alerts"
-          link="#" 
-          dataAiHint="bell icon"
-          colorConfig="bg-red-500/10 text-red-500"
-        />
-        <StatCard 
-          title={user.role === 'faculty' ? "My Classes" : "Upcoming Deadlines"} 
-          value={user.role === 'faculty' ? "3 Sections" : "2 Tasks"} 
-          icon={user.role === 'faculty' ? <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" /> : <CheckSquare className="h-5 w-5 sm:h-6 sm:w-6" />} 
-          description={user.role === 'faculty' ? "Manage your course sections" : "Assignments & Submissions"}
-          link="#" 
-          dataAiHint={user.role === 'faculty' ? "teacher classroom" : "checklist tasks"}
-          colorConfig="bg-yellow-500/10 text-yellow-500"
-        />
-        <StatCard 
-          title="My Courses" 
-          value="4 Active" 
-          icon={<GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />} 
-          description="Access your course materials"
-          link="#" 
-          dataAiHint="graduation cap"
-          colorConfig="bg-green-500/10 text-green-500"
-        />
-      </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1">
+        <div>
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl sm:text-2xl">
@@ -233,67 +187,13 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-
-        <div className="lg:col-span-1 space-y-8">
-           <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Quick Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {user.role === 'student' && <QuickLinkItem href="#" icon={<CalendarDays className="h-5 w-5"/>} label="Class Schedule" />}
-              {user.role === 'faculty' && <QuickLinkItem href="/faculty/courses" icon={<Briefcase className="h-5 w-5"/>} label="My Courses" />}
-              <QuickLinkItem href="/profile/settings" icon={<UserCircle className="h-5 w-5"/>} label="My Profile" />
-              {/* Removed Library Portal and Full Activity Feed */}
-              {/* Site Settings is an admin-only feature, not for general users here */}
-            </CardContent>
-          </Card>
-
-          {/* Admin Quick Actions section removed from here */}
-        </div>
       </div>
     </div>
   );
 }
 
-interface StatCardProps {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  link?: string;
-  dataAiHint: string;
-  description?: string;
-  colorConfig?: string; 
-}
-
-function StatCard({ title, value, icon, link, dataAiHint, description, colorConfig = "bg-accent/10 text-accent" }: StatCardProps) {
-  const cardContent = (
-    <Card className="shadow-md hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm sm:text-base font-semibold text-foreground">{title}</CardTitle>
-        <div className={`p-2 sm:p-2.5 rounded-lg ${colorConfig}`}>{icon}</div>
-      </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-between">
-        <div>
-          <div className="text-3xl sm:text-4xl font-bold text-primary">{value}</div>
-          {description && <p className="text-xs sm:text-sm text-muted-foreground mt-1">{description}</p>}
-        </div>
-        <Image 
-          src={`https://picsum.photos/seed/${title.replace(/\s+/g, '-')}/300/150`} 
-          alt={title} 
-          width={300} 
-          height={150} 
-          className="mt-4 rounded-lg object-cover w-full aspect-[2/1]"
-          data-ai-hint={dataAiHint} 
-        />
-      </CardContent>
-    </Card>
-  );
-  return link ? <Link href={link} className="block h-full">{cardContent}</Link> : <div className="h-full">{cardContent}</div>;
-}
-
-
 interface UpdateItemProps {
-  post: Post; // Use the actual Post type
+  post: Post; 
 }
 
 function UpdateItem({ post }: UpdateItemProps) {
@@ -318,24 +218,3 @@ function UpdateItem({ post }: UpdateItemProps) {
     </Card>
   );
 }
-
-
-interface QuickLinkItemProps {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-}
-
-function QuickLinkItem({ href, icon, label }: QuickLinkItemProps) {
-  return (
-    <Link href={href} className="flex items-center p-3 -m-3 rounded-lg hover:bg-muted/50 transition-colors group">
-      <div className="p-2 sm:p-2.5 bg-primary/10 text-primary rounded-lg mr-3 sm:mr-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-        {icon}
-      </div>
-      <span className="font-medium text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">{label}</span>
-      <ChevronRight className="ml-auto h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-    </Link>
-  );
-}
-
-// QuickActionLink component is removed as it was part of Admin Quick Actions

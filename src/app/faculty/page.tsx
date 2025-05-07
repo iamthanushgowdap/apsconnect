@@ -7,7 +7,6 @@ import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2 } from "lu
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { useAuth, User } from "@/components/auth-provider";
 
 export default function FacultyDashboardPage() {
@@ -21,9 +20,9 @@ export default function FacultyDashboardPage() {
       if (authUser && authUser.role === 'faculty') {
         setFacultyUser(authUser);
       } else if (authUser && authUser.role !== 'faculty') {
-        router.push('/dashboard'); // Redirect non-faculty to their generic dashboard
+        router.push('/dashboard'); 
       } else {
-        router.push('/login'); // Redirect unauthenticated users to login
+        router.push('/login'); 
       }
       setPageLoading(false);
     }
@@ -77,7 +76,6 @@ export default function FacultyDashboardPage() {
           icon={<Users className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/faculty/user-management"
           actionText="Manage Students"
-          dataAiHint="students group"
         />
         <FacultyActionCard
           title="Create Content"
@@ -85,7 +83,6 @@ export default function FacultyDashboardPage() {
           icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/faculty/content/new"
           actionText="Create New Post"
-          dataAiHint="writing document"
         />
         <FacultyActionCard
           title="My Profile"
@@ -93,15 +90,13 @@ export default function FacultyDashboardPage() {
           icon={<UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/profile/settings" 
           actionText="View Profile"
-          dataAiHint="profile page"
         />
          <FacultyActionCard
           title="View Content"
           description="Browse and manage content relevant to your branches."
           icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/faculty/content" // This will be the feed/management page for faculty
+          link="/faculty/content" 
           actionText="Manage Content"
-          dataAiHint="documents files"
         />
       </div>
     </div>
@@ -114,10 +109,9 @@ interface FacultyActionCardProps {
   icon: React.ReactNode;
   link: string;
   actionText: string;
-  dataAiHint: string;
 }
 
-function FacultyActionCard({ title, description, icon, link, actionText, dataAiHint }: FacultyActionCardProps) {
+function FacultyActionCard({ title, description, icon, link, actionText }: FacultyActionCardProps) {
   return (
     <Card className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-4">
@@ -128,15 +122,8 @@ function FacultyActionCard({ title, description, icon, link, actionText, dataAiH
         <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-end">
-        <Image 
-            src={`https://picsum.photos/seed/${title.replace(/\s+/g, '-')}/300/180`} 
-            alt={title} 
-            width={300} 
-            height={180} 
-            className="mb-4 rounded-md object-cover w-full aspect-[16/9]"
-            data-ai-hint={dataAiHint}
-        />
-        <Link href={link} className="w-full">
+        {/* Image removed */}
+        <Link href={link} className="w-full mt-auto"> {/* Added mt-auto to push button to bottom */}
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base">
             {actionText}
           </Button>
@@ -145,4 +132,3 @@ function FacultyActionCard({ title, description, icon, link, actionText, dataAiH
     </Card>
   );
 }
-

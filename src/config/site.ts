@@ -43,7 +43,7 @@ export const SiteConfig: SiteConfig = {
       // protected: true, 
     },
     {
-      title: "Admin Panel",
+      title: "Admin Dashboard",
       href: "/admin",
       protected: true,
       adminOnly: true,

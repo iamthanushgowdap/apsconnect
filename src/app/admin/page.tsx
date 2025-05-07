@@ -7,7 +7,6 @@ import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle } from "
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { useAuth } from "@/components/auth-provider";
 import type { UserProfile, Post } from "@/types";
 
@@ -31,7 +30,7 @@ export default function AdminDashboardPage() {
     if (!authLoading) {
       if (authUser && authUser.role === 'admin') {
         setUser(authUser as MockUserFromAuth); 
-        // Fetch counts
+        
         if (typeof window !== 'undefined') {
           let users = 0;
           for (let i = 0; i < localStorage.length; i++) {
@@ -97,8 +96,8 @@ export default function AdminDashboardPage() {
   }
 
   const adminStats = [
-    { title: "Total Users", value: totalUsersCount.toString(), icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "group people" },
-    { title: "Content Posts", value: contentPostsCount.toString(), icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "document plus" },
+    { title: "Total Users", value: totalUsersCount.toString(), icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
+    { title: "Content Posts", value: contentPostsCount.toString(), icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
   ];
 
   return (
@@ -117,14 +116,7 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
-               <Image 
-                src={`https://picsum.photos/seed/${stat.title.replace(/\s+/g, '-')}/200/100`} 
-                alt={stat.title} 
-                width={200} 
-                height={100} 
-                className="mt-2 rounded-md object-cover w-full aspect-[2/1]"
-                data-ai-hint={stat.dataAiHint} 
-              />
+              {/* Image removed */}
             </CardContent>
           </Card>
         ))}
@@ -137,7 +129,6 @@ export default function AdminDashboardPage() {
           icon={<Users className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/users"
           actionText="Manage Users"
-          dataAiHint="users list"
         />
         <AdminActionCard
           title="Content Creation"
@@ -145,7 +136,6 @@ export default function AdminDashboardPage() {
           icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/posts/new"
           actionText="Create New Post"
-          dataAiHint="writing document"
         />
         <AdminActionCard
           title="Branch Management"
@@ -153,7 +143,6 @@ export default function AdminDashboardPage() {
           icon={<BarChart3 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/branches" 
           actionText="Manage Branches"
-          dataAiHint="organization chart"
         />
         <AdminActionCard
           title="Site Settings"
@@ -161,7 +150,6 @@ export default function AdminDashboardPage() {
           icon={<Settings className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/settings" 
           actionText="Configure Settings"
-          dataAiHint="gears settings"
         />
          <AdminActionCard
           title="My Profile"
@@ -169,7 +157,6 @@ export default function AdminDashboardPage() {
           icon={<UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/profile/settings" 
           actionText="View Profile"
-          dataAiHint="user profile"
         />
       </div>
     </div>
@@ -182,10 +169,9 @@ interface AdminActionCardProps {
   icon: React.ReactNode;
   link: string;
   actionText: string;
-  dataAiHint: string;
 }
 
-function AdminActionCard({ title, description, icon, link, actionText, dataAiHint }: AdminActionCardProps) {
+function AdminActionCard({ title, description, icon, link, actionText }: AdminActionCardProps) {
   return (
     <Card className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-4">
@@ -196,15 +182,8 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
         <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-end">
-        <Image 
-            src={`https://picsum.photos/seed/${title.replace(/\s+/g, '-')}/300/180`} 
-            alt={title} 
-            width={300} 
-            height={180} 
-            className="mb-4 rounded-md object-cover w-full aspect-[16/9]"
-            data-ai-hint={dataAiHint}
-        />
-        <Link href={link} className="w-full">
+        {/* Image removed */}
+        <Link href={link} className="w-full mt-auto"> {/* Added mt-auto to push button to bottom if content is short */}
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base">
             {actionText}
           </Button>
@@ -213,4 +192,3 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     </Card>
   );
 }
-

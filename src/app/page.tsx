@@ -1,10 +1,10 @@
+
 "use client"; 
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SiteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { ArrowRight, BookOpen, CalendarDays, Newspaper, Rocket } from "lucide-react"; 
-import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider"; 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,19 +57,16 @@ export default function Home() {
             icon={<Newspaper className="h-8 w-8 md:h-10 md:w-10 text-primary" />}
             title="Latest News & Announcements"
             description="Never miss important updates from the college administration and various departments."
-            dataAiHint="news paper"
           />
           <FeatureCard
             icon={<CalendarDays className="h-8 w-8 md:h-10 md:w-10 text-primary" />}
             title="Event Schedules"
             description="Keep track of upcoming workshops, seminars, cultural fests, and sports events."
-            dataAiHint="calendar schedule"
           />
           <FeatureCard
             icon={<BookOpen className="h-8 w-8 md:h-10 md:w-10 text-primary" />}
             title="Academic Resources"
             description="Access notes, important links, and schedules shared by faculty and departments."
-            dataAiHint="open book"
           />
         </div>
       </section>
@@ -81,16 +78,7 @@ export default function Home() {
                 Connect with students from your branch, share information, and collaborate on projects.
                 CampusConnect fosters a supportive and interactive environment.
             </p>
-            <div className="mt-6 sm:mt-8 mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl">
-              <Image 
-                src="https://picsum.photos/800/400" 
-                alt="Community engagement" 
-                width={800} 
-                height={400} 
-                className="rounded-lg shadow-md w-full h-auto"
-                data-ai-hint="students collaborating"
-              />
-            </div>
+            {/* Image removed from here */}
         </div>
       </section>
     </div>
@@ -101,10 +89,9 @@ interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
-  dataAiHint: string;
 }
 
-function FeatureCard({ icon, title, description, dataAiHint }: FeatureCardProps) {
+function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
     <div className="bg-card p-4 sm:p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
       <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-primary/10 rounded-full">
@@ -112,17 +99,7 @@ function FeatureCard({ icon, title, description, dataAiHint }: FeatureCardProps)
       </div>
       <h3 className="text-lg sm:text-xl font-semibold mb-2">{title}</h3>
       <p className="text-muted-foreground text-xs sm:text-sm">{description}</p>
-      <div className="mt-4 w-full aspect-[3/2] max-w-xs sm:max-w-sm">
-        <Image 
-          src={`https://picsum.photos/seed/${title.replace(/\s+/g, '-')}/300/200`} 
-          alt={title} 
-          width={300} 
-          height={200} 
-          className="rounded-md object-cover w-full h-full"
-          data-ai-hint={dataAiHint}
-        />
-      </div>
+      {/* Image removed from here */}
     </div>
   );
 }
-

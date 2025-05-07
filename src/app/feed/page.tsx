@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Link from 'next/link';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Loader2, FileText, Paperclip, Download, Search, Filter, ChevronRight } from 'lucide-react';
-import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast'; 
 
 const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
@@ -153,7 +152,7 @@ export default function FeedPage() {
                         {postCategories.map(cat => <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                { (user?.role === 'admin' || user?.role === 'faculty' || !user) && // Show branch filter for admin, faculty, or unauth users
+                { (user?.role === 'admin' || user?.role === 'faculty' || !user) && 
                     <Select value={branchFilter} onValueChange={setBranchFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Filter by branch" />
@@ -223,15 +222,8 @@ export default function FeedPage() {
                   </div>
                 )}
               </CardContent>
-               <CardFooter className="flex-col items-start"> 
-                <Image
-                    src={`https://picsum.photos/seed/${post.id}/400/200`}
-                    alt={post.title}
-                    width={400}
-                    height={200}
-                    className="rounded-md object-cover w-full aspect-video mb-2" 
-                    data-ai-hint={`${post.category} ${post.targetBranches.length > 0 ? post.targetBranches[0].toLowerCase() : 'general'}`}
-                />
+               <CardFooter className="flex-col items-start pt-2"> 
+                {/* Image Removed */}
               </CardFooter>
             </Card>
           ))}
@@ -240,4 +232,3 @@ export default function FeedPage() {
     </div>
   );
 }
-
