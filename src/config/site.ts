@@ -42,12 +42,12 @@ export const SiteConfig: SiteConfig = {
       // public or protected based on app logic, assume public for now or protected
       // protected: true, 
     },
-    {
-      title: "Admin Dashboard",
-      href: "/admin",
-      protected: true,
-      adminOnly: true,
-    },
+    // {
+    //   title: "Admin Dashboard", // Removed as per user request to remove from Navbar
+    //   href: "/admin",
+    //   protected: true,
+    //   adminOnly: true,
+    // },
     {
       title: "Faculty Dashboard", 
       href: "/faculty", 
