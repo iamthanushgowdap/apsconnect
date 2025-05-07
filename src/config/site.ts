@@ -31,16 +31,22 @@ export const SiteConfig: SiteConfig = {
       title: "Home",
       href: "/",
     },
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      protected: true, 
-    },
+    // {
+    //   title: "Dashboard",
+    //   href: "/dashboard",
+    //   protected: true, 
+    // },
     {
       title: "Campus Feed",
       href: "/feed",
       // public or protected based on app logic, assume public for now or protected
       // protected: true, 
+    },
+    {
+      title: "Admin Dashboard",
+      href: "/admin",
+      protected: true,
+      adminOnly: true,
     },
     {
       title: "Faculty Dashboard", 
