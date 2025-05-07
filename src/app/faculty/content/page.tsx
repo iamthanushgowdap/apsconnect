@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react'; // Added useState
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -80,3 +80,4 @@ export default function FacultyViewContentPage() {
     </div>
   );
 }
+
