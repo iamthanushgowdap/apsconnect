@@ -20,10 +20,10 @@ interface MockUserFromAuth {
 interface AdminStat {
   title: string;
   value: string;
-  icon: React.ReactElement; // Expecting JSX Element for icon
+  icon: React.ReactElement; 
   breakdown?: string; 
-  bgColorClass: string; // For icon background
-  iconColorClass: string; // For icon color
+  bgColorClass: string; 
+  iconColorClass: string; 
 }
 
 export default function AdminDashboardPage() {
@@ -83,10 +83,10 @@ export default function AdminDashboardPage() {
         <div className="animate-pulse space-y-8 w-full">
           <div className="h-10 w-1/2 rounded bg-muted"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2].map(i => <div key={i} className="h-36 rounded-lg bg-muted"></div>)}
+            {[1, 2].map(i => <Card key={i} className="h-36 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-64 rounded-lg bg-muted"></div>)}
+            {[1, 2, 3, 4, 5].map(i => <Card key={i} className="h-64 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
           </div>
         </div>
       </div>
@@ -131,72 +131,80 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-12">
-      <header className="mb-10 text-center sm:text-left">
+    <div className="container mx-auto px-4 py-8 sm:py-12 space-y-10">
+      <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">Admin Dashboard</h1>
         <p className="text-md sm:text-lg text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
       </header>
 
-      <section className="mb-12">
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Platform Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {adminStats.map(stat => (
-            <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-xl border border-border/70">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-5 px-5">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColorClass}`}>
-                  {React.cloneElement(stat.icon, { className: `${stat.iconColorClass} h-6 w-6`})}
-                </div>
-              </CardHeader>
-              <CardContent className="px-5 pb-5">
-                <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                {stat.breakdown && <p className="text-xs text-muted-foreground pt-1">{stat.breakdown}</p>}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+      <Card className="shadow-xl rounded-xl border border-border/70">
+        <CardHeader>
+          <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Platform Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {adminStats.map(stat => (
+              <Card key={stat.title} className="shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg border border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-5 px-5">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                  <div className={`p-2 rounded-lg ${stat.bgColorClass}`}>
+                    {React.cloneElement(stat.icon, { className: `${stat.iconColorClass} h-6 w-6`})}
+                  </div>
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                  {stat.breakdown && <p className="text-xs text-muted-foreground pt-1">{stat.breakdown}</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      <section>
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Management Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StyledActionCard
-            title="User Management"
-            description="View, approve, and manage student and faculty accounts."
-            icon={<Users />}
-            link="/admin/users"
-            actionText="Manage Users"
-          />
-          <StyledActionCard
-            title="Content Creation"
-            description="Post news, events, notes, and schedules for specific branches."
-            icon={<FilePlus2 />}
-            link="/admin/posts/new"
-            actionText="Create New Post"
-          />
-          <StyledActionCard
-            title="Branch Management"
-            description="Define and manage college branches (CSE, ISE, etc.)."
-            icon={<BarChart3 />}
-            link="/admin/branches" 
-            actionText="Manage Branches"
-          />
-          <StyledActionCard
-            title="Site Settings"
-            description="Configure general application settings and preferences."
-            icon={<Settings />}
-            link="/admin/settings" 
-            actionText="Configure Settings"
-          />
-          <StyledActionCard
-            title="My Profile"
-            description="View and edit your admin profile details."
-            icon={<UserCircle />}
-            link="/profile/settings" 
-            actionText="View Profile"
-          />
-        </div>
-      </section>
+      <Card className="shadow-xl rounded-xl border border-border/70">
+        <CardHeader>
+            <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Management Tools</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StyledActionCard
+                title="User Management"
+                description="View, approve, and manage student and faculty accounts."
+                icon={<Users />}
+                link="/admin/users"
+                actionText="Manage Users"
+            />
+            <StyledActionCard
+                title="Content Creation"
+                description="Post news, events, notes, and schedules for specific branches."
+                icon={<FilePlus2 />}
+                link="/admin/posts/new"
+                actionText="Create New Post"
+            />
+            <StyledActionCard
+                title="Branch Management"
+                description="Define and manage college branches (CSE, ISE, etc.)."
+                icon={<BarChart3 />}
+                link="/admin/branches" 
+                actionText="Manage Branches"
+            />
+            <StyledActionCard
+                title="Site Settings"
+                description="Configure general application settings and preferences."
+                icon={<Settings />}
+                link="/admin/settings" 
+                actionText="Configure Settings"
+            />
+            <StyledActionCard
+                title="My Profile"
+                description="View and edit your admin profile details."
+                icon={<UserCircle />}
+                link="/profile/settings" 
+                actionText="View Profile"
+            />
+            </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -212,7 +220,7 @@ interface StyledActionCardProps {
 
 function StyledActionCard({ title, description, icon, link, actionText, disabled = false }: StyledActionCardProps) {
   return (
-    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
+    <Card className={`shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
       <CardHeader className="pb-4 pt-5 px-5">
         <div className="flex items-start space-x-4">
           <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
@@ -234,4 +242,3 @@ function StyledActionCard({ title, description, icon, link, actionText, disabled
     </Card>
   );
 }
-

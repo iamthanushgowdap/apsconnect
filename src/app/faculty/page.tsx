@@ -60,8 +60,8 @@ export default function FacultyDashboardPage() {
     : 'Not Assigned';
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-12">
-      <header className="mb-10 text-center sm:text-left">
+    <div className="container mx-auto px-4 py-8 sm:py-12 space-y-10">
+      <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">
           Faculty Dashboard
         </h1>
@@ -71,39 +71,43 @@ export default function FacultyDashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">Assigned Branches: <span className="font-semibold">{assignedBranchesText}</span></p>
       </header>
 
-      <section>
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Key Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StyledActionCard
-            title="Manage Students"
-            description="View, approve, and manage student accounts within your assigned branches."
-            icon={<Users />} 
-            link="/faculty/user-management"
-            actionText="Manage Students"
-          />
-          <StyledActionCard
-            title="Create Content"
-            description="Post news, events, or notes for your assigned branches."
-            icon={<FilePlus2 />}
-            link="/faculty/content/new"
-            actionText="Create New Post"
-          />
-          <StyledActionCard
-            title="My Profile"
-            description="View and edit your faculty profile details."
-            icon={<UserCircle />}
-            link="/profile/settings" 
-            actionText="View Profile"
-          />
-          <StyledActionCard
-            title="View Content Feed"
-            description="Browse and manage content relevant to your branches."
-            icon={<FileText />}
-            link="/feed" // Faculty content is on the main feed, filtered for them
-            actionText="View Feed"
-          />
-        </div>
-      </section>
+      <Card className="shadow-xl rounded-xl border border-border/70">
+        <CardHeader>
+            <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Key Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StyledActionCard
+                title="Manage Students"
+                description="View, approve, and manage student accounts within your assigned branches."
+                icon={<Users />} 
+                link="/faculty/user-management"
+                actionText="Manage Students"
+            />
+            <StyledActionCard
+                title="Create Content"
+                description="Post news, events, or notes for your assigned branches."
+                icon={<FilePlus2 />}
+                link="/faculty/content/new"
+                actionText="Create New Post"
+            />
+            <StyledActionCard
+                title="My Profile"
+                description="View and edit your faculty profile details."
+                icon={<UserCircle />}
+                link="/profile/settings" 
+                actionText="View Profile"
+            />
+            <StyledActionCard
+                title="View Content Feed"
+                description="Browse and manage content relevant to your branches."
+                icon={<FileText />}
+                link="/feed" 
+                actionText="View Feed"
+            />
+            </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -111,7 +115,7 @@ export default function FacultyDashboardPage() {
 interface StyledActionCardProps {
   title: string;
   description: string;
-  icon: React.ReactNode; // Expecting Lucide icon components
+  icon: React.ReactNode; 
   link: string;
   actionText: string;
   disabled?: boolean;
@@ -119,7 +123,7 @@ interface StyledActionCardProps {
 
 function StyledActionCard({ title, description, icon, link, actionText, disabled = false }: StyledActionCardProps) {
   return (
-    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
+    <Card className={`shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
       <CardHeader className="pb-4 pt-5 px-5">
         <div className="flex items-start space-x-4">
           <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
@@ -141,4 +145,3 @@ function StyledActionCard({ title, description, icon, link, actionText, disabled
     </Card>
   );
 }
-
