@@ -4,9 +4,28 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth, User } from "@/components/auth-provider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ShieldCheck, UserCircle, Bell, AlertTriangle, Newspaper, BookOpen, CalendarDays, FileText, ArrowRight, Paperclip } from "lucide-react";
+import {
+  Loader2,
+  ShieldCheck,
+  UserCircle,
+  Bell,
+  AlertTriangle,
+  Newspaper,
+  BookOpen,
+  CalendarDays,
+  FileText,
+  ArrowRight,
+  Paperclip
+} from "lucide-react";
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
@@ -15,40 +34,47 @@ interface RecentPostItemProps {
   post: Post;
 }
 
+// Updated RecentPostItem component as per user's provided code
 function RecentPostItem({ post }: RecentPostItemProps) {
-  const categoryIcons: Record<Post['category'], React.ElementType> = {
+  const categoryIcons: Partial<Record<Post['category'], React.ElementType>> = {
     event: CalendarDays,
     news: Newspaper,
-    link: Paperclip, 
+    link: Paperclip,
     note: BookOpen,
     schedule: CalendarDays,
   };
-  const IconComponent = categoryIcons[post.category] || FileText;
+
+  const IconComponent = post?.category && categoryIcons[post.category] ? categoryIcons[post.category] : FileText;
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col h-full bg-card border border-border/70 rounded-xl overflow-hidden">
-      <CardHeader className="pb-3 pt-5 px-5"> 
-        <div className="flex justify-between items-start mb-1.5">
-          <div className="flex items-center gap-2.5"> 
-            <IconComponent className="h-6 w-6 text-primary flex-shrink-0" /> 
-            <CardTitle className="text-lg font-semibold text-primary leading-snug line-clamp-2"> 
+    <Card className="shadow-md hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col h-full bg-background border border-border/50 rounded-2xl overflow-hidden">
+      <CardHeader className="pb-2 pt-5 px-6">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-3">
+            <IconComponent className="h-6 w-6 text-primary" />
+            <CardTitle className="text-lg font-semibold text-primary leading-tight line-clamp-2">
               {post.title}
             </CardTitle>
           </div>
-          <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-2 shrink-0 py-1 px-2.5">
-            {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
+          <Badge
+            variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"}
+            className="text-xs ml-2 px-2 py-1 rounded-full"
+          >
+            {post.category ? post.category.charAt(0).toUpperCase() + post.category.slice(1) : "Other"}
           </Badge>
         </div>
         <CardDescription className="text-xs text-muted-foreground">
-          By {post.authorName} - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
+          By {post.authorName || "Unknown"} — {post.createdAt ? formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true }) : "some time ago"}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow px-5 py-4"> 
-        <p className="text-sm text-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+      <CardContent className="px-6 py-4 flex-grow">
+        <p className="text-sm text-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed">
+          {post.content || "No content available."}
+        </p>
       </CardContent>
-      <CardFooter className="pt-3 px-5 pb-5 border-t border-border/50"> 
+      <CardFooter className="pt-3 px-6 pb-5 border-t border-border/50">
         <Link href="/feed" className="w-full">
-          <Button variant="ghost" size="sm" className="w-full text-primary hover:bg-primary/10 justify-between group">
+          <Button variant="ghost" size="sm" className="w-full justify-between text-primary hover:bg-primary/10 group">
             Read More on Feed <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Button>
         </Link>
@@ -261,4 +287,3 @@ function ActionCard({ title, description, icon, link, actionText, disabled = fal
     </Card>
   );
 }
-
