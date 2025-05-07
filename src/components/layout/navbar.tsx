@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -18,7 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User as UserIcon, LogOut, LayoutDashboard, Settings, Newspaper } from "lucide-react"; 
+import { User as UserIcon, LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
+import { ThemeToggleButton } from "@/components/theme-toggle-button";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -40,7 +42,6 @@ export function Navbar() {
     }
 
     let viewablePosts = allPosts;
-    // Filter posts based on user role and branch (similar to FeedPage logic)
     if (user.role === 'student' && user.branch) {
       const studentBranch = user.branch;
       viewablePosts = allPosts.filter(post => 
@@ -52,10 +53,7 @@ export function Navbar() {
         user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch))
       );
     } else { 
-      // For other roles (like admin) or if no branch info, show all posts. 
-      // Or, if if non-student/faculty shouldn't see badge, handle here.
-      // Current logic: admin won't show badge as per initial useCallback condition.
-      viewablePosts = allPosts; // Admin sees all posts for count if logic were to change
+      viewablePosts = allPosts;
     }
     
     const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
@@ -132,32 +130,57 @@ export function Navbar() {
         </Link>
         <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-            if (isLoading) {
-              // Hide protected/role-specific links while loading auth state
+             if (isLoading) {
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
             } else { 
               if (item.hideWhenLoggedIn && user) return null;
               if (item.protected && !user) return null;
               if (item.adminOnly && user?.role !== 'admin') return null;
               if (item.facultyOnly && user?.role !== 'faculty') return null;
-              // StudentOnly also applies to 'pending' users for the student dashboard link
               if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
+              if (item.title === "Campus Feed") return null; // Explicitly hide Campus Feed
             }
             
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "transition-colors hover:text-primary relative flex items-center",
-                  pathname === item.href ? "text-primary" : "text-foreground/60",
-                  "text-xs sm:text-sm" 
-                )}
-              >
-                {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
-                {item.title}
-              </Link>
-            );
+            // Always show Home, Login, Register based on their own conditions
+            if (item.title === "Home" || (item.title === "Login" && !user) || (item.title === "Register" && !user)) {
+                 return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                        "transition-colors hover:text-primary relative flex items-center",
+                        pathname === item.href ? "text-primary" : "text-foreground/60",
+                        "text-xs sm:text-sm" 
+                        )}
+                    >
+                        {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
+                        {item.title}
+                    </Link>
+                );
+            }
+
+            // Show role-specific dashboards if user is logged in and matches role
+            if (user && (
+                (item.adminOnly && user.role === 'admin') ||
+                (item.facultyOnly && user.role === 'faculty') ||
+                (item.studentOnly && (user.role === 'student' || user.role === 'pending'))
+            )) {
+                return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                        "transition-colors hover:text-primary relative flex items-center",
+                        pathname === item.href ? "text-primary" : "text-foreground/60",
+                        "text-xs sm:text-sm" 
+                        )}
+                    >
+                        {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
+                        {item.title}
+                    </Link>
+                );
+            }
+            return null; 
           })}
         </nav>
         <div className="flex items-center space-x-1 sm:space-x-2">
@@ -195,7 +218,7 @@ export function Navbar() {
                     <span>Dashboard</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
+                 <DropdownMenuItem asChild>
                   <Link href="/feed" className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Newspaper className="mr-2 h-4 w-4" />
@@ -213,6 +236,10 @@ export function Navbar() {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <ThemeToggleButton />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
