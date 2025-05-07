@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -20,8 +20,10 @@ interface MockUserFromAuth {
 interface AdminStat {
   title: string;
   value: string;
-  icon: React.ReactNode;
-  breakdown?: string; // Optional field for user breakdown
+  icon: React.ReactElement; // Expecting JSX Element for icon
+  breakdown?: string; 
+  bgColorClass: string; // For icon background
+  iconColorClass: string; // For icon color
 }
 
 export default function AdminDashboardPage() {
@@ -47,7 +49,7 @@ export default function AdminDashboardPage() {
             if (key && key.startsWith('campus_connect_user_')) {
               try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
-                if (profile.role === 'student' && profile.isApproved) { // Count only approved students
+                if (profile.role === 'student' && profile.isApproved) { 
                   currentStudentCount++;
                 } else if (profile.role === 'faculty') {
                   currentFacultyCount++;
@@ -77,11 +79,14 @@ export default function AdminDashboardPage() {
 
   if (isLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-8">
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <div className="animate-pulse space-y-8 w-full">
           <div className="h-10 w-1/2 rounded bg-muted"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2].map(i => <div key={i} className="h-36 rounded-lg bg-muted"></div>)}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-48 rounded-lg bg-muted"></div>)}
+            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-64 rounded-lg bg-muted"></div>)}
           </div>
         </div>
       </div>
@@ -91,15 +96,15 @@ export default function AdminDashboardPage() {
   if (!user) { 
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto shadow-lg">
+        <Card className="max-w-md mx-auto shadow-2xl border-destructive">
             <CardHeader>
                 <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
             </CardHeader>
             <CardContent>
-                <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+                <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
                 <Link href="/dashboard">
-                    <Button variant="outline" className="mt-6">Go to Dashboard</Button>
+                    <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">Go to Dashboard</Button>
                 </Link>
             </CardContent>
         </Card>
@@ -112,103 +117,121 @@ export default function AdminDashboardPage() {
       title: "Total Users", 
       value: (studentCount + facultyCount).toString(), 
       breakdown: `Students: ${studentCount}, Faculty: ${facultyCount}`,
-      icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> 
+      icon: <Users className="h-6 w-6" />,
+      bgColorClass: "bg-blue-100 dark:bg-blue-900/30",
+      iconColorClass: "text-blue-600 dark:text-blue-400",
     },
     { 
       title: "Content Posts", 
       value: contentPostsCount.toString(), 
-      icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> 
+      icon: <FilePlus2 className="h-6 w-6" />,
+      bgColorClass: "bg-green-100 dark:bg-green-900/30",
+      iconColorClass: "text-green-600 dark:text-green-400",
     },
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">Admin Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
-      </div>
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <header className="mb-10 text-center sm:text-left">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">Admin Dashboard</h1>
+        <p className="text-md sm:text-lg text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        {adminStats.map(stat => (
-          <Card key={stat.title} className="shadow-md hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-              {stat.icon}
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
-              {stat.breakdown && <p className="text-xs text-muted-foreground pt-1">{stat.breakdown}</p>}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <section className="mb-12">
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Platform Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {adminStats.map(stat => (
+            <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-xl border border-border/70">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-5 px-5">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                <div className={`p-2 rounded-lg ${stat.bgColorClass}`}>
+                  {React.cloneElement(stat.icon, { className: `${stat.iconColorClass} h-6 w-6`})}
+                </div>
+              </CardHeader>
+              <CardContent className="px-5 pb-5">
+                <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                {stat.breakdown && <p className="text-xs text-muted-foreground pt-1">{stat.breakdown}</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AdminActionCard
-          title="User Management"
-          description="View, approve, and manage student and faculty accounts."
-          icon={<Users className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/users"
-          actionText="Manage Users"
-        />
-        <AdminActionCard
-          title="Content Creation"
-          description="Post news, events, notes, and schedules for specific branches."
-          icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/posts/new"
-          actionText="Create New Post"
-        />
-        <AdminActionCard
-          title="Branch Management"
-          description="Define and manage college branches (CSE, ISE, etc.)."
-          icon={<BarChart3 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/branches" 
-          actionText="Manage Branches"
-        />
-        <AdminActionCard
-          title="Site Settings"
-          description="Configure general application settings and preferences."
-          icon={<Settings className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/settings" 
-          actionText="Configure Settings"
-        />
-         <AdminActionCard
-          title="My Profile"
-          description="View and edit your admin profile details."
-          icon={<UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/profile/settings" 
-          actionText="View Profile"
-        />
-      </div>
+      <section>
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Management Tools</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StyledActionCard
+            title="User Management"
+            description="View, approve, and manage student and faculty accounts."
+            icon={<Users />}
+            link="/admin/users"
+            actionText="Manage Users"
+          />
+          <StyledActionCard
+            title="Content Creation"
+            description="Post news, events, notes, and schedules for specific branches."
+            icon={<FilePlus2 />}
+            link="/admin/posts/new"
+            actionText="Create New Post"
+          />
+          <StyledActionCard
+            title="Branch Management"
+            description="Define and manage college branches (CSE, ISE, etc.)."
+            icon={<BarChart3 />}
+            link="/admin/branches" 
+            actionText="Manage Branches"
+          />
+          <StyledActionCard
+            title="Site Settings"
+            description="Configure general application settings and preferences."
+            icon={<Settings />}
+            link="/admin/settings" 
+            actionText="Configure Settings"
+          />
+          <StyledActionCard
+            title="My Profile"
+            description="View and edit your admin profile details."
+            icon={<UserCircle />}
+            link="/profile/settings" 
+            actionText="View Profile"
+          />
+        </div>
+      </section>
     </div>
   );
 }
 
-interface AdminActionCardProps {
+interface StyledActionCardProps {
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: React.ReactNode; 
   link: string;
   actionText: string;
+  disabled?: boolean;
 }
 
-function AdminActionCard({ title, description, icon, link, actionText }: AdminActionCardProps) {
+function StyledActionCard({ title, description, icon, link, actionText, disabled = false }: StyledActionCardProps) {
   return (
-    <Card className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col">
-      <CardHeader className="pb-4">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="p-2 sm:p-3 bg-accent/10 rounded-full">{icon}</div>
-          <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
+    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
+      <CardHeader className="pb-4 pt-5 px-5">
+        <div className="flex items-start space-x-4">
+          <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
+            {React.cloneElement(icon as React.ReactElement, { className: `h-10 w-10 ${disabled ? 'text-muted-foreground' : 'text-accent'}`})}
+          </div>
+          <div>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-foreground">{title}</CardTitle>
+            <CardDescription className="text-sm mt-1 text-muted-foreground">{description}</CardDescription>
+          </div>
         </div>
-        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-end">
-        <Link href={link} className="w-full mt-auto">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base">
-            {actionText}
+      <CardContent className="flex-grow flex flex-col justify-end mt-auto px-5 pb-5">
+        <Link href={disabled ? "#" : link} className={`w-full ${disabled ? 'pointer-events-none' : ''}`}>
+          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-3 rounded-lg" disabled={disabled}>
+            {actionText} <ArrowRight className="ml-2 h-4 w-4"/>
           </Button>
         </Link>
       </CardContent>
     </Card>
   );
 }
+

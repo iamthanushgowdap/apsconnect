@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2 } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -31,7 +31,7 @@ export default function FacultyDashboardPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
@@ -39,15 +39,15 @@ export default function FacultyDashboardPage() {
   if (!facultyUser) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto shadow-lg">
+        <Card className="max-w-md mx-auto shadow-2xl border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
           </CardHeader>
           <CardContent>
-            <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+            <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
             <Link href="/dashboard">
-              <Button variant="outline" className="mt-6">Go to Dashboard</Button>
+              <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">Go to Dashboard</Button>
             </Link>
           </CardContent>
         </Card>
@@ -57,78 +57,88 @@ export default function FacultyDashboardPage() {
   
   const assignedBranchesText = facultyUser.assignedBranches && facultyUser.assignedBranches.length > 0 
     ? facultyUser.assignedBranches.join(', ') 
-    : 'N/A';
+    : 'Not Assigned';
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">Faculty Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <header className="mb-10 text-center sm:text-left">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">
+          Faculty Dashboard
+        </h1>
+        <p className="text-md sm:text-lg text-muted-foreground">
           Welcome, {facultyUser.displayName || facultyUser.email}! Manage your students and resources.
         </p>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Assigned Branches: {assignedBranchesText}</p>
-      </div>
+        <p className="text-sm text-muted-foreground mt-1">Assigned Branches: <span className="font-semibold">{assignedBranchesText}</span></p>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <FacultyActionCard
-          title="Manage Students"
-          description="View, approve, and manage student accounts within your assigned branches."
-          icon={<Users className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/faculty/user-management"
-          actionText="Manage Students"
-        />
-        <FacultyActionCard
-          title="Create Content"
-          description="Post news, events, or notes for your assigned branches."
-          icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/faculty/content/new"
-          actionText="Create New Post"
-        />
-        <FacultyActionCard
-          title="My Profile"
-          description="View and edit your faculty profile details."
-          icon={<UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/profile/settings" 
-          actionText="View Profile"
-        />
-         <FacultyActionCard
-          title="View Content"
-          description="Browse and manage content relevant to your branches."
-          icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/faculty/content" 
-          actionText="Manage Content"
-        />
-      </div>
+      <section>
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Key Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StyledActionCard
+            title="Manage Students"
+            description="View, approve, and manage student accounts within your assigned branches."
+            icon={<Users />} 
+            link="/faculty/user-management"
+            actionText="Manage Students"
+          />
+          <StyledActionCard
+            title="Create Content"
+            description="Post news, events, or notes for your assigned branches."
+            icon={<FilePlus2 />}
+            link="/faculty/content/new"
+            actionText="Create New Post"
+          />
+          <StyledActionCard
+            title="My Profile"
+            description="View and edit your faculty profile details."
+            icon={<UserCircle />}
+            link="/profile/settings" 
+            actionText="View Profile"
+          />
+          <StyledActionCard
+            title="View Content Feed"
+            description="Browse and manage content relevant to your branches."
+            icon={<FileText />}
+            link="/feed" // Faculty content is on the main feed, filtered for them
+            actionText="View Feed"
+          />
+        </div>
+      </section>
     </div>
   );
 }
 
-interface FacultyActionCardProps {
+interface StyledActionCardProps {
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: React.ReactNode; // Expecting Lucide icon components
   link: string;
   actionText: string;
+  disabled?: boolean;
 }
 
-function FacultyActionCard({ title, description, icon, link, actionText }: FacultyActionCardProps) {
+function StyledActionCard({ title, description, icon, link, actionText, disabled = false }: StyledActionCardProps) {
   return (
-    <Card className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col">
-      <CardHeader className="pb-4">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="p-2 sm:p-3 bg-accent/10 rounded-full">{icon}</div>
-          <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
+    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
+      <CardHeader className="pb-4 pt-5 px-5">
+        <div className="flex items-start space-x-4">
+          <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
+            {React.cloneElement(icon as React.ReactElement, { className: `h-10 w-10 ${disabled ? 'text-muted-foreground' : 'text-accent'}`})}
+          </div>
+          <div>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-foreground">{title}</CardTitle>
+            <CardDescription className="text-sm mt-1 text-muted-foreground">{description}</CardDescription>
+          </div>
         </div>
-        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-end">
-        {/* Image removed */}
-        <Link href={link} className="w-full mt-auto"> {/* Added mt-auto to push button to bottom */}
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base">
-            {actionText}
+      <CardContent className="flex-grow flex flex-col justify-end mt-auto px-5 pb-5">
+        <Link href={disabled ? "#" : link} className={`w-full ${disabled ? 'pointer-events-none' : ''}`}>
+          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-3 rounded-lg" disabled={disabled}>
+            {actionText} <ArrowRight className="ml-2 h-4 w-4"/>
           </Button>
         </Link>
       </CardContent>
     </Card>
   );
 }
+
