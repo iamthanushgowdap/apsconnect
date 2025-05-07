@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { Loader2, FileText, Paperclip, Download, Search, Filter } from 'lucide-react';
+import { Loader2, FileText, Paperclip, Download, Search, Filter, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 const getBranchFromUsn = (usn?: string): Branch | undefined => {
   if (!usn || usn.length < 7) return undefined;
@@ -27,6 +28,7 @@ const getBranchFromUsn = (usn?: string): Branch | undefined => {
 
 export default function FeedPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast(); // Initialize toast
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
@@ -213,21 +215,22 @@ export default function FeedPage() {
                   </div>
                 )}
               </CardContent>
-               <CardFooter>
-                {/* <Link href={`/feed/${post.id}`} className="w-full">
-                   <Button variant="outline" className="w-full text-sm">
-                        View Details <ChevronRight className="ml-1 h-4 w-4"/>
-                    </Button>
-                </Link> */}
-                 {/* Placeholder for placeholder image, actual images if available */}
+               <CardFooter className="flex-col items-start"> {/* Changed to flex-col and items-start */}
+                {/* Placeholder for placeholder image, actual images if available */}
                 <Image
                     src={`https://picsum.photos/seed/${post.id}/400/200`}
                     alt={post.title}
                     width={400}
                     height={200}
-                    className="rounded-md object-cover w-full aspect-video mt-2"
+                    className="rounded-md object-cover w-full aspect-video mb-2" // Added mb-2
                     data-ai-hint={`${post.category} ${post.targetBranches.length > 0 ? post.targetBranches[0].toLowerCase() : 'general'}`}
                 />
+                {/* Removed Link to individual post page for now, as it is not implemented */}
+                {/* <Link href={`/feed/${post.id}`} className="w-full">
+                   <Button variant="outline" className="w-full text-sm">
+                        View Details <ChevronRight className="ml-1 h-4 w-4"/>
+                    </Button>
+                </Link> */}
               </CardFooter>
             </Card>
           ))}
@@ -237,3 +240,4 @@ export default function FeedPage() {
     </div>
   );
 }
+
