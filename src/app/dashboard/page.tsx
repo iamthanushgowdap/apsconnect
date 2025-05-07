@@ -27,35 +27,45 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/components/auth-provider";
 import type { User } from "@/components/auth-provider"; 
-import type { Branch } from "@/types";
-
-interface MockPost {
-  id: string;
-  title: string;
-  category: "Schedule" | "Event" | "News" | "Notes";
-  date: string;
-  snippet: string;
-  branch?: string; 
-}
-
-const mockPosts: MockPost[] = [
-  { id: "1", title: "Mid-term Exam Schedule Released", category: "Schedule", date: "Oct 28, 2023", snippet: "The schedule for the upcoming mid-term examinations has been published for all branches...", branch: "General" },
-  { id: "2", title: "Guest Lecture on AI Ethics (CSE)", category: "Event", date: "Oct 25, 2023", snippet: "Join us for an insightful guest lecture on the ethical implications of AI. Open to CSE students.", branch: "CSE" },
-  { id: "3", title: "Library System Maintenance", category: "News", date: "Oct 22, 2023", snippet: "The library's online portal will be down for maintenance this weekend from Sat 6 PM to Sun 6 AM." },
-  { id: "4", title: "Advanced Java Programming Notes (ISE)", category: "Notes", date: "Oct 20, 2023", snippet: "Chapter 3 & 4 notes for Advanced Java Programming have been uploaded for ISE students.", branch: "ISE"},
-];
-
+import type { Branch, Post } from "@/types"; // Assuming Post type is also needed from types
 
 export default function DashboardPage() {
   const router = useRouter(); 
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [user, setUser] = useState<User | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
+  const [relevantPosts, setRelevantPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     if (!authLoading) {
       if (authUser) {
-        setUser(authUser); 
+        setUser(authUser);
+        if (authUser.role === 'admin') { // Redirect admin to their specific dashboard
+          router.push('/admin');
+          return; // Important to prevent further execution for admin on this page
+        }
+        // Fetch and filter posts for students/faculty
+        if (typeof window !== 'undefined') {
+          const allPostsStr = localStorage.getItem('campus_connect_posts');
+          const allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+          allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          let filtered: Post[];
+          if (authUser.role === 'student' && authUser.branch) {
+            const studentBranch = authUser.branch;
+            filtered = allPosts.filter(post =>
+              post.targetBranches.length === 0 || post.targetBranches.includes(studentBranch)
+            );
+          } else if (authUser.role === 'faculty' && authUser.assignedBranches && authUser.assignedBranches.length > 0) {
+            filtered = allPosts.filter(post =>
+              post.targetBranches.length === 0 || authUser.assignedBranches?.some(b => post.targetBranches.includes(b))
+            );
+          } else {
+            filtered = allPosts.filter(post => post.targetBranches.length === 0); // Default to general posts
+          }
+          setRelevantPosts(filtered.slice(0, 3)); // Show a few recent posts
+        }
+
       } else {
         setUser(null); 
         router.push('/login'); 
@@ -64,7 +74,7 @@ export default function DashboardPage() {
     }
   }, [authUser, authLoading, router]);
   
-  if (isLoading || authLoading) {
+  if (isLoading || authLoading || (authUser?.role === 'admin' && !isLoading) ) { // Keep loading if admin is being redirected
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-6">
@@ -140,29 +150,9 @@ export default function DashboardPage() {
     );
   }
 
-  let relevantMockPosts: MockPost[];
-  if (user.role === 'admin') {
-    relevantMockPosts = mockPosts; 
-  } else if (user.role === 'student' && user.branch) {
-    const studentBranch = user.branch;
-    relevantMockPosts = mockPosts.filter(post =>
-      !post.branch || post.branch === "General" || post.branch === studentBranch
-    );
-  } else if (user.role === 'faculty' && user.assignedBranches && user.assignedBranches.length > 0) {
-    relevantMockPosts = mockPosts.filter(post =>
-      !post.branch || post.branch === "General" || user.assignedBranches?.includes(post.branch as Branch)
-    );
-  } else {
-    relevantMockPosts = mockPosts.filter(post => !post.branch || post.branch === "General");
-  }
-
-
   const getRoleSpecificGreeting = () => {
     if (user.role === 'faculty') {
       return `Welcome to your Faculty Dashboard.`;
-    }
-    if (user.role === 'admin') {
-      return `Welcome to your Admin Access Dashboard.`
     }
     // Student
     return `Welcome to your ${user.branch ? `${user.branch} ` : ''}Dashboard.`;
@@ -177,7 +167,7 @@ export default function DashboardPage() {
         <p className="text-lg sm:text-xl text-muted-foreground mt-1">
           {getRoleSpecificGreeting()}
           {user.usn && user.role === 'student' && <span className="block text-sm sm:text-base">USN: {user.usn}</span>}
-           {user.email && (user.role === 'faculty' || user.role === 'admin') && <span className="block text-sm sm:text-base">Email: {user.email}</span>}
+           {user.email && user.role === 'faculty' && <span className="block text-sm sm:text-base">Email: {user.email}</span>}
         </p>
       </div>
 
@@ -223,9 +213,9 @@ export default function DashboardPage() {
               <CardDescription>Latest posts relevant to you.</CardDescription>
             </CardHeader>
             <CardContent>
-              {relevantMockPosts.length > 0 ? (
+              {relevantPosts.length > 0 ? (
                 <div className="space-y-6">
-                  {relevantMockPosts.map(post => (
+                  {relevantPosts.map(post => (
                     <UpdateItem key={post.id} post={post} />
                   ))}
                 </div>
@@ -250,26 +240,15 @@ export default function DashboardPage() {
               <CardTitle className="text-lg sm:text-xl">Quick Links</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {user.role === 'student' && <QuickLinkItem href="/academics/schedule" icon={<CalendarDays className="h-5 w-5"/>} label="Class Schedule" />}
+              {user.role === 'student' && <QuickLinkItem href="#" icon={<CalendarDays className="h-5 w-5"/>} label="Class Schedule" />}
               {user.role === 'faculty' && <QuickLinkItem href="/faculty/courses" icon={<Briefcase className="h-5 w-5"/>} label="My Courses" />}
-              <QuickLinkItem href="/resources/library" icon={<BookOpen className="h-5 w-5"/>} label="Library Portal" />
-              <QuickLinkItem href="/profile/settings" icon={<Settings className="h-5 w-5"/>} label="Profile Settings" />
-              <QuickLinkItem href="/feed" icon={<LayoutGrid className="h-5 w-5"/>} label="Full Activity Feed" />
+              <QuickLinkItem href="/profile/settings" icon={<UserCircle className="h-5 w-5"/>} label="My Profile" />
+              {/* Removed Library Portal and Full Activity Feed */}
+              {/* Site Settings is an admin-only feature, not for general users here */}
             </CardContent>
           </Card>
 
-          {user.role === 'admin' && (
-            <Card className="shadow-lg bg-primary/5">
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl text-primary">Admin Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-3">
-                <QuickActionLink href="/admin/users" icon={<Users className="h-5 w-5 mr-2" />} label="Manage Users" />
-                <QuickActionLink href="/admin/posts/new" icon={<FileText className="h-5 w-5 mr-2" />} label="Create Post" />
-                <QuickActionLink href="/admin" icon={<UserCircle className="h-5 w-5 mr-2"/>} label="Admin Dashboard" />
-              </CardContent>
-            </Card>
-          )}
+          {/* Admin Quick Actions section removed from here */}
         </div>
       </div>
     </div>
@@ -314,7 +293,7 @@ function StatCard({ title, value, icon, link, dataAiHint, description, colorConf
 
 
 interface UpdateItemProps {
-  post: MockPost;
+  post: Post; // Use the actual Post type
 }
 
 function UpdateItem({ post }: UpdateItemProps) {
@@ -323,11 +302,16 @@ function UpdateItem({ post }: UpdateItemProps) {
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row justify-between items-start mb-1">
           <h3 className="text-base sm:text-lg font-semibold text-primary leading-tight mb-1 sm:mb-0">{post.title}</h3>
-          <Badge variant={post.category === "Event" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-0 sm:ml-2 self-start sm:self-center">{post.category}</Badge>
+          <Badge variant={post.category === "event" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-0 sm:ml-2 self-start sm:self-center">
+            {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
+          </Badge>
         </div>
-        <p className="text-xs text-muted-foreground mb-2">{post.date} {post.branch && post.branch !== "General" ? `(${post.branch})` : ''}</p>
-        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.snippet}</p>
-        <Link href={`/feed/${post.id}`} className="text-sm font-medium text-accent hover:text-accent/80 inline-flex items-center">
+        <p className="text-xs text-muted-foreground mb-2">
+          {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {post.targetBranches && post.targetBranches.length > 0 ? ` (${post.targetBranches.join(', ')})` : ''}
+        </p>
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.content}</p>
+        <Link href={`/feed`} className="text-sm font-medium text-accent hover:text-accent/80 inline-flex items-center">
           Read More <ArrowRight className="ml-1.5 h-4 w-4" />
         </Link>
       </CardContent>
@@ -354,21 +338,4 @@ function QuickLinkItem({ href, icon, label }: QuickLinkItemProps) {
   );
 }
 
-
-interface QuickActionLinkProps {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-}
-
-function QuickActionLink({ href, icon, label }: QuickActionLinkProps) {
-  return (
-    <Link href={href}>
-      <Button variant="outline" className="w-full justify-start text-sm sm:text-base py-2.5 sm:py-3">
-        {icon}
-        {label}
-      </Button>
-    </Link>
-  );
-}
-
+// QuickActionLink component is removed as it was part of Admin Quick Actions
