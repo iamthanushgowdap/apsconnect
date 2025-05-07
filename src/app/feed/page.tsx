@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Heart, MessageSquare, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MessageCircle, MapPin } from 'lucide-react';
+import { Loader2, Heart, MessageSquare, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MessageCircle, MapPin, Users } from 'lucide-react'; // Added Users
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,12 +45,23 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
 
   const handleDownload = (attachment: PostAttachment) => {
     toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}...` });
+    // This is a mock download. In a real app, you'd use the file URL.
+    // For base64 data URI (if stored like that for small files):
+    // const link = document.createElement('a');
+    // link.href = attachment.url; // Assuming attachment.url is a data URI or direct link
+    // link.download = attachment.name;
+    // document.body.appendChild(link);
+    // link.click();
+    // document.body.removeChild(link);
+    // Simulating with a blob if no direct URL
+    const blob = new Blob(["Mock file content for " + attachment.name], { type: attachment.type });
     const link = document.createElement('a');
-    link.href = `data:${attachment.type};base64,`; 
+    link.href = URL.createObjectURL(blob);
     link.download = attachment.name;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
   };
   
   const getInitials = (name?: string | null) => {
@@ -205,18 +216,20 @@ export default function FeedPage() {
         if (user.role === 'student' && user.branch) {
           const studentBranch = user.branch;
           allPosts = allPosts.filter(post => 
-            post.targetBranches.length === 0 || 
+            !post.targetBranches || post.targetBranches.length === 0 || 
             post.targetBranches.includes(studentBranch) 
           );
         } else if (user.role === 'faculty' && user.assignedBranches) {
           const facultyBranches = user.assignedBranches;
           allPosts = allPosts.filter(post => 
-            post.targetBranches.length === 0 || 
+            !post.targetBranches || post.targetBranches.length === 0 || 
             facultyBranches.some(branch => post.targetBranches.includes(branch)) 
           );
         } 
+        // Admins see all posts, no filtering needed here unless specifically designed
       } else {
-        allPosts = allPosts.filter(post => post.targetBranches.length === 0);
+        // Non-logged in users see only posts targeted to 'All Branches'
+        allPosts = allPosts.filter(post => !post.targetBranches || post.targetBranches.length === 0);
       }
 
       setPosts(allPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime()));
@@ -252,11 +265,11 @@ export default function FeedPage() {
 
           if (typeof window !== 'undefined') {
             const allPostsStr = localStorage.getItem('campus_connect_posts');
-            let allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
-            const postIndex = allPosts.findIndex(storedPost => storedPost.id === postId);
+            let allPostsStored: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+            const postIndex = allPostsStored.findIndex(storedPost => storedPost.id === postId);
             if (postIndex > -1) {
-              allPosts[postIndex] = updatedPost;
-              localStorage.setItem('campus_connect_posts', JSON.stringify(allPosts));
+              allPostsStored[postIndex] = updatedPost;
+              localStorage.setItem('campus_connect_posts', JSON.stringify(allPostsStored));
             }
           }
           return updatedPost;
@@ -284,9 +297,9 @@ export default function FeedPage() {
 
     if (typeof window !== 'undefined') {
         let allPostsStr = localStorage.getItem('campus_connect_posts');
-        let allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
-        allPosts = allPosts.filter(p => p.id !== deleteTargetPostId);
-        localStorage.setItem('campus_connect_posts', JSON.stringify(allPosts));
+        let allPostsStored: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+        allPostsStored = allPostsStored.filter(p => p.id !== deleteTargetPostId);
+        localStorage.setItem('campus_connect_posts', JSON.stringify(allPostsStored));
         
         setPosts(prevPosts => prevPosts.filter(p => p.id !== deleteTargetPostId));
         toast({title: "Post Deleted", description: `"${postToDelete.title}" has been deleted.`, duration: 3000});
