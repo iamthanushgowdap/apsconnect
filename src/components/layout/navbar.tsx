@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -9,7 +8,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider"; 
 import React from 'react';
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User as UserIcon, LogOut, LayoutDashboard, Settings } from "lucide-react"; // Import necessary icons
 
 export function Navbar() {
   const pathname = usePathname();
@@ -21,6 +29,30 @@ export function Navbar() {
     router.push('/'); 
   };
 
+  const getUserInitials = (name: string | null | undefined): string => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getDashboardLink = () => {
+    if (!user) return "/";
+    switch (user.role) {
+      case "admin":
+        return "/admin";
+      case "faculty":
+        return "/faculty";
+      case "student":
+      case "pending":
+        return "/student";
+      default:
+        return "/dashboard"; // Fallback, though covered by specific roles
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
@@ -30,12 +62,9 @@ export function Navbar() {
         </Link>
         <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-            // Handle loading state first
             if (isLoading) {
-              // For protected, adminOnly, or facultyOnly links, don't render during loading
-              // to prevent brief flashes of links the user shouldn't see.
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
-            } else { // Not loading, apply user-based visibility rules
+            } else { 
               if (item.hideWhenLoggedIn && user) return null;
               if (item.protected && !user) return null;
               if (item.adminOnly && user?.role !== 'admin') return null;
@@ -60,14 +89,53 @@ export function Navbar() {
         </nav>
         <div className="flex items-center space-x-1 sm:space-x-2">
           {isLoading ? (
-            <div className="h-8 w-16 sm:w-20 animate-pulse rounded-md bg-muted"></div>
+            <div className="h-10 w-10 animate-pulse rounded-full bg-muted"></div>
           ) : user ? (
-            <>
-              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Hi, {user.displayName || user.email?.split('@')[0] || user.usn}</span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
-              </Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-9 w-9">
+                    {/* In a real app, you might have user.avatarUrl */}
+                    {/* <AvatarImage src={user.avatarUrl} alt={user.displayName || "User"} /> */}
+                    <AvatarFallback>
+                      {user.displayName ? (
+                        getUserInitials(user.displayName)
+                      ) : (
+                        <UserIcon className="h-5 w-5" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email || user.usn}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href={getDashboardLink()} className="flex items-center">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile/settings" className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "px-2 sm:px-3")}>
@@ -83,4 +151,3 @@ export function Navbar() {
     </header>
   );
 }
-
