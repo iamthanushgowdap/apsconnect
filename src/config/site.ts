@@ -49,12 +49,12 @@ export const SiteConfig: SiteConfig = {
       protected: true,
       facultyOnly: true, 
     },
-    {
-      title: "Student Dashboard",
-      href: "/student",
-      protected: true,
-      studentOnly: true, // This will show for 'student' and 'pending' roles
-    }
+    // {
+    //   title: "Student Dashboard",
+    //   href: "/student",
+    //   protected: true,
+    //   studentOnly: true, // This will show for 'student' and 'pending' roles
+    // }
   ],
   footerNav: [
     {
