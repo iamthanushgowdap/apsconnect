@@ -7,7 +7,7 @@ export type NavItem = {
   protected?: boolean; // Requires login (any role)
   adminOnly?: boolean; // Requires admin role
   facultyOnly?: boolean; // Requires faculty role
-  studentOnly?: boolean; // Requires student role
+  studentOnly?: boolean; // Requires student role or pending role
   hideWhenLoggedIn?: boolean; // Hide this link if user is logged in
   icon?: React.ComponentType<{ className?: string }>;
 };
@@ -31,11 +31,6 @@ export const SiteConfig: SiteConfig = {
       title: "Home",
       href: "/",
     },
-    // {
-    //   title: "Dashboard",
-    //   href: "/dashboard",
-    //   protected: true, 
-    // },
     {
       title: "Campus Feed",
       href: "/feed",
@@ -53,19 +48,13 @@ export const SiteConfig: SiteConfig = {
       href: "/faculty", 
       protected: true,
       facultyOnly: true, 
+    },
+    {
+      title: "Student Dashboard",
+      href: "/student",
+      protected: true,
+      studentOnly: true, // This will show for 'student' and 'pending' roles
     }
-    // {
-    //   title: "Create Post (Admin)", // Example of a more specific link if needed
-    //   href: "/admin/posts/new",
-    //   protected: true,
-    //   adminOnly: true,
-    // },
-    // {
-    //   title: "Create Post (Faculty)", // Example
-    //   href: "/faculty/content/new",
-    //   protected: true,
-    //   facultyOnly: true,
-    // }
   ],
   footerNav: [
     {

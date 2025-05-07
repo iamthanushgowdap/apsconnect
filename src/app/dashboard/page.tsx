@@ -19,9 +19,8 @@ export default function DashboardPage() {
         } else if (user.role === 'faculty') {
           router.replace('/faculty');
         } else if (user.role === 'student' || user.role === 'pending') {
-          // Students and pending users might see something else or be redirected to feed.
-          // For now, let's redirect to feed.
-          router.replace('/feed');
+          // Students and pending users are redirected to the student dashboard
+          router.replace('/student');
         } else {
           // Fallback for unknown roles or if no specific dashboard exists
           router.replace('/'); 

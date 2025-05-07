@@ -34,13 +34,13 @@ export function Navbar() {
             if (isLoading) {
               // For protected, adminOnly, or facultyOnly links, don't render during loading
               // to prevent brief flashes of links the user shouldn't see.
-              if (item.protected || item.adminOnly || item.facultyOnly) return null;
+              if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
             } else { // Not loading, apply user-based visibility rules
               if (item.hideWhenLoggedIn && user) return null;
               if (item.protected && !user) return null;
               if (item.adminOnly && user?.role !== 'admin') return null;
               if (item.facultyOnly && user?.role !== 'faculty') return null;
-              if (item.studentOnly && user?.role !== 'student') return null;
+              if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
             }
             
             return (
@@ -63,7 +63,7 @@ export function Navbar() {
             <div className="h-8 w-16 sm:w-20 animate-pulse rounded-md bg-muted"></div>
           ) : user ? (
             <>
-              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Hi, {user.displayName || user.email?.split('@')[0]}</span>
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Hi, {user.displayName || user.email?.split('@')[0] || user.usn}</span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
