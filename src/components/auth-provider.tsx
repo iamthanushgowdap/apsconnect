@@ -1,26 +1,29 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { UserRole, Branch, UserProfile } from '@/types'; 
+import { useToast } from '@/hooks/use-toast';
+import { SiteConfig } from '@/config/site'; // Changed import
+import { UpdateNotificationToast } from '@/components/notifications/update-notification-toast';
+
 
 export interface User {
   uid: string; 
   email: string | null; 
   displayName: string | null;
   role: UserRole;
-  branch?: Branch; // For students: their branch. For faculty: their primary/first assigned branch for display.
+  branch?: Branch; 
   usn?: string; 
-  assignedBranches?: Branch[]; // For faculty, to know all their branches
-  rejectionReason?: string; // Added to show rejection reason to the user
+  assignedBranches?: Branch[]; 
+  rejectionReason?: string; 
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<User>; // Return User on success
+  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<User>; 
   signOut: () => Promise<void>;
-  updateUserContext: (updatedUser: User) => void; // Added to update user context
+  updateUserContext: (updatedUser: User) => void; 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +31,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -48,7 +53,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false); 
     }
-  }, []);
+
+    // Check for app updates
+    if (typeof window !== 'undefined') {
+      const APP_VERSION_KEY = 'campus_connect_app_version';
+      const storedVersion = localStorage.getItem(APP_VERSION_KEY);
+
+      if (storedVersion !== SiteConfig.LATEST_APP_VERSION) { // Use SiteConfig.LATEST_APP_VERSION
+        // Version mismatch or first load, show update toast
+        const toastCtrl = toast({ 
+          duration: Infinity, 
+          variant: 'raw',
+          description: ( 
+            <UpdateNotificationToast
+              onUpdate={() => {
+                localStorage.setItem(APP_VERSION_KEY, SiteConfig.LATEST_APP_VERSION); // Use SiteConfig.LATEST_APP_VERSION
+                toastCtrl.dismiss(); 
+                window.location.reload(); 
+              }}
+              onDismiss={() => {
+                localStorage.setItem(APP_VERSION_KEY, SiteConfig.LATEST_APP_VERSION); // Use SiteConfig.LATEST_APP_VERSION
+                toastCtrl.dismiss();
+              }}
+            />
+          ),
+        });
+      }
+    }
+
+  }, [toast]); // Added toast to dependency array
 
   const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }): Promise<User> => {
     setIsLoading(true);
@@ -102,19 +135,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
        if(registeredUserDataStr){
          const registeredUserData = JSON.parse(registeredUserDataStr) as UserProfile;
-         // Ensure password check for student login only if they are approved
          if (registeredUserData.isApproved && registeredUserData.role === 'student') {
            if (credentials.password !== registeredUserData.password) {
              setIsLoading(false);
              throw new Error("Invalid student credentials.");
            }
          } else if (!registeredUserData.isApproved && registeredUserData.role === 'pending' && credentials.password !== registeredUserData.password) {
-           // If pending, still might need password if that's how registration flow is set up to "reserve" account
-           // For now, assume if pending or rejected, password match might not be the primary block for login attempt itself,
-           // but the role will gate access.
-           // If the intent is that pending users can't "log in" at all even to see pending status page via /login,
-           // this check should be stricter.
-           // This mock is a bit lenient on password check for pending to allow them to reach dashboard to see status.
+          // Allow pending users to login to see status, password check might not be strict here if they haven't set one
          }
 
 
@@ -165,7 +192,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUserContext = (updatedUser: User) => {
     setUser(updatedUser);
-    // Also update the mockUser in localStorage if it's the source of truth for AuthProvider's initial load
     if (typeof window !== 'undefined') {
       localStorage.setItem('mockUser', JSON.stringify(updatedUser));
     }
@@ -186,4 +212,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
