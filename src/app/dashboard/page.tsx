@@ -33,7 +33,7 @@ export default function DashboardPage() {
   }, [user, isLoading, router]);
 
   // Show a loading indicator while redirecting
-  if (isLoading || !user) {
+  if (isLoading || !user && typeof window !== 'undefined' && window.location.pathname === '/dashboard') { // Added a check to prevent flash if user is null but redirecting
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -42,7 +42,7 @@ export default function DashboardPage() {
   }
 
   // This content will likely not be shown due to redirects
-  // but serves as a placeholder if redirect logic changes.
+  // but serves as a placeholder if redirect logic changes or for very brief flashes.
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold">Redirecting...</h1>

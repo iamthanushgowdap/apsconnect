@@ -30,17 +30,18 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [user, setUser] = useState<MockUserFromAuth | null>(null); 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(true); // Local page loading state
   const [studentCount, setStudentCount] = useState(0);
   const [facultyCount, setFacultyCount] = useState(0);
   const [contentPostsCount, setContentPostsCount] = useState(0);
 
 
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading) { // Only proceed once auth context is resolved
       if (authUser && authUser.role === 'admin') {
-        setUser(authUser as MockUserFromAuth); 
+        setUser(authUser as MockUserFromAuth);
         
+        // Fetch admin-specific data (stats)
         if (typeof window !== 'undefined') {
           let currentStudentCount = 0;
           let currentFacultyCount = 0;
@@ -64,20 +65,20 @@ export default function AdminDashboardPage() {
           const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           setContentPostsCount(posts.length);
         }
-
-      } else if (authUser && authUser.role !== 'admin'){
-        setUser(null); 
-        router.push('/dashboard'); 
-      } else { 
-        setUser(null);
-        router.push('/login'); 
+      } else {
+        setUser(null); // Clear local user if not admin or no authUser
+        if (authUser) { // Logged in, but not admin
+          router.replace('/dashboard'); // Redirect to a general dashboard or student/faculty specific one
+        } else { // Not logged in
+          router.replace('/login');
+        }
       }
-      setIsLoading(false);
+      setIsPageLoading(false); // Page has processed auth state
     }
   }, [authUser, authLoading, router]);
 
 
-  if (isLoading || authLoading) {
+  if (authLoading || isPageLoading) { // Show loader if auth is loading OR page is still processing
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <div className="animate-pulse space-y-8 w-full">
@@ -93,7 +94,9 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (!user) { 
+  if (!user) { // If local user state is not set (because authUser wasn't admin or redirects are happening)
+    // This content might briefly show if redirects are slow, or if there's an issue.
+    // Ideally, the user is redirected away before this renders significantly.
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
@@ -103,8 +106,10 @@ export default function AdminDashboardPage() {
             <CardContent>
                 <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
-                <Link href="/dashboard">
-                    <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">Go to Dashboard</Button>
+                <Link href={authUser ? (authUser.role === 'student' ? '/student' : authUser.role === 'faculty' ? '/faculty' : '/dashboard') : '/login'}>
+                    <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">
+                      {authUser ? "Go to My Dashboard" : "Go to Login"}
+                    </Button>
                 </Link>
             </CardContent>
         </Card>
@@ -125,8 +130,8 @@ export default function AdminDashboardPage() {
       title: "Content Posts", 
       value: contentPostsCount.toString(), 
       icon: <FilePlus2 className="h-6 w-6" />,
-      bgColorClass: "bg-green-100 dark:bg-green-900/30",
-      iconColorClass: "text-green-600 dark:text-green-400",
+      bgColorClass: "bg-purple-100 dark:bg-purple-900/30", // Changed from green to purple
+      iconColorClass: "text-purple-600 dark:text-purple-400", // Changed from green to purple
     },
   ];
 
@@ -242,3 +247,4 @@ function StyledActionCard({ title, description, icon, link, actionText, disabled
     </Card>
   );
 }
+
