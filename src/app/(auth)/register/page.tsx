@@ -16,9 +16,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription, // Added FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Renamed CardDescription to avoid conflict
 import { useToast } from "@/hooks/use-toast";
 // import { branches, Branch } from "@/types"; // Branch is now part of USN
 
@@ -104,7 +105,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm sm:max-w-lg shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Create an Account</CardTitle>
-          <CardDescription className="text-sm sm:text-base">Join CampusConnect to stay updated with college activities.</CardDescription>
+          <ShadCnCardDescription className="text-sm sm:text-base">Join CampusConnect to stay updated with college activities.</ShadCnCardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -218,3 +219,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
