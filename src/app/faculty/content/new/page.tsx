@@ -71,7 +71,7 @@ export default function FacultyCreatePostPage() {
             timestamp={postData.createdAt}
           />
         ),
-        duration: 5000, // Changed duration to 5 seconds
+        duration: 3000, 
       });
       router.push('/faculty/content'); 
     } catch (error) {
