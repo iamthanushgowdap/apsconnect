@@ -201,9 +201,9 @@ export default function RegisterPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Branch</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} >
                       <FormControl>
-                        <SelectTrigger className="text-sm sm:text-base">
+                        <SelectTrigger className="text-sm sm:text-base" suppressHydrationWarning>
                           <SelectValue placeholder="Select your branch" />
                         </SelectTrigger>
                       </FormControl>
