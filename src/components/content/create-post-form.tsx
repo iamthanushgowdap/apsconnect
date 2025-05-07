@@ -11,9 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Branch, defaultBranches, PostCategory, postCategories, Post, PostAttachment } from '@/types'; // Updated import
+import { Branch, defaultBranches, PostCategory, postCategories, Post, PostAttachment } from '@/types'; 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, Paperclip, Trash2, UploadCloud } from 'lucide-react';
@@ -29,13 +29,14 @@ const ALLOWED_FILE_TYPES = [
   'text/plain',
   'video/mp4', 'video/webm', 'video/ogg'
 ];
+const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
 
 const postFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(150, "Title cannot exceed 150 characters."),
   content: z.string().min(20, "Content must be at least 20 characters.").max(5000, "Content cannot exceed 5000 characters."),
   category: z.enum(postCategories, { required_error: "Please select a category." }),
   targetAllBranches: z.boolean().default(false),
-  targetBranches: z.array(z.string()).optional(), // Branch is now string
+  targetBranches: z.array(z.string()).optional(), 
   attachments: z.custom<FileList>((val) => val instanceof FileList, "Please upload valid files.").optional()
     .refine(files => { 
       if (!files) return true;
@@ -82,7 +83,7 @@ export function CreatePostForm({
   const { toast } = useToast();
   const { user } = useAuth(); 
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialData?.attachments.map(att => new File([], att.name, {type: att.type})) ?? []); 
-  const [managedBranches, setManagedBranches] = useState<string[]>(defaultBranches);
+  const [availableBranches, setAvailableBranches] = useState<Branch[]>(defaultBranches);
   
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postFormSchema),
@@ -98,11 +99,22 @@ export function CreatePostForm({
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedBranches = localStorage.getItem('campus_connect_managed_branches');
+      const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
       if (storedBranches) {
-        setManagedBranches(JSON.parse(storedBranches));
+        try {
+          const parsedBranches = JSON.parse(storedBranches);
+          if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
+            setAvailableBranches(parsedBranches);
+          } else {
+            setAvailableBranches(defaultBranches);
+          }
+        } catch (e) {
+            console.error("Failed to parse branches for post form, using defaults:", e);
+            setAvailableBranches(defaultBranches);
+        }
+      } else {
+        setAvailableBranches(defaultBranches);
       }
-      // If no stored branches, managedBranches defaults to defaultBranches
     }
   }, []);
 
@@ -140,6 +152,12 @@ export function CreatePostForm({
         return;
       }
       setSelectedFiles(prev => [...prev, ...newFilesArray]); 
+      // Update form value with the new FileList
+      const dataTransfer = new DataTransfer();
+      selectedFiles.forEach(file => dataTransfer.items.add(file));
+      newFilesArray.forEach(file => dataTransfer.items.add(file));
+      form.setValue('attachments', dataTransfer.files.length > 0 ? dataTransfer.files : undefined, { shouldValidate: true });
+
     }
   };
 
@@ -162,7 +180,7 @@ export function CreatePostForm({
       return;
     }
 
-    const filesToUpload: File[] = data.attachments ? Array.from(data.attachments) : [];
+    const filesToUpload: File[] = selectedFiles; // Use state for selected files
     const newAttachments: PostAttachment[] = filesToUpload.map(file => ({
       name: file.name,
       type: file.type,
@@ -170,11 +188,19 @@ export function CreatePostForm({
     }));
     
     let finalAttachments = newAttachments;
-    if (initialData && initialData.attachments) {
-      const existingAttachmentsNotReplaced = initialData.attachments.filter(
-        existingAtt => !filesToUpload.some(newFile => newFile.name === existingAtt.name)
-      );
-      finalAttachments = [...existingAttachmentsNotReplaced, ...newAttachments];
+    // If editing, handle existing attachments that were not removed.
+    // This logic might need refinement if initialData.attachments has different structure
+    // or if some initial files were kept and new ones added.
+    // For simplicity, current approach assumes selectedFiles is the final list.
+    if (initialData?.id) {
+        // A more robust approach would be to compare selectedFiles with initialData.attachments
+        // and decide which ones are new, kept, or removed.
+        // For now, we just use what's in selectedFiles for the final post.
+        finalAttachments = selectedFiles.map(file => ({
+             name: file.name,
+             type: file.type,
+             size: file.size,
+        }));
     }
 
 
@@ -198,7 +224,7 @@ export function CreatePostForm({
     <Card className="w-full max-w-2xl mx-auto shadow-xl">
       <CardHeader>
         <CardTitle className="text-2xl font-bold tracking-tight text-primary">{formTitle}</CardTitle>
-        <CardDescription>{formDescription}</CardDescription>
+        <ShadCnCardDescription>{formDescription}</ShadCnCardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -262,11 +288,11 @@ export function CreatePostForm({
                   <FormItem>
                     <FormLabel>Target Specific Branches</FormLabel>
                     <FormDescription>
-                      {managedBranches.length === 0 && defaultBranches.length === 0 ? "No branches available for selection. Please add branches in Branch Management first or select 'Target All Branches'." : 
+                      {availableBranches.length === 0 ? "No branches available for selection. Please add branches in Branch Management first or select 'Target All Branches'." : 
                        "Select the branches this post is relevant to."}
                     </FormDescription>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 p-2 border rounded-md">
-                      {(managedBranches.length > 0 ? managedBranches : defaultBranches).map((branch) => (
+                      {availableBranches.map((branch) => (
                         <FormField
                           key={branch}
                           control={form.control}
@@ -286,6 +312,7 @@ export function CreatePostForm({
                                     }
                                     field.onChange(newValue);
                                   }}
+                                  disabled={availableBranches.length === 0 && !defaultBranches.includes(branch)}
                                 />
                               </FormControl>
                               <FormLabel className="font-normal text-sm">{branch}</FormLabel>
@@ -302,7 +329,7 @@ export function CreatePostForm({
             <FormField
               control={form.control}
               name="attachments"
-              render={({ field: { onChange, value, ...restField } }) => ( 
+              render={({ field: { onChange, ...restField } }) => ( 
                 <FormItem>
                   <FormLabel>Attachments (Optional)</FormLabel>
                    <FormControl>
@@ -319,8 +346,14 @@ export function CreatePostForm({
                                 multiple 
                                 className="sr-only" 
                                 onChange={(e) => {
-                                    onChange(e.target.files); 
-                                    handleFileChange(e);    
+                                    handleFileChange(e); 
+                                    // RHF still needs the FileList from the input
+                                    // The handleFileChange updates the `selectedFiles` state
+                                    // It's important that RHF's `onChange` is also called with the native FileList
+                                    // or ensure that the `selectedFiles` state is correctly transformed for submission.
+                                    // If `handleFileChange` sets RHF's value: `form.setValue('attachments', e.target.files, { shouldValidate: true });`
+                                    // Then `onChange` passed by RHF to this input can be omitted here OR handleFileChange needs to call it.
+                                    // For simplicity, we let handleFileChange also manage RHF's value as shown in `handleFileChange`
                                 }}
                                 {...restField} 
                             />

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,10 +29,11 @@ import {
 import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, Branch } from "@/types";
-import { defaultBranches } from "@/types"; // Updated import
+import { defaultBranches } from "@/types"; 
 
 
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
+const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -45,7 +46,7 @@ const registerSchema = z.object({
     .transform(val => {
       return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
     }),
-  branch: z.string({ required_error: "Please select your branch." }), // Changed to z.string()
+  branch: z.string({ required_error: "Please select your branch." }), 
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -57,6 +58,29 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [availableBranches, setAvailableBranches] = useState<Branch[]>(defaultBranches);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
+      if (storedBranches) {
+        try {
+          const parsedBranches = JSON.parse(storedBranches);
+          if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
+            setAvailableBranches(parsedBranches);
+          } else {
+            setAvailableBranches(defaultBranches); // Fallback if stored is empty or invalid
+          }
+        } catch (e) {
+          console.error("Failed to parse branches from localStorage, using default:", e);
+          setAvailableBranches(defaultBranches); // Fallback on error
+        }
+      } else {
+        setAvailableBranches(defaultBranches); // Fallback if not in localStorage
+      }
+    }
+  }, []);
+
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -66,7 +90,7 @@ export default function RegisterPage() {
       password: "",
       confirmPassword: "",
       usnSuffix: "",
-      branch: undefined, // Initialize branch as undefined
+      branch: undefined, 
     },
   });
 
@@ -85,14 +109,12 @@ export default function RegisterPage() {
             email: data.email, 
             role: 'pending', 
             usn: fullUsn,
-            branch: data.branch, // Store selected branch
+            branch: data.branch, 
             registrationDate: new Date().toISOString(),
             isApproved: false,
-            // Password is NOT stored in the UserProfile for students via registration for security mock.
         };
         localStorage.setItem(`campus_connect_user_${fullUsn}`, JSON.stringify(userProfileData));
         
-        // Set current session to pending user for immediate dashboard feedback
         localStorage.setItem('mockUser', JSON.stringify({
             uid: fullUsn,
             displayName: data.displayName,
@@ -208,11 +230,17 @@ export default function RegisterPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {defaultBranches.map((branchName) => ( // Updated to defaultBranches
-                          <SelectItem key={branchName} value={branchName} className="text-sm sm:text-base">
-                            {branchName}
+                        {availableBranches.length > 0 ? (
+                          availableBranches.map((branchName) => (
+                            <SelectItem key={branchName} value={branchName} className="text-sm sm:text-base">
+                              {branchName}
+                            </SelectItem>
+                          ))
+                        ) : (
+                           <SelectItem value="disabled" disabled className="text-sm sm:text-base">
+                            No branches configured by admin.
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-xs sm:text-sm"/>

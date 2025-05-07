@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Post, Branch, UserRole, defaultBranches } from '@/types'; // Updated import
+import { Post, Branch, UserRole, defaultBranches } from '@/types'; 
 import { useAuth } from '@/components/auth-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +15,7 @@ import { Loader2, FileText, Paperclip, Download, Search, Filter, ChevronRight } 
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast'; 
 
-// getBranchFromUsn might be deprecated if branch is always directly assigned
-// const getBranchFromUsn = (usn?: string): Branch | undefined => {
-//   if (!usn || usn.length < 7) return undefined;
-//   const branchCode = usn.substring(5, 7).toUpperCase();
-//   // Since Branch is now string, direct validation against defaultBranches might not be needed
-//   // unless for specific display rules or initial population.
-//   return branchCode;
-// };
+const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
 
 
 export default function FeedPage() {
@@ -35,16 +28,27 @@ export default function FeedPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [branchFilter, setBranchFilter] = useState<string>('all');
   
-  const [managedBranches, setManagedBranches] = useState<string[]>(defaultBranches); // Use default as fallback
+  const [availableBranches, setAvailableBranches] = useState<Branch[]>(defaultBranches); 
   const postCategories: Post['category'][] = ["event", "news", "link", "note", "schedule"]; 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedBranches = localStorage.getItem('campus_connect_managed_branches');
+      const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
       if (storedBranches) {
-        setManagedBranches(JSON.parse(storedBranches));
+         try {
+          const parsedBranches = JSON.parse(storedBranches);
+          if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
+            setAvailableBranches(parsedBranches);
+          } else {
+            setAvailableBranches(defaultBranches); 
+          }
+        } catch (e) {
+          console.error("Failed to parse branches for feed, using default:", e);
+          setAvailableBranches(defaultBranches); 
+        }
+      } else {
+        setAvailableBranches(defaultBranches); 
       }
-      // If no stored branches, managedBranches remains defaultBranches.
     }
   }, []);
 
@@ -64,7 +68,7 @@ export default function FeedPage() {
 
     if (user) {
       if (user.role === 'student') {
-        const studentBranch = user.branch; // Directly use stored branch
+        const studentBranch = user.branch; 
         postsToFilter = postsToFilter.filter(post => 
           post.targetBranches.length === 0 || 
           (studentBranch && post.targetBranches.includes(studentBranch)) 
@@ -75,7 +79,9 @@ export default function FeedPage() {
           user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch)) 
         );
       }
+      // Admins see all posts, no branch filtering needed based on user role.
     } else {
+       // Unauthenticated users see only general posts
        postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
     }
 
@@ -93,9 +99,10 @@ export default function FeedPage() {
     }
     
     if (branchFilter !== 'all') {
-        if (branchFilter === 'general') { // Handle 'General' filter
+        if (branchFilter === 'general') { 
             postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
         } else {
+            // Show posts for the specific branch OR general posts
             postsToFilter = postsToFilter.filter(post => post.targetBranches.includes(branchFilter as Branch) || post.targetBranches.length === 0);
         }
     }
@@ -146,14 +153,14 @@ export default function FeedPage() {
                         {postCategories.map(cat => <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                { (user?.role === 'admin' || user?.role === 'faculty') && 
+                { (user?.role === 'admin' || user?.role === 'faculty' || !user) && // Show branch filter for admin, faculty, or unauth users
                     <Select value={branchFilter} onValueChange={setBranchFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Filter by branch" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Branches</SelectItem>
-                            {(managedBranches.length > 0 ? managedBranches : defaultBranches).map(branch => <SelectItem key={branch} value={branch}>{branch}</SelectItem>)}
+                            <SelectItem value="all">All Branches (Visible)</SelectItem>
+                            {availableBranches.map(branch => <SelectItem key={branch} value={branch}>{branch}</SelectItem>)}
                             <SelectItem value="general">General (No Specific Branch)</SelectItem> 
                         </SelectContent>
                     </Select>

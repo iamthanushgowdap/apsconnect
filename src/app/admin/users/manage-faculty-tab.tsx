@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch, defaultBranches } from '@/types'; // Updated import
+import { UserProfile, Branch, defaultBranches } from '@/types'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,7 +32,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription as ShadCnFormDescription,
 } from "@/components/ui/form";
+
+const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
 
 const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
@@ -40,7 +43,7 @@ const facultyFormSchema = z.object({
   phoneNumber: z.string().min(10, "Phone number must be at least 10 digits.").optional().or(z.literal('')),
   password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')), 
   confirmPassword: z.string().optional().or(z.literal('')),
-  assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."), // Branch is now string
+  assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."), 
   facultyTitle: z.string().optional().or(z.literal('')),
 }).refine(data => {
   if (data.password || data.confirmPassword) { 
@@ -61,7 +64,7 @@ export default function ManageFacultyTab() {
   const [editingFaculty, setEditingFaculty] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [managedBranches, setManagedBranches] = useState<string[]>(defaultBranches); // Initialize with default, can be fetched
+  const [availableBranches, setAvailableBranches] = useState<Branch[]>(defaultBranches);
 
   const form = useForm<FacultyFormValues>({
     resolver: zodResolver(facultyFormSchema),
@@ -76,17 +79,23 @@ export default function ManageFacultyTab() {
     },
   });
   
-  // In a real app, fetch managed branches from backend/localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedBranches = localStorage.getItem('campus_connect_managed_branches');
+      const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
       if (storedBranches) {
-        setManagedBranches(JSON.parse(storedBranches));
+         try {
+          const parsedBranches = JSON.parse(storedBranches);
+          if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
+            setAvailableBranches(parsedBranches);
+          } else {
+            setAvailableBranches(defaultBranches); // Fallback if stored is empty or invalid
+          }
+        } catch (e) {
+          console.error("Failed to parse branches from localStorage, using default:", e);
+          setAvailableBranches(defaultBranches); // Fallback on error
+        }
       } else {
-        // If no managed branches are stored, use the default ones as a fallback
-        // Or, ideally, admins should define branches first.
-        // For this component, we'll allow selection from defaultBranches if nothing else is set.
-        setManagedBranches(defaultBranches); 
+        setAvailableBranches(defaultBranches); // Fallback if not in localStorage
       }
     }
   }, []);
@@ -292,11 +301,11 @@ export default function ManageFacultyTab() {
                 render={() => (
                   <FormItem>
                     <FormLabel>Assigned Branches</FormLabel>
-                     <FormDescription>
-                      {managedBranches.length === 0 ? "No branches defined by admin yet. Please add branches in Branch Management." : "Select branches."}
-                    </FormDescription>
+                     <ShadCnFormDescription>
+                      {availableBranches.length === 0 ? "No branches defined by admin yet. Please add branches in Branch Management first." : "Select branches."}
+                    </ShadCnFormDescription>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md">
-                      {(managedBranches.length > 0 ? managedBranches : defaultBranches).map((branch) => ( // Use managedBranches or fallback
+                      {availableBranches.map((branch) => ( 
                         <FormField
                           key={branch}
                           control={form.control}
@@ -319,7 +328,7 @@ export default function ManageFacultyTab() {
                                             )
                                           );
                                     }}
-                                    disabled={managedBranches.length === 0 && !defaultBranches.includes(branch)}
+                                    disabled={availableBranches.length === 0 && !defaultBranches.includes(branch)}
                                   />
                                 </FormControl>
                                 <FormLabel className="font-normal">
