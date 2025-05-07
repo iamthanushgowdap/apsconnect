@@ -20,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<User>; // Return User on success
   signOut: () => Promise<void>;
+  updateUserContext: (updatedUser: User) => void; // Added to update user context
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
        const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
        let studentEmail: string | null = null;
        let studentDisplayName: string | null = defaultDisplayName;
-       let studentBranch: Branch | undefined = undefined; // Branch will be determined by stored profile
+       let studentBranch: Branch | undefined = undefined; 
        let isApproved = false;
        let currentRole: UserRole = 'pending';
        let rejectionReason: string | undefined = undefined;
@@ -101,19 +102,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
        if(registeredUserDataStr){
          const registeredUserData = JSON.parse(registeredUserDataStr) as UserProfile;
+         // Ensure password check for student login only if they are approved
+         if (registeredUserData.isApproved && registeredUserData.role === 'student') {
+           if (credentials.password !== registeredUserData.password) {
+             setIsLoading(false);
+             throw new Error("Invalid student credentials.");
+           }
+         } else if (!registeredUserData.isApproved && registeredUserData.role === 'pending' && credentials.password !== registeredUserData.password) {
+           // If pending, still might need password if that's how registration flow is set up to "reserve" account
+           // For now, assume if pending or rejected, password match might not be the primary block for login attempt itself,
+           // but the role will gate access.
+           // If the intent is that pending users can't "log in" at all even to see pending status page via /login,
+           // this check should be stricter.
+           // This mock is a bit lenient on password check for pending to allow them to reach dashboard to see status.
+         }
+
+
          studentEmail = registeredUserData.email;
          studentDisplayName = registeredUserData.displayName || defaultDisplayName;
          isApproved = registeredUserData.isApproved;
-         currentRole = registeredUserData.role; // Use current role from storage
-         studentBranch = registeredUserData.branch; // Branch is from stored profile data
+         currentRole = registeredUserData.role; 
+         studentBranch = registeredUserData.branch; 
          if (!isApproved && registeredUserData.rejectionReason) {
             rejectionReason = registeredUserData.rejectionReason;
          }
        } else {
-          // Student record not found in localStorage.
-          // This implies they haven't registered or data is missing.
-          // They will default to a 'pending' status with minimal info.
-          // Branch remains undefined as it cannot be derived from USN.
+          setIsLoading(false);
+          throw new Error("Student account not found. Please register first.");
        }
 
       newUser = {
@@ -122,7 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email: studentEmail, 
         displayName: studentDisplayName,
         role: currentRole, 
-        branch: studentBranch, // Branch comes from stored profile, or undefined if no profile
+        branch: studentBranch, 
         rejectionReason,
       };
     } else {
@@ -148,8 +163,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   };
 
+  const updateUserContext = (updatedUser: User) => {
+    setUser(updatedUser);
+    // Also update the mockUser in localStorage if it's the source of truth for AuthProvider's initial load
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mockUser', JSON.stringify(updatedUser));
+    }
+  };
+
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signOut, updateUserContext }}>
       {children}
     </AuthContext.Provider>
   );

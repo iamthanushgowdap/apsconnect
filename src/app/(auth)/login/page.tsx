@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react"; // Removed useEffect as it's not used here.
+import { useState } from "react"; 
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, User } from "@/components/auth-provider"; 
-import type { UserRole } from "@/types";
+import type { UserRole, UserProfile } from "@/types";
 
 
 const usnRegex = /^1AP\d{2}[A-Z]{2}\d{3}$/i; 
@@ -60,7 +60,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const ADMIN_EMAIL = "admin@gmail.com"; 
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "admin123"; // This becomes a fallback
 
 export default function LoginPage() {
   const router = useRouter();
@@ -87,12 +87,30 @@ export default function LoginPage() {
       let loggedInUser: User;
 
       if (mode === "admin") {
-        if (identifier.toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        const adminProfileKey = `campus_connect_user_${ADMIN_EMAIL.toLowerCase()}`;
+        const adminProfileStr = typeof window !== 'undefined' ? localStorage.getItem(adminProfileKey) : null;
+        let effectiveAdminPassword = ADMIN_PASSWORD;
+        let adminDisplayName = "Admin User";
+
+        if (adminProfileStr) {
+          const adminProfile = JSON.parse(adminProfileStr) as UserProfile;
+          if (adminProfile.password) {
+            effectiveAdminPassword = adminProfile.password;
+          }
+          if (adminProfile.displayName) {
+            adminDisplayName = adminProfile.displayName;
+          }
+        }
+        
+        if (identifier.toLowerCase() === ADMIN_EMAIL && password === effectiveAdminPassword) {
           loggedInUser = await signIn({ 
             email: identifier.toLowerCase(), 
-            password, 
+            // Pass the entered password here, signIn for admin doesn't use it for auth, 
+            // but it's good practice to pass what user entered.
+            // The actual check `password === effectiveAdminPassword` is above.
+            password: password, 
             role: "admin",
-            displayName: "Admin User", 
+            displayName: adminDisplayName, 
           });
           targetRoute = "/admin";
         } else {
@@ -111,13 +129,13 @@ export default function LoginPage() {
           role: "faculty",
         });
         // displayName will be set by signIn from stored profile if available
-        targetRoute = "/dashboard"; 
+        targetRoute = facultyUserHasPendingTasks(loggedInUser) ? "/faculty/user-management" : "/faculty";
       } else { // Student mode
         const usn = identifier.toUpperCase();
         loggedInUser = await signIn({ 
           usn: usn, 
           password, 
-          role: "student",
+          role: "student", // This role might be updated to 'pending' by signIn based on UserProfile
         });
          // displayName will be set by signIn from stored profile if available
       }
@@ -138,6 +156,30 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   }
+
+  // Helper function to determine if faculty has pending student approvals
+  // This is a mock; in a real app, this would involve a data fetch.
+  const facultyUserHasPendingTasks = (facultyUser: User): boolean => {
+    if (typeof window === 'undefined' || !facultyUser.assignedBranches || facultyUser.assignedBranches.length === 0) {
+        return false;
+    }
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('campus_connect_user_')) {
+            try {
+                const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
+                if (profile.role === 'pending' && 
+                    !profile.isApproved && 
+                    !profile.rejectionReason &&
+                    profile.branch &&
+                    facultyUser.assignedBranches.includes(profile.branch)) {
+                    return true; // Found a pending student for this faculty's branch
+                }
+            } catch (e) { /* ignore parse errors */ }
+        }
+    }
+    return false;
+  };
   
   const getIdentifierLabel = () => {
     switch(loginMode) {
@@ -253,3 +295,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
