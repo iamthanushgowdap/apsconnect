@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-// import { Navbar } from '@/components/layout/navbar'; // Navbar removed
+import { Navbar } from '@/components/layout/navbar'; // Navbar restored
 import { Footer } from '@/components/layout/footer';
 import { AuthProvider } from '@/components/auth-provider';
 import { SiteConfig } from '@/config/site';
@@ -35,7 +35,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
         <AuthProvider>
-          {/* <Navbar /> Navbar component removed */}
+          <Navbar /> {/* Navbar component restored */}
           <main className="flex-grow">{children}</main>
           <Footer />
         </AuthProvider>

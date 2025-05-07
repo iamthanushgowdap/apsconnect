@@ -7,8 +7,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider"; 
-import React, { useEffect, useState } from 'react'; // Added useEffect, useState
-import type { Post } from "@/types"; // Added Post type
+import React, { useEffect, useState } from 'react';
+import type { Post } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,7 +51,7 @@ export function Navbar() {
         post.targetBranches.length === 0 || 
         user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch))
       );
-    } else { // Non-student/faculty or no branch info, show only general posts or handle as per app logic
+    } else { 
       viewablePosts = allPosts.filter(post => post.targetBranches.length === 0);
     }
     
@@ -73,16 +73,19 @@ export function Navbar() {
       }
     };
 
+    const handlePostsSeenEvent = () => {
+        calculateUnseenPosts();
+    };
+    
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', handleStorageChange);
-      // Listen for a custom event that FeedPage can dispatch
-      window.addEventListener('postsSeen', calculateUnseenPosts);
+      window.addEventListener('postsSeen', handlePostsSeenEvent);
     }
 
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('postsSeen', calculateUnseenPosts);
+        window.removeEventListener('postsSeen', handlePostsSeenEvent);
       }
     };
   }, [user, pathname, calculateUnseenPosts]);
@@ -134,10 +137,14 @@ export function Navbar() {
               if (item.adminOnly && user?.role !== 'admin') return null;
               if (item.facultyOnly && user?.role !== 'faculty') return null;
               if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
+              // Specifically hide 'Campus Feed' for students and pending users
+              if (item.href === '/feed' && (user?.role === 'student' || user?.role === 'pending')) return null;
             }
             
             const isCampusFeed = item.href === '/feed';
-            const showBadge = isCampusFeed && user && (user.role === 'student' || user.role === 'faculty') && unseenPostsCount > 0;
+             // Show badge only for faculty, not for admin, student, or pending
+            const showBadge = isCampusFeed && user && user.role === 'faculty' && unseenPostsCount > 0;
+
 
             return (
               <Link
@@ -149,10 +156,9 @@ export function Navbar() {
                   "text-xs sm:text-sm" 
                 )}
                 onClick={() => {
-                  if (isCampusFeed) {
-                    // Optimistically reduce count, FeedPage will confirm by updating localStorage
-                    // setUnseenPostsCount(0); // Or let FeedPage handle it for accuracy
-                  }
+                  // if (isCampusFeed) {
+                  //   // Optimistically reduce count or let FeedPage handle it
+                  //   }
                 }}
               >
                 {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
@@ -174,6 +180,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
+                     {/* Placeholder for AvatarImage if user has a profile picture URL */}
                     <AvatarFallback>
                       {user.displayName ? (
                         getUserInitials(user.displayName)
