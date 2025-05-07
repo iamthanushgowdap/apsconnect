@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -8,7 +7,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider"; 
-import React from 'react';
+import React, { useEffect, useState } from 'react'; // Added useEffect, useState
+import type { Post } from "@/types"; // Added Post type
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +18,75 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User as UserIcon, LogOut, LayoutDashboard, Settings } from "lucide-react"; // Import necessary icons
+import { User as UserIcon, LogOut, LayoutDashboard, Settings, Newspaper } from "lucide-react"; 
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, signOut } = useAuth(); 
+  const [unseenPostsCount, setUnseenPostsCount] = useState(0);
+
+  const calculateUnseenPosts = React.useCallback(() => {
+    if (typeof window === 'undefined' || !user || (user.role !== 'student' && user.role !== 'faculty')) {
+      setUnseenPostsCount(0);
+      return;
+    }
+
+    const allPostsStr = localStorage.getItem('campus_connect_posts');
+    const allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+    if (allPosts.length === 0) {
+      setUnseenPostsCount(0);
+      return;
+    }
+
+    let viewablePosts = allPosts;
+    // Filter posts based on user role and branch (similar to FeedPage logic)
+    if (user.role === 'student' && user.branch) {
+      const studentBranch = user.branch;
+      viewablePosts = allPosts.filter(post => 
+        post.targetBranches.length === 0 || post.targetBranches.includes(studentBranch)
+      );
+    } else if (user.role === 'faculty' && user.assignedBranches) {
+      viewablePosts = allPosts.filter(post =>
+        post.targetBranches.length === 0 || 
+        user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch))
+      );
+    } else { // Non-student/faculty or no branch info, show only general posts or handle as per app logic
+      viewablePosts = allPosts.filter(post => post.targetBranches.length === 0);
+    }
+    
+    const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
+    const seenPostIdsStr = localStorage.getItem(seenPostIdsKey);
+    const seenPostIds: string[] = seenPostIdsStr ? JSON.parse(seenPostIdsStr) : [];
+
+    const unseen = viewablePosts.filter(post => !seenPostIds.includes(post.id));
+    setUnseenPostsCount(unseen.length);
+
+  }, [user]);
+
+  useEffect(() => {
+    calculateUnseenPosts();
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'campus_connect_posts' || (user && event.key === `campus_connect_seen_post_ids_${user.uid}`)) {
+        calculateUnseenPosts();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
+      // Listen for a custom event that FeedPage can dispatch
+      window.addEventListener('postsSeen', calculateUnseenPosts);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('postsSeen', calculateUnseenPosts);
+      }
+    };
+  }, [user, pathname, calculateUnseenPosts]);
+
 
   const handleLogout = async () => {
     await signOut();
@@ -50,7 +113,7 @@ export function Navbar() {
       case "pending":
         return "/student";
       default:
-        return "/dashboard"; // Fallback, though covered by specific roles
+        return "/dashboard"; 
     }
   };
 
@@ -73,17 +136,32 @@ export function Navbar() {
               if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
             }
             
+            const isCampusFeed = item.href === '/feed';
+            const showBadge = isCampusFeed && user && (user.role === 'student' || user.role === 'faculty') && unseenPostsCount > 0;
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "transition-colors hover:text-primary",
+                  "transition-colors hover:text-primary relative flex items-center",
                   pathname === item.href ? "text-primary" : "text-foreground/60",
                   "text-xs sm:text-sm" 
                 )}
+                onClick={() => {
+                  if (isCampusFeed) {
+                    // Optimistically reduce count, FeedPage will confirm by updating localStorage
+                    // setUnseenPostsCount(0); // Or let FeedPage handle it for accuracy
+                  }
+                }}
               >
+                {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                 {item.title}
+                {showBadge && (
+                  <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                    {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -96,8 +174,6 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
-                    {/* In a real app, you might have user.avatarUrl */}
-                    {/* <AvatarImage src={user.avatarUrl} alt={user.displayName || "User"} /> */}
                     <AvatarFallback>
                       {user.displayName ? (
                         getUserInitials(user.displayName)
@@ -113,7 +189,7 @@ export function Navbar() {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email || user.usn}
+                      {user.email || user.usn} ({user.role})
                     </p>
                   </div>
                 </DropdownMenuLabel>

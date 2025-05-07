@@ -1,14 +1,17 @@
+import type { NavItem as OriginalNavItem } from '@/types'; // Assuming NavItem might be in types
+import { Newspaper } from 'lucide-react'; // Import icon
 
+// Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
 export type NavItem = {
   title: string;
   href: string;
   disabled?: boolean;
   external?: boolean;
-  protected?: boolean; // Requires login (any role)
-  adminOnly?: boolean; // Requires admin role
-  facultyOnly?: boolean; // Requires faculty role
-  studentOnly?: boolean; // Requires student role or pending role
-  hideWhenLoggedIn?: boolean; // Hide this link if user is logged in
+  protected?: boolean; 
+  adminOnly?: boolean; 
+  facultyOnly?: boolean; 
+  studentOnly?: boolean; 
+  hideWhenLoggedIn?: boolean; 
   icon?: React.ComponentType<{ className?: string }>;
 };
 
@@ -24,17 +27,19 @@ export type SiteConfig = {
 export const SiteConfig: SiteConfig = {
   name: "CampusConnect",
   description: "A modern platform for college communication and engagement.",
-  url: "https://campusconnect.example.com", // Replace with actual URL
-  ogImage: "https://campusconnect.example.com/og.jpg", // Replace with actual OG image
+  url: "https://campusconnect.example.com", 
+  ogImage: "https://campusconnect.example.com/og.jpg", 
   mainNav: [
     {
       title: "Home",
       href: "/",
     },
-    // {
-    //   title: "Campus Feed", // Hidden as per user request
-    //   href: "/feed",
-    // },
+    {
+      title: "Campus Feed",
+      href: "/feed",
+      protected: true, // Visible to all logged-in users
+      icon: Newspaper,
+    },
     {
       title: "Admin Dashboard",
       href: "/admin",
@@ -51,7 +56,7 @@ export const SiteConfig: SiteConfig = {
       title: "Student Dashboard",
       href: "/student",
       protected: true,
-      studentOnly: true, // This will show for 'student' and 'pending' roles
+      studentOnly: true, 
     }
   ],
   footerNav: [
@@ -65,4 +70,3 @@ export const SiteConfig: SiteConfig = {
     },
   ],
 };
-

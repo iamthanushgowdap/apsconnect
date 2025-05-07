@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -59,7 +58,7 @@ export default function FeedPage() {
       const postsStr = localStorage.getItem('campus_connect_posts');
       const loadedPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
       loadedPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime());
-      setAllPosts(loadedPosts.map(p => ({...p, likes: p.likes || [] }))); // Ensure likes array exists
+      setAllPosts(loadedPosts.map(p => ({...p, likes: p.likes || [] }))); 
     }
     setIsLoadingPosts(false);
   };
@@ -84,9 +83,7 @@ export default function FeedPage() {
           user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch)) 
         );
       }
-      // Admins see all posts, no branch filtering needed based on user role.
     } else {
-       // Unauthenticated users see only general posts
        postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
     }
 
@@ -107,13 +104,26 @@ export default function FeedPage() {
         if (branchFilter === 'general') { 
             postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
         } else {
-            // Show posts for the specific branch OR general posts
             postsToFilter = postsToFilter.filter(post => post.targetBranches.includes(branchFilter as Branch) || post.targetBranches.length === 0);
         }
     }
 
     setFilteredPosts(postsToFilter);
   }, [allPosts, user, searchTerm, categoryFilter, branchFilter]);
+
+  useEffect(() => {
+    // Mark currently filtered (and thus visible) posts as seen
+    if (typeof window !== 'undefined' && user && filteredPosts.length > 0) {
+      const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
+      const currentSeenIdsStr = localStorage.getItem(seenPostIdsKey);
+      const currentSeenIds: string[] = currentSeenIdsStr ? JSON.parse(currentSeenIdsStr) : [];
+      
+      const newSeenIds = new Set([...currentSeenIds, ...filteredPosts.map(p => p.id)]);
+      localStorage.setItem(seenPostIdsKey, JSON.stringify(Array.from(newSeenIds)));
+      // Dispatch a custom event to notify Navbar immediately
+      window.dispatchEvent(new CustomEvent('postsSeen'));
+    }
+  }, [filteredPosts, user]);
 
   const handleLikePost = (postId: string) => {
     if (!user) {
@@ -125,10 +135,8 @@ export default function FeedPage() {
         if (post.id === postId) {
           const currentLikes = post.likes || [];
           if (currentLikes.includes(user.uid)) {
-            // Unlike
             return { ...post, likes: currentLikes.filter(uid => uid !== user.uid) };
           } else {
-            // Like
             return { ...post, likes: [...currentLikes, user.uid] };
           }
         }
@@ -154,7 +162,6 @@ export default function FeedPage() {
     if (user?.role === 'admin') {
       return `/admin/posts/edit/${post.id}`;
     }
-    // Only faculty author gets this link if canEditPost is true for them
     return `/faculty/content/edit/${post.id}`; 
   };
 
@@ -291,4 +298,3 @@ export default function FeedPage() {
     </div>
   );
 }
-
