@@ -1,126 +1,370 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button'; // Assuming Button component for consistency if needed later
+import Link from 'next/link';
+import { useAuth, User } from '@/components/auth-provider';
+import type { Post, PostAttachment } from '@/types';
+import { Card, CardContent, CardDescription, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Heart, MessageSquare, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter } from 'lucide-react';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
+
+interface PostItemProps {
+  post: Post;
+  currentUser: User | null;
+  onLikePost: (postId: string) => void;
+  onDeletePost: (postId: string) => void;
+}
+
+function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps) {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleDownload = (attachment: PostAttachment) => {
+    // In a real app, this would trigger a download from a URL.
+    // For mock, we just show a toast.
+    toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}...` });
+    // Simulating file download with a placeholder link
+    const link = document.createElement('a');
+    link.href = `data:${attachment.type};base64,`; // Placeholder data URI
+    link.download = attachment.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const getInitials = (name?: string | null) => {
+    if (!name) return "??";
+    const parts = name.split(" ");
+    if (parts.length > 1) {
+      return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const categoryIcons: Partial<Record<Post['category'], React.ElementType>> = {
+    event: CalendarDays,
+    news: Newspaper,
+    link: Paperclip,
+    note: BookOpen,
+    schedule: CalendarDays,
+  };
+  const IconComponent = post?.category && categoryIcons[post.category] ? categoryIcons[post.category] : FileText;
+
+  const canEdit = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'faculty' && post.authorId === currentUser.uid));
+  const canDelete = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'faculty' && post.authorId === currentUser.uid));
+
+  const handleEdit = () => {
+    if (currentUser?.role === 'admin') {
+      router.push(`/admin/posts/edit/${post.id}`);
+    } else if (currentUser?.role === 'faculty') {
+      router.push(`/faculty/content/edit/${post.id}`);
+    }
+  };
+
+
+  return (
+    <Card className="w-full shadow-lg rounded-xl overflow-hidden border border-border/60">
+      <CardHeader className="p-4 sm:p-5 border-b border-border/50">
+        <div className="flex items-start space-x-3">
+          <Avatar className="h-11 w-11">
+            {/* Add AvatarImage if author has one, e.g. src={post.authorAvatarUrl} */}
+            <AvatarImage src={`https://picsum.photos/seed/${post.authorId}/44/44`} alt={post.authorName} data-ai-hint="person avatar"/>
+            <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle className="text-base sm:text-lg font-semibold text-foreground leading-tight">{post.title}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                        By {post.authorName} ({post.authorRole}) - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
+                    </CardDescription>
+                </div>
+                { (canEdit || canDelete) && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-1">
+                            <Settings className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {canEdit && <DropdownMenuItem onClick={handleEdit}><Edit3 className="mr-2 h-4 w-4" />Edit Post</DropdownMenuItem>}
+                        {canDelete && <DropdownMenuItem onClick={() => onDeletePost(post.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Delete Post</DropdownMenuItem>}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                )}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-5 space-y-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <IconComponent className="h-4 w-4 text-primary"/> 
+            <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="capitalize">
+                {post.category}
+            </Badge>
+            {post.targetBranches && post.targetBranches.length > 0 && (
+                <Badge variant="outline">For: {post.targetBranches.join(', ')}</Badge>
+            )}
+            {(!post.targetBranches || post.targetBranches.length === 0) && (
+                <Badge variant="outline">For: All Branches</Badge>
+            )}
+        </div>
+        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{post.content}</p>
+        {post.attachments && post.attachments.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Attachments:</h4>
+            <ul className="space-y-1.5">
+              {post.attachments.map((att, index) => (
+                <li key={index} className="text-xs">
+                  <Button variant="outline" size="sm" onClick={() => handleDownload(att)} className="w-full justify-start text-left h-auto py-1.5 px-2.5">
+                    <Paperclip className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                    <span className="truncate flex-grow">{att.name} ({(att.size / (1024*1024)).toFixed(2)} MB)</span>
+                    <Download className="h-3.5 w-3.5 ml-2 flex-shrink-0 text-muted-foreground" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="p-4 sm:p-5 border-t border-border/50 flex items-center justify-start">
+        <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="text-muted-foreground hover:text-red-500 group">
+          <Heart className={`h-4 w-4 mr-1.5 transition-colors ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
+          {post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}
+        </Button>
+        {/* Placeholder for comments if added later */}
+        {/* <Button variant="ghost" size="sm" className="ml-2 text-muted-foreground hover:text-primary">
+          <MessageSquare className="h-4 w-4 mr-1.5" /> 0 Comments
+        </Button> */}
+      </CardFooter>
+    </Card>
+  );
+}
+
 
 export default function FeedPage() {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mx-auto my-10 max-w-lg rounded-xl border border-border bg-card px-4 py-8 shadow-lg">
-        <div className="mb-4 flex justify-between border-b border-border pb-3">
-          <p className="text-xl font-bold text-foreground">Activity feed</p>
-          {/* Placeholder for Notification Settings button functionality */}
-          <button className="text-sm font-medium text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring">
-            Notification Settings
-          </button>
-        </div>
-        <div>
-          {/* Activity Item 1: Liked Comment */}
-          <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring" tabIndex={0}>
-            <div className="relative flex items-center">
-              <Image
-                className="h-10 w-10 rounded-full object-cover"
-                src="https://picsum.photos/40/40"
-                alt="Johanson Levinsiki"
-                width={40}
-                height={40}
-                data-ai-hint="person avatar"
-              />
-              <div className="ml-4 flex flex-col sm:w-96">
-                <p className="mb-1 font-medium text-foreground">Johanson Levinsiki</p>
-                <div className="text-sm text-muted-foreground">
-                  <span className="shrink-0 mr-1 text-red-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline h-3 w-3">
-                      <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-                    </svg>
-                  </span>
-                  <span className="mr-1 font-medium text-red-500">liked your comment:</span>
-                  <span className="">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
-                </div>
-              </div>
-              <span className="absolute top-0 right-2 text-sm text-muted-foreground">1min ago</span>
-            </div>
-          </div>
+  const { user, isLoading: authLoading } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [deleteTargetPostId, setDeleteTargetPostId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-          {/* Activity Item 2: Replied to Comment */}
-          <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring" tabIndex={0}>
-            <div className="relative flex items-center">
-              <Image
-                className="h-10 w-10 rounded-full object-cover"
-                src="https://picsum.photos/40/41" // Slightly different to get a new image
-                alt="Johanson Levinsiki"
-                width={40}
-                height={40}
-                data-ai-hint="person avatar"
-              />
-              <div className="ml-4 flex flex-col sm:w-96">
-                <p className="mb-1 font-medium text-foreground">Johanson Levinsiki</p>
-                <div className="mb-2 text-sm text-muted-foreground">
-                  <span className="shrink-0 mr-1 text-primary"> {/* Changed to primary based on theme */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline h-3 w-3">
-                      <path d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 00-1.032-.211 50.89 50.89 0 00-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 002.433 3.984L7.28 21.53A.75.75 0 016 21v-4.03a48.527 48.527 0 01-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979z" />
-                      <path d="M15.75 7.5c-1.376 0-2.739.057-4.086.169C10.124 7.797 9 9.103 9 10.609v4.285c0 1.507 1.128 2.814 2.67 2.94 1.243.102 2.5.157 3.768.165l2.782 2.781a.75.75 0 001.28-.53v-2.39l.33-.026c1.542-.125 2.67-1.433 2.67-2.94v-4.286c0-1.505-1.125-2.811-2.664-2.94A49.392 49.392 0 0015.75 7.5z" />
-                    </svg>
-                  </span>
-                  <span className="mr-1 font-medium text-primary">replied to your comment:</span> {/* Changed to primary */}
-                  <span className="">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
-                </div>
-                <div className="rounded-xl bg-primary/10 p-4 text-muted-foreground"> {/* Adjusted background */}
-                  <p className="text-sm">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Rerum, soluta modi? Amet, sequi distinctio.</p>
-                </div>
-              </div>
-              <span className="absolute top-0 right-2 text-sm text-muted-foreground">1min ago</span>
-            </div>
-          </div>
+  const markPostsAsSeen = useCallback(() => {
+    if (!user || posts.length === 0) return;
 
-          {/* Activity Item 3: Shared a File */}
-          <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring" tabIndex={0}>
-            <div className="relative flex items-center">
-              <Image
-                className="h-10 w-10 rounded-full object-cover"
-                src="https://picsum.photos/40/42" // Slightly different to get a new image
-                alt="Johanson Levinsiki"
-                width={40}
-                height={40}
-                data-ai-hint="person avatar"
-              />
-              <div className="ml-4 flex flex-col sm:w-96">
-                <p className="mb-1 font-medium text-foreground">Johanson Levinsiki</p>
-                <div className="mb-2 text-sm text-muted-foreground">
-                  <span className="shrink-0 mr-1 text-primary"> {/* Changed to primary */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline h-3 w-3">
-                      <path fillRule="evenodd" d="M15.75 4.5a3 3 0 11.825 2.066l-8.421 4.679a3.002 3.002 0 010 1.51l8.421 4.679a3 3 0 11-.729 1.31l-8.421-4.678a3 3 0 110-4.132l8.421-4.679a3 3 0 01-.096-.755z" clipRule="evenodd" />
-                    </svg>
-                  </span>
-                  <span className="mr-1 font-medium text-primary">shared a file</span> {/* Changed to primary */}
-                </div>
-                <div className="rounded-xl bg-primary/10 p-4 text-muted-foreground"> {/* Adjusted background */}
-                  <div className="flex items-center">
-                    <span className="text-primary"> {/* Changed to primary */}
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-6 w-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                      </svg>
-                    </span>
-                    <div className="ml-4 pr-10">
-                      <p className="mb-1 text-sm font-medium text-foreground">Earnings Report 2021 | Berkshire Hathaway Inc</p>
-                      <p className="text-xs text-muted-foreground">
-                        512KB
-                        <a className="ml-1 text-primary hover:underline" href="#"> {/* Changed to primary */}
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="inline h-4 w-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                          </svg>
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <span className="absolute top-0 right-2 text-sm text-muted-foreground">1min ago</span>
-            </div>
-          </div>
-        </div>
+    const viewablePostIds = posts.map(p => p.id);
+    const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
+    let seenPostIds: string[] = [];
+    
+    if (typeof window !== 'undefined') {
+        const storedSeenIds = localStorage.getItem(seenPostIdsKey);
+        if (storedSeenIds) {
+            seenPostIds = JSON.parse(storedSeenIds);
+        }
+        const newSeenIds = Array.from(new Set([...seenPostIds, ...viewablePostIds]));
+        localStorage.setItem(seenPostIdsKey, JSON.stringify(newSeenIds));
+        
+        // Dispatch custom event to notify navbar
+        window.dispatchEvent(new CustomEvent('postsSeen'));
+    }
+  }, [user, posts]);
+
+
+  const fetchPosts = useCallback(() => {
+    setIsLoadingPosts(true);
+    if (typeof window !== 'undefined') {
+      const storedPostsStr = localStorage.getItem('campus_connect_posts');
+      let allPosts: Post[] = storedPostsStr ? JSON.parse(storedPostsStr) : [];
+      
+      if (user) {
+        if (user.role === 'student' && user.branch) {
+          const studentBranch = user.branch;
+          allPosts = allPosts.filter(post => 
+            post.targetBranches.length === 0 || // General posts
+            post.targetBranches.includes(studentBranch) // Posts for student's branch
+          );
+        } else if (user.role === 'faculty' && user.assignedBranches) {
+          const facultyBranches = user.assignedBranches;
+          allPosts = allPosts.filter(post => 
+            post.targetBranches.length === 0 || // General posts
+            facultyBranches.some(branch => post.targetBranches.includes(branch)) // Posts for faculty's branches
+          );
+        } 
+        // Admin sees all posts implicitly
+      } else {
+        // Non-logged in users might see only general posts, or none
+        // For now, let's assume they see general posts if any are marked as such
+        allPosts = allPosts.filter(post => post.targetBranches.length === 0);
+      }
+
+      setPosts(allPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime()));
+    }
+    setIsLoadingPosts(false);
+  }, [user]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  useEffect(() => {
+    if (posts.length > 0 && user) {
+      markPostsAsSeen();
+    }
+  }, [posts, user, markPostsAsSeen]);
+
+
+  const handleLikePost = (postId: string) => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
+      return;
+    }
+    setPosts(prevPosts =>
+      prevPosts.map(p => {
+        if (p.id === postId) {
+          const currentLikes = p.likes || [];
+          const userLiked = currentLikes.includes(user.uid);
+          const newLikes = userLiked
+            ? currentLikes.filter(uid => uid !== user.uid)
+            : [...currentLikes, user.uid];
+          const updatedPost = { ...p, likes: newLikes };
+
+          // Update localStorage
+          if (typeof window !== 'undefined') {
+            const allPostsStr = localStorage.getItem('campus_connect_posts');
+            let allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+            const postIndex = allPosts.findIndex(storedPost => storedPost.id === postId);
+            if (postIndex > -1) {
+              allPosts[postIndex] = updatedPost;
+              localStorage.setItem('campus_connect_posts', JSON.stringify(allPosts));
+            }
+          }
+          return updatedPost;
+        }
+        return p;
+      })
+    );
+  };
+
+  const confirmDeletePost = (postId: string) => {
+    setDeleteTargetPostId(postId);
+  };
+
+  const handleDeletePost = () => {
+    if (!deleteTargetPostId || !user) return;
+
+    const postToDelete = posts.find(p => p.id === deleteTargetPostId);
+    if (!postToDelete) return;
+
+    if (!(user.role === 'admin' || (user.role === 'faculty' && postToDelete.authorId === user.uid))) {
+        toast({title: "Unauthorized", description: "You cannot delete this post.", variant: "destructive"});
+        setDeleteTargetPostId(null);
+        return;
+    }
+
+    if (typeof window !== 'undefined') {
+        let allPostsStr = localStorage.getItem('campus_connect_posts');
+        let allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+        allPosts = allPosts.filter(p => p.id !== deleteTargetPostId);
+        localStorage.setItem('campus_connect_posts', JSON.stringify(allPosts));
+        
+        setPosts(prevPosts => prevPosts.filter(p => p.id !== deleteTargetPostId));
+        toast({title: "Post Deleted", description: `"${postToDelete.title}" has been deleted.`});
+    }
+    setDeleteTargetPostId(null);
+  };
+
+  if (authLoading || isLoadingPosts) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
+    );
+  }
+  
+  return (
+    <div className="container mx-auto px-2 sm:px-4 py-8">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center">
+                <Newspaper className="mr-3 h-7 w-7" /> Activity Feed
+            </h1>
+            <p className="text-sm text-muted-foreground">Latest updates, news, and events from around the campus.</p>
+        </div>
+        {/* Placeholder for Notification Settings or Filter button functionality */}
+        <Button variant="outline" size="sm" className="mt-2 sm:mt-0">
+          <Filter className="mr-2 h-4 w-4" /> Filter Feed
+        </Button>
+      </div>
+
+      {posts.length === 0 ? (
+        <Card className="text-center py-12 shadow-md rounded-xl border border-border/60">
+          <CardContent>
+            <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold text-foreground">No Posts Yet</h2>
+            <p className="text-muted-foreground mt-1">
+              {user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
+            </p>
+            {user && (user.role === 'admin' || user.role === 'faculty') && (
+              <Link href={user.role === 'admin' ? "/admin/posts/new" : "/faculty/content/new"} className="mt-4 inline-block">
+                <Button>Create New Post</Button>
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6 max-w-2xl mx-auto">
+          {posts.map(post => (
+            <PostItem 
+              key={post.id} 
+              post={post} 
+              currentUser={user} 
+              onLikePost={handleLikePost}
+              onDeletePost={confirmDeletePost}
+            />
+          ))}
+        </div>
+      )}
+
+    <AlertDialog open={!!deleteTargetPostId} onOpenChange={() => setDeleteTargetPostId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTargetPostId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePost} className="bg-destructive hover:bg-destructive/90">
+                Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
