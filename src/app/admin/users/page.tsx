@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
+import type { User } from "@/components/auth-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,16 +18,16 @@ export default function UserManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [actor, setActor] = useState<User | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
-      if (user && user.role === 'admin') {
+      if (user && (user.role === 'admin' || user.role === 'faculty')) {
         setIsAuthorized(true);
+        setActor(user);
       } else if (user) {
-        // Logged in but not admin
-        router.push('/dashboard'); // Or an unauthorized page
+        router.push('/dashboard'); 
       } else {
-        // Not logged in
         router.push('/login');
       }
       setPageLoading(false);
@@ -41,8 +42,7 @@ export default function UserManagementPage() {
     );
   }
 
-  if (!isAuthorized) {
-    // This case should ideally be handled by the redirect, but as a fallback:
+  if (!isAuthorized || !actor) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -66,21 +66,27 @@ export default function UserManagementPage() {
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">User Management</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          View, approve, and manage student and faculty accounts.
+          {actor.role === 'admin' 
+            ? "View, approve, and manage student and faculty accounts."
+            : "View and manage student accounts for your assigned branches."}
         </p>
       </div>
 
       <Tabs defaultValue="students" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:w-1/2 lg:w-1/3">
+        <TabsList className={`grid w-full ${actor.role === 'admin' ? 'grid-cols-2 md:w-1/2 lg:w-1/3' : 'grid-cols-1 md:w-1/4 lg:w-1/6'}`}>
           <TabsTrigger value="students">Manage Students</TabsTrigger>
-          <TabsTrigger value="faculty">Manage Faculty</TabsTrigger>
+          {actor.role === 'admin' && (
+            <TabsTrigger value="faculty">Manage Faculty</TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="students">
-          <ManageStudentsTab />
+          <ManageStudentsTab actor={actor} />
         </TabsContent>
-        <TabsContent value="faculty">
-          <ManageFacultyTab />
-        </TabsContent>
+        {actor.role === 'admin' && (
+          <TabsContent value="faculty">
+            <ManageFacultyTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

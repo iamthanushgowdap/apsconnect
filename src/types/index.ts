@@ -16,9 +16,17 @@ export interface UserProfile {
   usn?: string; // University Seat Number for students
   branch?: Branch; // Student's single branch (derived from USN or set)
   registrationDate: string; // ISO string format (e.g., new Date().toISOString())
+  
   isApproved: boolean;
+  
   approvedByUid?: string; // UID of admin/faculty who approved
   approvedByDisplayName?: string; // Display name of admin/faculty who approved
+  approvalDate?: string; // ISO string for when approved
+
+  rejectionReason?: string;
+  rejectedByUid?: string; // UID of admin/faculty who rejected
+  rejectedByDisplayName?: string; // Display name of admin/faculty who rejected
+  rejectedDate?: string; // ISO string for when rejected
 
   // Faculty-specific fields
   assignedBranches?: Branch[]; // Branches faculty is associated with
@@ -42,4 +50,3 @@ export interface Post {
   targetBranches: Branch[]; // Which branches this post is for
   // Add other post fields like attachments, expiryDate, etc.
 }
-
