@@ -43,8 +43,8 @@ export const SiteConfig: SiteConfig = {
       adminOnly: true,
     },
     {
-      title: "Faculty Tools", // Example link only visible to faculty
-      href: "/faculty", // Placeholder, create this route later
+      title: "Faculty Dashboard", 
+      href: "/faculty", 
       protected: true,
       facultyOnly: true, 
     }
