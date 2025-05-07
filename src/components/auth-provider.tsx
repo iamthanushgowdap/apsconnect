@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
        const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
        let studentEmail: string | null = null;
        let studentDisplayName: string | null = defaultDisplayName;
-       let studentBranch: Branch | undefined = credentials.branch;
+       let studentBranch: Branch | undefined = undefined; // Branch will be determined by stored profile
        let isApproved = false;
        let currentRole: UserRole = 'pending';
        let rejectionReason: string | undefined = undefined;
@@ -105,24 +105,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          studentDisplayName = registeredUserData.displayName || defaultDisplayName;
          isApproved = registeredUserData.isApproved;
          currentRole = registeredUserData.role; // Use current role from storage
+         studentBranch = registeredUserData.branch; // Branch is from stored profile data
          if (!isApproved && registeredUserData.rejectionReason) {
             rejectionReason = registeredUserData.rejectionReason;
          }
-
-
-         if(!studentBranch && credentials.usn.length >= 7) { // Derive branch if not explicitly passed
-            const branchCode = credentials.usn.substring(5,7).toUpperCase() as Branch; 
-            if (["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"].includes(branchCode)) {
-                 studentBranch = branchCode;
-            }
-         } else if (registeredUserData.branch) { // Use stored branch if available
-            studentBranch = registeredUserData.branch;
-         }
        } else {
-          // This case implies a student is trying to log in without prior registration data.
-          // For the mock setup, this shouldn't happen as registration creates the record.
-          // If it does, they would be treated as 'pending' and without specific profile data.
-          // isApproved remains false, role remains 'pending'.
+          // Student record not found in localStorage.
+          // This implies they haven't registered or data is missing.
+          // They will default to a 'pending' status with minimal info.
+          // Branch remains undefined as it cannot be derived from USN.
        }
 
       newUser = {
@@ -130,9 +121,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         usn: credentials.usn.toUpperCase(),
         email: studentEmail, 
         displayName: studentDisplayName,
-        role: currentRole, // Role will be 'pending' or 'student' based on stored profile
-        branch: studentBranch,
-        rejectionReason, // Populate rejectionReason if present
+        role: currentRole, 
+        branch: studentBranch, // Branch comes from stored profile, or undefined if no profile
+        rejectionReason,
       };
     } else {
       setIsLoading(false);

@@ -27,6 +27,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/components/auth-provider";
 import type { User } from "@/components/auth-provider"; 
+import type { Branch } from "@/types";
 
 interface MockPost {
   id: string;
@@ -110,6 +111,7 @@ export default function DashboardPage() {
               Hi, {user.displayName || "User"}!
             </p>
             {user.usn && <p className="text-md text-muted-foreground">USN: {user.usn}</p>}
+            {user.branch && <p className="text-md text-muted-foreground">Branch: {user.branch}</p>}
             {user.rejectionReason ? (
               <>
                 <p className="mt-3 text-muted-foreground">
@@ -138,11 +140,22 @@ export default function DashboardPage() {
     );
   }
 
-  const userBranchFromUsn = user.role === 'student' && user.usn ? user.usn.substring(5, 7) : user.branch;
-  const userBranchPosts = mockPosts.filter(post => 
-    user.role === 'faculty' || user.role === 'admin' || 
-    !post.branch || post.branch === "General" || post.branch === userBranchFromUsn
-  );
+  let relevantMockPosts: MockPost[];
+  if (user.role === 'admin') {
+    relevantMockPosts = mockPosts; 
+  } else if (user.role === 'student' && user.branch) {
+    const studentBranch = user.branch;
+    relevantMockPosts = mockPosts.filter(post =>
+      !post.branch || post.branch === "General" || post.branch === studentBranch
+    );
+  } else if (user.role === 'faculty' && user.assignedBranches && user.assignedBranches.length > 0) {
+    relevantMockPosts = mockPosts.filter(post =>
+      !post.branch || post.branch === "General" || user.assignedBranches?.includes(post.branch as Branch)
+    );
+  } else {
+    relevantMockPosts = mockPosts.filter(post => !post.branch || post.branch === "General");
+  }
+
 
   const getRoleSpecificGreeting = () => {
     if (user.role === 'faculty') {
@@ -151,7 +164,8 @@ export default function DashboardPage() {
     if (user.role === 'admin') {
       return `Welcome to your Admin Access Dashboard.`
     }
-    return `Welcome to your ${userBranchFromUsn ? `${userBranchFromUsn} ` : ''}Dashboard.`;
+    // Student
+    return `Welcome to your ${user.branch ? `${user.branch} ` : ''}Dashboard.`;
   }
 
   return (
@@ -201,13 +215,17 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl sm:text-2xl">Recent Updates {userBranchFromUsn && user.role === 'student' ? `for ${userBranchFromUsn}`: ''}</CardTitle>
-              <CardDescription>Latest posts relevant to you {user.role === 'student' && 'and your branch'}.</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl">
+                Recent Updates
+                {user.role === 'student' && user.branch ? ` for ${user.branch}` : ''}
+                {user.role === 'faculty' && user.assignedBranches && user.assignedBranches.length > 0 ? ` for your branches` : ''}
+              </CardTitle>
+              <CardDescription>Latest posts relevant to you.</CardDescription>
             </CardHeader>
             <CardContent>
-              {userBranchPosts.length > 0 ? (
+              {relevantMockPosts.length > 0 ? (
                 <div className="space-y-6">
-                  {userBranchPosts.map(post => (
+                  {relevantMockPosts.map(post => (
                     <UpdateItem key={post.id} post={post} />
                   ))}
                 </div>
@@ -353,3 +371,4 @@ function QuickActionLink({ href, icon, label }: QuickActionLinkProps) {
     </Link>
   );
 }
+
