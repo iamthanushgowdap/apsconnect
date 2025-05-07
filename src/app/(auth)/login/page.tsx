@@ -138,6 +138,24 @@ export default function LoginPage() {
           role: "student", // This role might be updated to 'pending' by signIn based on UserProfile
         });
          // displayName will be set by signIn from stored profile if available
+         if (loggedInUser.role === 'pending' && loggedInUser.rejectionReason) {
+            toast({
+                title: "Login Denied",
+                description: `Your registration was rejected. Reason: ${loggedInUser.rejectionReason}`,
+                variant: "destructive",
+                duration: 10000,
+            });
+            setIsLoading(false);
+            return; 
+         } else if (loggedInUser.role === 'pending' && !loggedInUser.rejectionReason) {
+            toast({
+                title: "Account Pending",
+                description: "Your account is still pending approval. Please check back later.",
+                duration: 7000,
+            });
+            // For pending (not rejected), we can let them proceed to dashboard to see this status more formally if needed
+            // or keep them on login with this toast. Assuming dashboard shows status.
+         }
       }
 
       toast({
@@ -225,7 +243,7 @@ export default function LoginPage() {
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="text-sm sm:text-base">
+                        <SelectTrigger className="text-sm sm:text-base" suppressHydrationWarning>
                           <SelectValue placeholder="Select login mode" />
                         </SelectTrigger>
                       </FormControl>
@@ -253,6 +271,7 @@ export default function LoginPage() {
                         className="text-sm sm:text-base"
                         onInput={loginMode === "student" ? (e) => e.currentTarget.value = e.currentTarget.value.toUpperCase() : undefined}
                         autoCapitalize={loginMode === "student" ? "characters" : "none"}
+                        suppressHydrationWarning
                       />
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
@@ -266,13 +285,13 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel className="text-sm">Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
+                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading} suppressHydrationWarning>
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
