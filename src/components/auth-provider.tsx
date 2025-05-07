@@ -1,9 +1,10 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { UserRole, Branch, UserProfile } from '@/types'; 
 import { useToast } from '@/hooks/use-toast';
-import { SiteConfig } from '@/config/site'; // Changed import
+import { SiteConfig } from '@/config/site'; 
 import { UpdateNotificationToast } from '@/components/notifications/update-notification-toast';
 
 
@@ -54,25 +55,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false); 
     }
 
-    // Check for app updates
     if (typeof window !== 'undefined') {
-      const APP_VERSION_KEY = 'campus_connect_app_version';
+      const APP_VERSION_KEY = 'apsconnect_app_version'; // Changed key
       const storedVersion = localStorage.getItem(APP_VERSION_KEY);
 
-      if (storedVersion !== SiteConfig.LATEST_APP_VERSION) { // Use SiteConfig.LATEST_APP_VERSION
-        // Version mismatch or first load, show update toast
+      if (storedVersion !== SiteConfig.LATEST_APP_VERSION) { 
         const toastCtrl = toast({ 
           duration: Infinity, 
           variant: 'raw',
           description: ( 
             <UpdateNotificationToast
               onUpdate={() => {
-                localStorage.setItem(APP_VERSION_KEY, SiteConfig.LATEST_APP_VERSION); // Use SiteConfig.LATEST_APP_VERSION
+                localStorage.setItem(APP_VERSION_KEY, SiteConfig.LATEST_APP_VERSION); 
                 toastCtrl.dismiss(); 
                 window.location.reload(); 
               }}
               onDismiss={() => {
-                localStorage.setItem(APP_VERSION_KEY, SiteConfig.LATEST_APP_VERSION); // Use SiteConfig.LATEST_APP_VERSION
+                localStorage.setItem(APP_VERSION_KEY, SiteConfig.LATEST_APP_VERSION); 
                 toastCtrl.dismiss();
               }}
             />
@@ -81,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-  }, [toast]); // Added toast to dependency array
+  }, [toast]); 
 
   const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }): Promise<User> => {
     setIsLoading(true);
@@ -100,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: credentials.role,
       };
     } else if (credentials.role === 'faculty' && credentials.email && credentials.password) {
-      const facultyUserKey = `campus_connect_user_${credentials.email.toLowerCase()}`;
+      const facultyUserKey = `apsconnect_user_${credentials.email.toLowerCase()}`; // Changed key
       const facultyUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(facultyUserKey) : null;
 
       if (facultyUserDataStr) {
@@ -123,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Faculty account not found.");
       }
     } else if (credentials.role === 'student' && credentials.usn) {
-       const registeredUserKey = `campus_connect_user_${credentials.usn.toUpperCase()}`;
+       const registeredUserKey = `apsconnect_user_${credentials.usn.toUpperCase()}`; // Changed key
        const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
        let studentEmail: string | null = null;
        let studentDisplayName: string | null = defaultDisplayName;
@@ -141,7 +140,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              throw new Error("Invalid student credentials.");
            }
          } else if (!registeredUserData.isApproved && registeredUserData.role === 'pending' && credentials.password !== registeredUserData.password) {
-          // Allow pending users to login to see status, password check might not be strict here if they haven't set one
          }
 
 

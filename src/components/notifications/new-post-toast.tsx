@@ -32,7 +32,7 @@ export function NewPostToast({
       <div className="flex items-center p-4">
         <div className="relative inline-block shrink-0">
           <Avatar className="w-12 h-12 rounded-full">
-            <AvatarImage src={authorImage} alt={`${authorName} image`} data-ai-hint="person avatar" />
+            <AvatarImage src={authorImage} alt={`${authorName || 'Author'} image`} data-ai-hint="person avatar" />
             <AvatarFallback className="bg-primary text-primary-foreground">
               {authorInitials}
             </AvatarFallback>
@@ -43,7 +43,7 @@ export function NewPostToast({
           </span>
         </div>
         <div className="ms-3 text-sm font-normal">
-          <div className="text-sm font-semibold text-foreground dark:text-white">{authorName}</div>
+          <div className="text-sm font-semibold text-foreground dark:text-white">{authorName || "APSConnect User"}</div>
           <div className="text-sm font-normal text-muted-foreground dark:text-gray-400">
             posted a new {postCategory}: "{postTitle.length > 30 ? postTitle.substring(0, 30) + '...' : postTitle}"
           </div>

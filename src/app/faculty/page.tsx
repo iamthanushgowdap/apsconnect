@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -101,9 +102,9 @@ export default function FacultyDashboardPage() {
                 actionText="View Profile"
             />
              <StyledActionCard
-                title="View Content Feed"
+                title="View Activity Feed"
                 description="Browse content relevant to your branches."
-                icon={<FileText />}
+                icon={<Newspaper />} 
                 link="/feed" 
                 actionText="View Feed"
             />

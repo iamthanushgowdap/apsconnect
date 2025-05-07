@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react'; // Added useState
+import React, { useEffect, useState } from 'react'; 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -9,9 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-// This page can be expanded to have admin-specific post management features (edit, delete, etc.)
-// For now, it will redirect to the main feed page for viewing content.
-// Or it could display the feed page content directly but with admin controls.
 
 export default function AdminViewPostsPage() {
   const router = useRouter();
@@ -21,10 +18,6 @@ export default function AdminViewPostsPage() {
   useEffect(() => {
     if (!authLoading) {
       if (user && user.role === 'admin') {
-        // Admins can view the main feed, or this page could embed/filter content
-        // For simplicity, redirect to the main feed for now.
-        // router.push('/feed');
-        // Or, if this page is meant to be a distinct admin view:
         setPageLoading(false);
       } else {
         router.push(user ? '/dashboard' : '/login');
@@ -57,26 +50,24 @@ export default function AdminViewPostsPage() {
     );
   }
 
-  // For now, this page is a placeholder. Admins will use /feed or a future dedicated management UI.
   return (
     <div className="container mx-auto px-4 py-8">
       <Card>
         <CardHeader>
           <CardTitle>Admin: All Content</CardTitle>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              This is the admin view for all posts. Currently, all posts are visible on the main <Link href="/feed" className="text-primary hover:underline">Campus Feed</Link>.
-            </p>
-            <p className="text-muted-foreground">
-              Future enhancements could include specific admin actions here like bulk operations, detailed analytics, or content moderation tools.
-            </p>
-             <Link href="/feed">
-                <Button className="mt-4">View Campus Feed</Button>
-            </Link>
-          </CardContent>
         </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">
+            This is the admin view for all posts. Currently, all posts are visible on the main <Link href="/feed" className="text-primary hover:underline">Activity Feed</Link>.
+          </p>
+          <p className="text-muted-foreground">
+            Future enhancements could include specific admin actions here like bulk operations, detailed analytics, or content moderation tools.
+          </p>
+            <Link href="/feed">
+              <Button className="mt-4">View Activity Feed</Button>
+            </Link>
+        </CardContent>
       </Card>
     </div>
   );
 }
-

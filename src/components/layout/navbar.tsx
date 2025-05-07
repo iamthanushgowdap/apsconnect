@@ -34,7 +34,7 @@ export function Navbar() {
       return;
     }
 
-    const allPostsStr = localStorage.getItem('campus_connect_posts');
+    const allPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
     const allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
     if (allPosts.length === 0) {
       setUnseenPostsCount(0);
@@ -45,18 +45,18 @@ export function Navbar() {
     if (user.role === 'student' && user.branch) {
       const studentBranch = user.branch;
       viewablePosts = allPosts.filter(post => 
-        post.targetBranches.length === 0 || post.targetBranches.includes(studentBranch)
+        !post.targetBranches || post.targetBranches.length === 0 || post.targetBranches.includes(studentBranch)
       );
     } else if (user.role === 'faculty' && user.assignedBranches) {
       viewablePosts = allPosts.filter(post =>
-        post.targetBranches.length === 0 || 
+        !post.targetBranches || post.targetBranches.length === 0 || 
         user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch))
       );
     } else { 
-      viewablePosts = allPosts;
+      viewablePosts = allPosts; // Admin sees all, or general public if applicable
     }
     
-    const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
+    const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; // Changed key
     const seenPostIdsStr = localStorage.getItem(seenPostIdsKey);
     const seenPostIds: string[] = seenPostIdsStr ? JSON.parse(seenPostIdsStr) : [];
 
@@ -69,7 +69,7 @@ export function Navbar() {
     calculateUnseenPosts();
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'campus_connect_posts' || (user && event.key === `campus_connect_seen_post_ids_${user.uid}`)) {
+      if (event.key === 'apsconnect_posts' || (user && event.key === `apsconnect_seen_post_ids_${user.uid}`)) { // Changed keys
         calculateUnseenPosts();
       }
     };
@@ -138,7 +138,8 @@ export function Navbar() {
               if (item.adminOnly && user?.role !== 'admin') return null;
               if (item.facultyOnly && user?.role !== 'faculty') return null;
               if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
-              if (item.title === "Campus Feed") return null; // Explicitly hide Campus Feed
+              // Hide "Activity Feed" from general nav if user is not admin or faculty
+              if (item.title === "Activity Feed" && user && user.role !== 'admin' && user.role !== 'faculty') return null;
             }
             
             // Always show Home, Login, Register based on their own conditions
@@ -163,7 +164,8 @@ export function Navbar() {
             if (user && (
                 (item.adminOnly && user.role === 'admin') ||
                 (item.facultyOnly && user.role === 'faculty') ||
-                (item.studentOnly && (user.role === 'student' || user.role === 'pending'))
+                (item.studentOnly && (user.role === 'student' || user.role === 'pending')) ||
+                (item.title === "Activity Feed" && (user.role === 'admin' || user.role === 'faculty')) // Show Activity Feed for admin/faculty
             )) {
                 return (
                     <Link
@@ -177,6 +179,11 @@ export function Navbar() {
                     >
                         {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                         {item.title}
+                        {item.title === "Activity Feed" && (user.role === 'student' || user.role === 'faculty') && unseenPostsCount > 0 && (
+                          <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                          </span>
+                        )}
                     </Link>
                 );
             }
@@ -191,7 +198,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
-                     {/* Placeholder for AvatarImage if user has a profile picture URL */}
+                    <AvatarImage src={`https://picsum.photos/seed/${user.uid}/40/40`} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
                     <AvatarFallback>
                       {user.displayName ? (
                         getUserInitials(user.displayName)
@@ -222,9 +229,9 @@ export function Navbar() {
                   <Link href="/feed" className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Newspaper className="mr-2 h-4 w-4" />
-                      <span>Campus Feed</span>
+                      <span>Activity Feed</span>
                     </div>
-                    {(user.role === 'student' || user.role === 'faculty') && unseenPostsCount > 0 && (
+                    {(user.role === 'student' || user.role === 'faculty' || user.role === 'admin') && unseenPostsCount > 0 && ( // Admin can also see badge
                        <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
                          {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
                        </span>
@@ -256,6 +263,7 @@ export function Navbar() {
               <Link href="/register" className={cn(buttonVariants({ variant: "default", size: "sm" }), "px-2 sm:px-3")}>
                 Register
               </Link>
+               <ThemeToggleButton />
             </>
           )}
         </div>

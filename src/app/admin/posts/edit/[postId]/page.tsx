@@ -32,7 +32,7 @@ export default function AdminEditPostPage() {
         return;
       }
       if (postId && typeof window !== 'undefined') {
-        const postsStr = localStorage.getItem('campus_connect_posts');
+        const postsStr = localStorage.getItem('apsconnect_posts'); // Changed key
         const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
         const postToEdit = allPosts.find(p => p.id === postId);
         if (postToEdit) {
@@ -54,24 +54,24 @@ export default function AdminEditPostPage() {
       console.log("Files to 'upload' (Admin):", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
-        const existingPostsStr = localStorage.getItem('campus_connect_posts');
+        const existingPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
         let existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
         const postIndex = existingPosts.findIndex(p => p.id === postData.id);
         if (postIndex > -1) {
           existingPosts[postIndex] = {...postData, updatedAt: new Date().toISOString(), likes: postData.likes || [] };
         } else {
-          // This case should not happen if editing an existing post by ID
-          toast({ title: "Error", description: "Original post not found for update.", variant: "destructive" });
+          toast({ title: "Error", description: "Original post not found for update.", variant: "destructive", duration: 3000 });
           setFormSubmitting(false);
           return;
         }
-        localStorage.setItem('campus_connect_posts', JSON.stringify(existingPosts));
+        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); // Changed key
       }
 
       toast({
         title: "Post Updated Successfully",
         description: `"${postData.title}" has been updated.`,
+        duration: 3000,
       });
       router.push('/feed'); 
     } catch (error) {
@@ -80,6 +80,7 @@ export default function AdminEditPostPage() {
         title: "Error Updating Post",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setFormSubmitting(false);

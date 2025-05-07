@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react'; // Added useState
+import React, { useEffect, useState } from 'react'; 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -9,9 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-// This page is for faculty to view content relevant to them.
-// The main /feed page already handles filtering for faculty based on their assigned branches.
-// So, for simplicity, this page can redirect to /feed or embed a similar view.
 
 export default function FacultyViewContentPage() {
   const router = useRouter();
@@ -21,10 +18,6 @@ export default function FacultyViewContentPage() {
   useEffect(() => {
     if (!authLoading) {
       if (user && user.role === 'faculty') {
-        // Faculty will see their relevant posts on the main feed page.
-        // Redirecting there for a consistent experience.
-        // router.push('/feed'); 
-        // Or, if this page is meant to be a distinct faculty view:
         setPageLoading(false); 
       } else {
         router.push(user ? '/dashboard' : '/login');
@@ -57,8 +50,6 @@ export default function FacultyViewContentPage() {
     );
   }
 
-  // Faculty will view their content on the main /feed page.
-  // This page can serve as a placeholder or be developed for specific faculty content management features.
   return (
     <div className="container mx-auto px-4 py-8">
       <Card>
@@ -67,17 +58,16 @@ export default function FacultyViewContentPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground mb-4">
-            Relevant posts for your assigned branches are displayed on the main <Link href="/feed" className="text-primary hover:underline">Campus Feed</Link>.
+            Relevant posts for your assigned branches are displayed on the main <Link href="/feed" className="text-primary hover:underline">Activity Feed</Link>.
           </p>
           <p className="text-muted-foreground">
             You can also <Link href="/faculty/content/new" className="text-primary hover:underline">create new posts</Link> for your students.
           </p>
            <Link href="/feed">
-                <Button className="mt-4">View Campus Feed</Button>
+                <Button className="mt-4">View Activity Feed</Button>
             </Link>
         </CardContent>
       </Card>
     </div>
   );
 }
-

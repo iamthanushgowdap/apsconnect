@@ -45,7 +45,7 @@ export default function AdminCreatePostPage() {
       console.log("Files to 'upload':", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
-        const existingPostsStr = localStorage.getItem('campus_connect_posts');
+        const existingPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
         const existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
         const finalPostData = {...postData, likes: postData.likes || []};
@@ -56,7 +56,7 @@ export default function AdminCreatePostPage() {
         } else {
             existingPosts.push(finalPostData); 
         }
-        localStorage.setItem('campus_connect_posts', JSON.stringify(existingPosts));
+        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); // Changed key
       }
 
       toast({
@@ -65,7 +65,6 @@ export default function AdminCreatePostPage() {
           <NewPostToast
             authorName={postData.authorName}
             authorInitials={getInitials(postData.authorName)}
-            // authorImage: user?.avatarUrl, // If you have avatar URLs
             postCategory={postData.category}
             postTitle={postData.title}
             timestamp={postData.createdAt}
@@ -80,6 +79,7 @@ export default function AdminCreatePostPage() {
         title: "Error Creating Post",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setFormSubmitting(false);

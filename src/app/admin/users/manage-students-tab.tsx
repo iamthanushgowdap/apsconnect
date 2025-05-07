@@ -72,7 +72,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       let users: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('campus_connect_user_')) {
+        if (key && key.startsWith('apsconnect_user_')) { // Changed key
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (user.uid && user.usn) { 
@@ -121,7 +121,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     const usn = studentToProcess.usn;
 
     if (typeof window !== 'undefined' && actor) {
-      const userKey = `campus_connect_user_${usn}`;
+      const userKey = `apsconnect_user_${usn}`; // Changed key
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
         try {
@@ -151,6 +151,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           toast({
             title: 'Student Approved',
             description: `${user.displayName || user.usn} has been approved by ${user.approvedByDisplayName}.`,
+            duration: 3000,
           });
           fetchUsers(); 
         } catch (error) {
@@ -158,6 +159,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             title: 'Error Approving Student',
             description: 'Could not update student status.',
             variant: 'destructive',
+            duration: 3000,
           });
           console.error("Error approving student:", error);
         }
@@ -172,7 +174,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     const usn = studentToProcess.usn;
 
     if (typeof window !== 'undefined' && actor) {
-      const userKey = `campus_connect_user_${usn}`;
+      const userKey = `apsconnect_user_${usn}`; // Changed key
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
         try {
@@ -202,7 +204,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           toast({
             title: 'Student Rejected',
             description: `${user.displayName || user.usn} has been rejected. Reason: ${data.reason}`,
-            variant: "default" 
+            variant: "default",
+            duration: 3000,
           });
           fetchUsers();
         } catch (error) {
@@ -210,6 +213,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             title: 'Error Rejecting Student',
             description: 'Could not update student status.',
             variant: 'destructive',
+            duration: 3000,
           });
           console.error("Error rejecting student:", error);
         }
@@ -225,7 +229,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     const usn = studentToChangePassword.usn;
 
     if (typeof window !== 'undefined' && actor.role === 'admin') {
-      const userKey = `campus_connect_user_${usn}`;
+      const userKey = `apsconnect_user_${usn}`; // Changed key
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
         try {
@@ -235,12 +239,14 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           toast({
             title: "Password Changed",
             description: `Password for ${userProfile.displayName || usn} has been updated by admin.`,
+            duration: 3000,
           });
         } catch (error) {
           toast({
             title: 'Error Changing Password',
             description: 'Could not update student password.',
             variant: 'destructive',
+            duration: 3000,
           });
           console.error("Error changing student password by admin:", error);
         }
@@ -250,6 +256,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             title: 'Unauthorized',
             description: 'Only administrators can perform this action.',
             variant: 'destructive',
+            duration: 3000,
         });
     }
     setIsChangePasswordDialogVisible(false);
@@ -407,7 +414,6 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
                                         <MessageSquareWarning className="mr-2 h-4 w-4 text-destructive" />
                                         <span>Reason: {student.rejectionReason.substring(0,20)}{student.rejectionReason.length > 20 ? '...' : ''}</span>
-                                        {/* Full reason can be in a tooltip for the item or a separate view details dialog */}
                                     </DropdownMenuItem>
                                 )}
                                 {student.isApproved && (
@@ -431,7 +437,6 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </CardContent>
       </Card>
 
-      {/* Approve Confirmation Dialog */}
       <AlertDialog open={isApproveDialogVisible} onOpenChange={setIsApproveDialogVisible}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -447,7 +452,6 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reject Reason Dialog */}
       <Dialog open={isRejectDialogVisible} onOpenChange={(isOpen) => {
         setIsRejectDialogVisible(isOpen);
         if (!isOpen) {
@@ -491,7 +495,6 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Admin Change Student Password Dialog */}
       <Dialog open={isChangePasswordDialogVisible && actor.role === 'admin'} onOpenChange={(isOpen) => {
         setIsChangePasswordDialogVisible(isOpen);
         if (!isOpen) {
@@ -552,4 +555,3 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     </TooltipProvider>
   );
 }
-

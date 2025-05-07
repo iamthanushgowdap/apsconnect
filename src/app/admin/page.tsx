@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export default function AdminDashboardPage() {
           let currentFacultyCount = 0;
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('campus_connect_user_')) {
+            if (key && key.startsWith('apsconnect_user_')) { // Changed key
               try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
                 if (profile.role === 'student' && profile.isApproved) { 
@@ -60,7 +61,7 @@ export default function AdminDashboardPage() {
           setStudentCount(currentStudentCount);
           setFacultyCount(currentFacultyCount);
 
-          const postsStr = localStorage.getItem('campus_connect_posts');
+          const postsStr = localStorage.getItem('apsconnect_posts'); // Changed key
           const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           setContentPostsCount(posts.length);
         }
@@ -136,7 +137,7 @@ export default function AdminDashboardPage() {
     <div className="container mx-auto px-4 py-8 space-y-10">
       <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">Admin Dashboard</h1>
-        <p className="text-md sm:text-lg text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
+        <p className="text-md sm:text-lg text-muted-foreground">Manage APSConnect content, users, and settings.</p>
       </header>
 
       <Card className="shadow-xl rounded-xl border border-border/70">
@@ -189,6 +190,13 @@ export default function AdminDashboardPage() {
                 icon={<BarChart3 />}
                 link="/admin/branches" 
                 actionText="Manage Branches"
+            />
+             <StyledActionCard
+                title="Activity Feed"
+                description="View all posts on the platform."
+                icon={<Newspaper />}
+                link="/feed"
+                actionText="View Feed"
             />
             <StyledActionCard
                 title="Site Settings"

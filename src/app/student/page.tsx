@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -97,18 +98,18 @@ const StudentDashboardPage = () => {
         setStudentUser(authUser);
         
         if (typeof window !== 'undefined') {
-          const postsStr = localStorage.getItem('campus_connect_posts');
+          const postsStr = localStorage.getItem('apsconnect_posts'); // Changed key
           const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           
           let relevantPosts = allPosts;
           if (authUser.role === 'student' && authUser.branch) {
             const studentBranch = authUser.branch;
             relevantPosts = allPosts.filter(post => 
-              post.targetBranches.length === 0 || 
+              !post.targetBranches || post.targetBranches.length === 0 || 
               post.targetBranches.includes(studentBranch)
             );
           } else { 
-            relevantPosts = allPosts.filter(post => post.targetBranches.length === 0);
+            relevantPosts = allPosts.filter(post => !post.targetBranches || post.targetBranches.length === 0);
           }
 
           relevantPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime());
@@ -211,6 +212,7 @@ const StudentDashboardPage = () => {
             actionText="Manage Profile"
             disabled={isRejected}
           />
+          {/* Campus Feed card removed as requested */}
         </div>
       </section>
       

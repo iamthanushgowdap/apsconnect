@@ -87,7 +87,7 @@ export default function LoginPage() {
       let loggedInUser: User;
 
       if (mode === "admin") {
-        const adminProfileKey = `campus_connect_user_${ADMIN_EMAIL.toLowerCase()}`;
+        const adminProfileKey = `apsconnect_user_${ADMIN_EMAIL.toLowerCase()}`; // Changed key
         const adminProfileStr = typeof window !== 'undefined' ? localStorage.getItem(adminProfileKey) : null;
         let effectiveAdminPassword = ADMIN_PASSWORD;
         let adminDisplayName = "Admin User";
@@ -105,9 +105,6 @@ export default function LoginPage() {
         if (identifier.toLowerCase() === ADMIN_EMAIL && password === effectiveAdminPassword) {
           loggedInUser = await signIn({ 
             email: identifier.toLowerCase(), 
-            // Pass the entered password here, signIn for admin doesn't use it for auth, 
-            // but it's good practice to pass what user entered.
-            // The actual check `password === effectiveAdminPassword` is above.
             password: password, 
             role: "admin",
             displayName: adminDisplayName, 
@@ -118,6 +115,7 @@ export default function LoginPage() {
             title: "Login Failed",
             description: "Invalid admin credentials.",
             variant: "destructive",
+            duration: 3000,
           });
           setIsLoading(false);
           return;
@@ -128,16 +126,14 @@ export default function LoginPage() {
           password,
           role: "faculty",
         });
-        // displayName will be set by signIn from stored profile if available
         targetRoute = facultyUserHasPendingTasks(loggedInUser) ? "/faculty/user-management" : "/faculty";
       } else { // Student mode
         const usn = identifier.toUpperCase();
         loggedInUser = await signIn({ 
           usn: usn, 
           password, 
-          role: "student", // This role might be updated to 'pending' by signIn based on UserProfile
+          role: "student", 
         });
-         // displayName will be set by signIn from stored profile if available
          if (loggedInUser.role === 'pending' && loggedInUser.rejectionReason) {
             toast({
                 title: "Login Denied",
@@ -153,14 +149,13 @@ export default function LoginPage() {
                 description: "Your account is still pending approval. Please check back later.",
                 duration: 7000,
             });
-            // For pending (not rejected), we can let them proceed to dashboard to see this status more formally if needed
-            // or keep them on login with this toast. Assuming dashboard shows status.
          }
       }
 
       toast({
         title: "Login Successful",
         description: `Welcome back${loggedInUser.displayName ? `, ${loggedInUser.displayName}` : ''}!`,
+        duration: 3000,
       });
       router.push(targetRoute);
 
@@ -169,21 +164,20 @@ export default function LoginPage() {
         title: "Login Failed",
         description: error.message || "Invalid credentials or an unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsLoading(false);
     }
   }
 
-  // Helper function to determine if faculty has pending student approvals
-  // This is a mock; in a real app, this would involve a data fetch.
   const facultyUserHasPendingTasks = (facultyUser: User): boolean => {
     if (typeof window === 'undefined' || !facultyUser.assignedBranches || facultyUser.assignedBranches.length === 0) {
         return false;
     }
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('campus_connect_user_')) {
+        if (key && key.startsWith('apsconnect_user_')) { // Changed key
             try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
                 if (profile.role === 'pending' && 
@@ -191,7 +185,7 @@ export default function LoginPage() {
                     !profile.rejectionReason &&
                     profile.branch &&
                     facultyUser.assignedBranches.includes(profile.branch)) {
-                    return true; // Found a pending student for this faculty's branch
+                    return true; 
                 }
             } catch (e) { /* ignore parse errors */ }
         }
@@ -222,7 +216,7 @@ export default function LoginPage() {
     <div className="container flex min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)] items-center justify-center py-8 sm:py-12 px-4">
       <Card className="w-full max-w-sm sm:max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Login to CampusConnect</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Login to APSConnect</CardTitle>
           <CardDescription className="text-sm sm:text-base">Enter your credentials to access your account.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -314,4 +308,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

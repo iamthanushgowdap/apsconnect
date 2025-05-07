@@ -35,7 +35,7 @@ import { Loader2, PlusCircle, Trash2, Users, ShieldCheck, BarChart3, Search } fr
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 
-const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
 
 export default function BranchManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -68,7 +68,7 @@ export default function BranchManagementPage() {
       const profiles: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('campus_connect_user_')) {
+        if (key && key.startsWith('apsconnect_user_')) { // Changed key
           try {
             const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (profile.role === 'faculty') {
@@ -97,12 +97,12 @@ export default function BranchManagementPage() {
 
   const handleAddBranch = () => {
     if (!newBranchName.trim()) {
-      toast({ title: "Error", description: "Branch name cannot be empty.", variant: "destructive" });
+      toast({ title: "Error", description: "Branch name cannot be empty.", variant: "destructive", duration: 3000 });
       return;
     }
     const upperCaseBranchName = newBranchName.trim().toUpperCase();
     if (branches.map(b => b.toUpperCase()).includes(upperCaseBranchName)) {
-      toast({ title: "Error", description: `Branch "${upperCaseBranchName}" already exists.`, variant: "destructive" });
+      toast({ title: "Error", description: `Branch "${upperCaseBranchName}" already exists.`, variant: "destructive", duration: 3000 });
       return;
     }
 
@@ -111,7 +111,7 @@ export default function BranchManagementPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem(BRANCH_STORAGE_KEY, JSON.stringify(updatedBranches));
     }
-    toast({ title: "Success", description: `Branch "${upperCaseBranchName}" added successfully.` });
+    toast({ title: "Success", description: `Branch "${upperCaseBranchName}" added successfully.`, duration: 3000 });
     setNewBranchName('');
     setIsAddBranchDialogOpen(false);
   };
@@ -141,7 +141,7 @@ export default function BranchManagementPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem(BRANCH_STORAGE_KEY, JSON.stringify(updatedBranches));
     }
-    toast({ title: "Success", description: `Branch "${branchToDelete}" deleted successfully.` });
+    toast({ title: "Success", description: `Branch "${branchToDelete}" deleted successfully.`, duration: 3000 });
     setBranchToDelete(null);
   };
 

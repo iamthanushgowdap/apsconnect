@@ -35,7 +35,7 @@ import {
   FormDescription as ShadCnFormDescription,
 } from "@/components/ui/form";
 
-const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
 
 const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
@@ -107,7 +107,7 @@ export default function ManageFacultyTab() {
       const users: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('campus_connect_user_')) {
+        if (key && key.startsWith('apsconnect_user_')) { // Changed key
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (user.role === 'faculty') {
@@ -129,13 +129,14 @@ export default function ManageFacultyTab() {
 
   const handleFormSubmit = (data: FacultyFormValues) => {
     if (typeof window !== 'undefined') {
-      const facultyUserKey = `campus_connect_user_${data.email.toLowerCase()}`;
+      const facultyUserKey = `apsconnect_user_${data.email.toLowerCase()}`; // Changed key
       
       if (!editingFaculty && localStorage.getItem(facultyUserKey)) {
         toast({
           title: "Error",
           description: "A faculty member with this email already exists.",
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
@@ -164,6 +165,7 @@ export default function ManageFacultyTab() {
       toast({
         title: editingFaculty ? "Faculty Updated" : "Faculty Created",
         description: `${data.displayName} has been successfully ${editingFaculty ? 'updated' : 'added'}.`,
+        duration: 3000,
       });
       fetchFaculty();
       setIsFormOpen(false);
@@ -196,7 +198,7 @@ export default function ManageFacultyTab() {
      if (typeof window !== 'undefined') {
         const confirmed = window.confirm("Are you sure you want to delete this faculty member? This action cannot be undone.");
         if (confirmed) {
-            localStorage.removeItem(`campus_connect_user_${email.toLowerCase()}`);
+            localStorage.removeItem(`apsconnect_user_${email.toLowerCase()}`); // Changed key
             const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr);
@@ -207,6 +209,7 @@ export default function ManageFacultyTab() {
             toast({
                 title: "Faculty Deleted",
                 description: `Faculty member with email ${email} has been deleted.`,
+                duration: 3000,
             });
             fetchFaculty();
         }
@@ -445,4 +448,3 @@ export default function ManageFacultyTab() {
     </div>
   );
 }
-

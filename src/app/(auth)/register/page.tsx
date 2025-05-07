@@ -33,7 +33,7 @@ import { defaultBranches } from "@/types";
 
 
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
-const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -112,10 +112,11 @@ export default function RegisterPage() {
             branch: data.branch, 
             registrationDate: new Date().toISOString(),
             isApproved: false,
+            password: data.password, // Storing password in profile
         };
-        localStorage.setItem(`campus_connect_user_${fullUsn}`, JSON.stringify(userProfileData));
+        localStorage.setItem(`apsconnect_user_${fullUsn}`, JSON.stringify(userProfileData)); // Changed key
         
-        localStorage.setItem('mockUser', JSON.stringify({
+        localStorage.setItem('mockUser', JSON.stringify({ // This mockUser might need to be apsconnect_mockUser
             uid: fullUsn,
             displayName: data.displayName,
             email: data.email,
@@ -128,6 +129,7 @@ export default function RegisterPage() {
       toast({
         title: "Registration Submitted",
         description: "Your registration is pending admin approval. You will be notified once approved.",
+        duration: 3000,
       });
       router.push("/dashboard"); 
     } catch (error: any) {
@@ -135,6 +137,7 @@ export default function RegisterPage() {
         title: "Registration Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsLoading(false);
@@ -146,7 +149,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm sm:max-w-lg shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Create an Account</CardTitle>
-          <ShadCnCardDescription className="text-sm sm:text-base">Join CampusConnect to stay updated with college activities.</ShadCnCardDescription>
+          <ShadCnCardDescription className="text-sm sm:text-base">Join APSConnect to stay updated with college activities.</ShadCnCardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -291,4 +294,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

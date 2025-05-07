@@ -29,7 +29,7 @@ const ALLOWED_FILE_TYPES = [
   'text/plain',
   'video/mp4', 'video/webm', 'video/ogg'
 ];
-const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
 
 const postFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(150, "Title cannot exceed 150 characters."),
@@ -78,7 +78,7 @@ export function CreatePostForm({
   isLoading,
   submitButtonText = initialData ? 'Update Post' : 'Create Post',
   formTitle = initialData ? 'Edit Post' : 'Create New Post',
-  formDescription = initialData ? 'Update the details of the post.' : 'Fill in the details to create a new post for the campus community.',
+  formDescription = initialData ? 'Update the details of the post.' : 'Fill in the details to create a new post for the APS community.',
 }: CreatePostFormProps) {
   const { toast } = useToast();
   const { user } = useAuth(); 
@@ -91,7 +91,7 @@ export function CreatePostForm({
       title: initialData?.title || "",
       content: initialData?.content || "",
       category: initialData?.category || postCategories[0],
-      targetAllBranches: initialData ? initialData.targetBranches.length === 0 : true,
+      targetAllBranches: initialData ? (!initialData.targetBranches || initialData.targetBranches.length === 0) : true,
       targetBranches: initialData?.targetBranches || [],
       attachments: undefined,
     },
@@ -134,25 +134,24 @@ export function CreatePostForm({
       const newFilesTotalSize = newFilesArray.reduce((acc, file) => acc + file.size, 0);
 
       if (currentTotalSize + newFilesTotalSize > MAX_TOTAL_SIZE) {
-        toast({ title: "File Limit Exceeded", description: `Total attachment size cannot exceed ${MAX_TOTAL_SIZE / (1024*1024)}MB.`, variant: "destructive" });
+        toast({ title: "File Limit Exceeded", description: `Total attachment size cannot exceed ${MAX_TOTAL_SIZE / (1024*1024)}MB.`, variant: "destructive", duration: 3000 });
         form.setValue('attachments', undefined); 
         event.target.value = ""; 
         return;
       }
       if (newFilesArray.some(file => file.size > MAX_FILE_SIZE)) {
-        toast({ title: "File Too Large", description: `One or more files exceed the ${MAX_FILE_SIZE / (1024*1024)}MB limit.`, variant: "destructive" });
+        toast({ title: "File Too Large", description: `One or more files exceed the ${MAX_FILE_SIZE / (1024*1024)}MB limit.`, variant: "destructive", duration: 3000 });
         form.setValue('attachments', undefined);
          event.target.value = "";
         return;
       }
        if (newFilesArray.some(file => !ALLOWED_FILE_TYPES.includes(file.type))) {
-        toast({ title: "Invalid File Type", description: `One or more files have an unsupported type.`, variant: "destructive" });
+        toast({ title: "Invalid File Type", description: `One or more files have an unsupported type.`, variant: "destructive", duration: 3000 });
         form.setValue('attachments', undefined);
          event.target.value = "";
         return;
       }
       setSelectedFiles(prev => [...prev, ...newFilesArray]); 
-      // Update form value with the new FileList
       const dataTransfer = new DataTransfer();
       selectedFiles.forEach(file => dataTransfer.items.add(file));
       newFilesArray.forEach(file => dataTransfer.items.add(file));
@@ -176,11 +175,11 @@ export function CreatePostForm({
 
   const onSubmit = async (data: PostFormValues) => {
     if (!user || (user.role !== 'admin' && user.role !== 'faculty')) {
-      toast({ title: "Unauthorized", description: "You are not authorized to create posts.", variant: "destructive" });
+      toast({ title: "Unauthorized", description: "You are not authorized to create posts.", variant: "destructive", duration: 3000 });
       return;
     }
 
-    const filesToUpload: File[] = selectedFiles; // Use state for selected files
+    const filesToUpload: File[] = selectedFiles; 
     const newAttachments: PostAttachment[] = filesToUpload.map(file => ({
       name: file.name,
       type: file.type,
@@ -188,14 +187,7 @@ export function CreatePostForm({
     }));
     
     let finalAttachments = newAttachments;
-    // If editing, handle existing attachments that were not removed.
-    // This logic might need refinement if initialData.attachments has different structure
-    // or if some initial files were kept and new ones added.
-    // For simplicity, current approach assumes selectedFiles is the final list.
     if (initialData?.id) {
-        // A more robust approach would be to compare selectedFiles with initialData.attachments
-        // and decide which ones are new, kept, or removed.
-        // For now, we just use what's in selectedFiles for the final post.
         finalAttachments = selectedFiles.map(file => ({
              name: file.name,
              type: file.type,
@@ -212,10 +204,11 @@ export function CreatePostForm({
       targetBranches: data.targetAllBranches ? [] : data.targetBranches || [], 
       attachments: finalAttachments,
       authorId: user.uid,
-      authorName: user.displayName || user.email || "CampusConnect User",
+      authorName: user.displayName || user.email || "APSConnect User",
       authorRole: user.role,
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      likes: initialData?.likes || [],
     };
     await onFormSubmit(postData, filesToUpload);
   };
@@ -347,13 +340,7 @@ export function CreatePostForm({
                                 className="sr-only" 
                                 onChange={(e) => {
                                     handleFileChange(e); 
-                                    // RHF still needs the FileList from the input
-                                    // The handleFileChange updates the `selectedFiles` state
-                                    // It's important that RHF's `onChange` is also called with the native FileList
-                                    // or ensure that the `selectedFiles` state is correctly transformed for submission.
-                                    // If `handleFileChange` sets RHF's value: `form.setValue('attachments', e.target.files, { shouldValidate: true });`
-                                    // Then `onChange` passed by RHF to this input can be omitted here OR handleFileChange needs to call it.
-                                    // For simplicity, we let handleFileChange also manage RHF's value as shown in `handleFileChange`
+                                    onChange(e.target.files); // Ensure RHF's onChange is called
                                 }}
                                 {...restField} 
                             />
@@ -396,4 +383,3 @@ export function CreatePostForm({
     </Card>
   );
 }
-

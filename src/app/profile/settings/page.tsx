@@ -25,7 +25,6 @@ import type { UserProfile } from '@/types';
 import { Loader2, ShieldCheck, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 
-// This constant is needed if we're dealing with the special hardcoded admin
 const ADMIN_EMAIL_CONST = "admin@gmail.com"; 
 const ADMIN_PASSWORD_CONST = "admin123";
 
@@ -51,12 +50,11 @@ const profileSchema = z.object({
       path: ["confirmNewPassword"],
     });
   }
-  // User must attempt to change at least one thing
   if (!data.displayName && !data.newPassword) {
     ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Please provide a new display name or set a new password to update.",
-        path: ["displayName"], // Or a general error for the form
+        path: ["displayName"], 
     });
   }
 });
@@ -93,11 +91,11 @@ export default function ProfileSettingsPage() {
 
   async function onSubmit(data: ProfileFormValues) {
     if (!authUser) {
-        toast({ title: "Error", description: "You are not logged in.", variant: "destructive" });
+        toast({ title: "Error", description: "You are not logged in.", variant: "destructive", duration: 3000 });
         return;
     }
     if (!data.displayName && !data.newPassword) {
-        toast({ title: "No Changes", description: "Please enter a new display name or password to update.", variant: "destructive"});
+        toast({ title: "No Changes", description: "Please enter a new display name or password to update.", variant: "destructive", duration: 3000});
         form.setError("displayName", {message: "Please provide a new display name or set a new password to update."});
         return;
     }
@@ -105,14 +103,14 @@ export default function ProfileSettingsPage() {
     setFormSubmitting(true);
 
     try {
-      const userProfileKey = `campus_connect_user_${authUser.uid}`;
+      const userProfileKey = `apsconnect_user_${authUser.uid}`; // Changed key
       const userProfileStr = typeof window !== 'undefined' ? localStorage.getItem(userProfileKey) : null;
       let userProfile: UserProfile | null = userProfileStr ? JSON.parse(userProfileStr) : null;
 
       let currentPasswordMatches = false;
-      if (data.newPassword) { // Password change attempt
+      if (data.newPassword) { 
         if (!data.currentPassword) {
-            toast({ title: "Error", description: "Current password is required to change password.", variant: "destructive"});
+            toast({ title: "Error", description: "Current password is required to change password.", variant: "destructive", duration: 3000});
             setFormSubmitting(false);
             return;
         }
@@ -123,15 +121,13 @@ export default function ProfileSettingsPage() {
         }
 
         if (!currentPasswordMatches) {
-          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant: "destructive" });
+          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant: "destructive", duration: 3000 });
           form.setError("currentPassword", { message: "Incorrect current password." });
           setFormSubmitting(false);
           return;
         }
       }
 
-
-      // Initialize profile if it doesn't exist (especially for the hardcoded admin first time editing)
       if (!userProfile) {
         if (authUser.uid === ADMIN_EMAIL_CONST) {
             userProfile = {
@@ -143,8 +139,7 @@ export default function ProfileSettingsPage() {
                 registrationDate: new Date().toISOString(),
             };
         } else {
-            // This case should ideally not happen for non-admin users if they logged in via profile
-            toast({ title: "Profile Error", description: "User profile not found.", variant: "destructive"});
+            toast({ title: "Profile Error", description: "User profile not found.", variant: "destructive", duration: 3000});
             setFormSubmitting(false);
             return;
         }
@@ -155,13 +150,13 @@ export default function ProfileSettingsPage() {
         userProfile.displayName = data.displayName;
         changesMade = true;
       }
-      if (data.newPassword && currentPasswordMatches) { // currentPasswordMatches ensure this block only runs if pass change is valid
+      if (data.newPassword && currentPasswordMatches) { 
         userProfile.password = data.newPassword;
         changesMade = true;
       }
 
       if (!changesMade && (!data.displayName || data.displayName === authUser.displayName) && !data.newPassword) {
-        toast({ title: "No Changes Detected", description: "Your profile information is already up to date." });
+        toast({ title: "No Changes Detected", description: "Your profile information is already up to date.", duration: 3000 });
         setFormSubmitting(false);
         return;
       }
@@ -169,21 +164,19 @@ export default function ProfileSettingsPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem(userProfileKey, JSON.stringify(userProfile));
 
-        // Update mockUser in localStorage for AuthProvider to pick up on next load/refresh
         const updatedMockUser: User = {
           ...authUser,
           displayName: userProfile.displayName || authUser.displayName,
-          // Password is not directly in mockUser for security but is in UserProfile
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedMockUser));
         
-        // Update context immediately
         updateUserContext(updatedMockUser);
       }
 
       toast({
         title: "Profile Updated",
         description: "Your profile details have been successfully updated.",
+        duration: 3000,
       });
       form.reset({ 
         displayName: userProfile.displayName, 
@@ -197,6 +190,7 @@ export default function ProfileSettingsPage() {
         title: "Update Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setFormSubmitting(false);
@@ -212,7 +206,6 @@ export default function ProfileSettingsPage() {
   }
 
   if (!authUser) {
-    // This should be caught by useEffect redirect, but as a fallback
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">

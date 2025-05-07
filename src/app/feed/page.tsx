@@ -5,8 +5,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, User } from '@/components/auth-provider';
-import type { Post, PostAttachment, PostCategory } from '@/types'; // Added PostCategory
-import { postCategories } from '@/types'; // Import postCategories
+import type { Post, PostAttachment, PostCategory } from '@/types'; 
+import { postCategories } from '@/types'; 
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +48,6 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
 
   const handleDownload = (attachment: PostAttachment) => {
     toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}...`, duration: 3000 });
-    // This is a mock download. In a real app, you'd use the file URL.
     const blob = new Blob(["Mock file content for " + attachment.name], { type: attachment.type });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -88,48 +87,48 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
     }
   };
 
-  const getPostIcon = (category: Post['category']) => {
+  const getPostIconColor = (category: Post['category']) => {
     switch(category) {
-      case 'event': return <CalendarDays className="inline h-3 w-3 mr-1 text-indigo-500 dark:text-indigo-400" />;
-      case 'news': return <Newspaper className="inline h-3 w-3 mr-1 text-green-500 dark:text-green-400" />;
-      case 'link': return <Paperclip className="inline h-3 w-3 mr-1 text-yellow-500 dark:text-yellow-400" />;
-      case 'note': return <BookOpen className="inline h-3 w-3 mr-1 text-purple-500 dark:text-purple-400" />;
-      case 'schedule': return <CalendarDays className="inline h-3 w-3 mr-1 text-teal-500 dark:text-teal-400" />;
-      default: return <FileText className="inline h-3 w-3 mr-1 text-gray-500 dark:text-gray-400" />;
+      case 'event': return "text-indigo-500 dark:text-indigo-400";
+      case 'news': return "text-green-500 dark:text-green-400";
+      case 'link': return "text-yellow-500 dark:text-yellow-400";
+      case 'note': return "text-purple-500 dark:text-purple-400";
+      case 'schedule': return "text-teal-500 dark:text-teal-400";
+      default: return "text-gray-500 dark:text-gray-400";
     }
   }
 
   return (
-    <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 dark:focus:ring-gray-700" tabIndex={0}>
+    <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 dark:focus:ring-gray-700 bg-card rounded-lg shadow-sm p-4" tabIndex={0}>
       <div className="relative flex items-start">
         <Avatar className="h-10 w-10 shrink-0">
            <AvatarImage src={`https://picsum.photos/seed/${post.authorId}/40/40`} alt={post.authorName || 'Author Avatar'} data-ai-hint="person avatar"/>
           <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
         </Avatar>
-        <div className="ml-4 flex flex-col sm:w-96">
-          <p className="mb-1 font-medium text-gray-700 dark:text-gray-200">{post.authorName} ({post.authorRole})</p>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {getPostIcon(post.category)}
-            <span className="mr-1 font-medium text-primary dark:text-primary-foreground">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}:</span>
-            <span className="line-clamp-2">{post.title}</span>
+        <div className="ml-4 flex flex-col flex-grow"> {/* Added flex-grow */}
+          <p className="mb-1 font-medium text-foreground ">{post.authorName} ({post.authorRole})</p>
+          <div className="text-sm text-muted-foreground">
+            <IconComponent className={`inline h-4 w-4 mr-1.5 ${getPostIconColor(post.category)}`} />
+            <span className="mr-1 font-semibold text-primary">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}:</span>
+            <span className="line-clamp-2 font-medium text-foreground">{post.title}</span>
           </div>
-          <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          <div className="mt-1 text-xs text-muted-foreground">
             {post.targetBranches && post.targetBranches.length > 0 ? (
                 <><MapPin className="inline h-3 w-3 mr-1" /> For: {post.targetBranches.join(', ')}</>
             ) : (
                 <><Users className="inline h-3 w-3 mr-1" /> For: All Branches</>
             )}
           </div>
-           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap line-clamp-3">{post.content}</p>
+           <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">{post.content}</p>
 
           {post.attachments && post.attachments.length > 0 && (
-            <div className="mt-3 rounded-xl bg-blue-50 dark:bg-gray-700 p-3">
-              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Attachments:</h4>
+            <div className="mt-3 rounded-lg bg-muted/50 p-3">
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Attachments:</h4>
               {post.attachments.map((att, index) => (
-                <div key={index} className="flex items-center text-xs text-gray-700 dark:text-gray-300 mb-1">
-                  <Paperclip className="h-3.5 w-3.5 mr-1.5 text-blue-500 dark:text-blue-400 shrink-0" />
+                <div key={index} className="flex items-center text-xs text-foreground mb-1">
+                  <Paperclip className="h-3.5 w-3.5 mr-1.5 text-primary shrink-0" />
                   <span className="truncate flex-grow pr-2">{att.name} ({(att.size / (1024*1024)).toFixed(2)} MB)</span>
-                  <Button variant="link" size="sm" onClick={() => handleDownload(att)} className="p-0 h-auto text-blue-600 dark:text-blue-400 hover:underline">
+                  <Button variant="link" size="sm" onClick={() => handleDownload(att)} className="p-0 h-auto text-primary hover:underline">
                     <Download className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -138,11 +137,11 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
           )}
         </div>
         <div className="absolute top-0 right-0 flex items-center space-x-1">
-             <span className="text-xs text-gray-400 dark:text-gray-500">{formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}</span>
+             <span className="text-xs text-muted-foreground">{formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}</span>
             {(canEdit || canDelete) && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 p-1 text-muted-foreground hover:text-foreground">
                             <Settings className="h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -155,11 +154,11 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
         </div>
       </div>
        <div className="mt-3 flex items-center justify-start space-x-2 pl-14">
-            <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="text-gray-500 dark:text-gray-400 hover:text-red-500 group px-2 py-1 h-auto">
+            <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="text-muted-foreground hover:text-red-500 group px-2 py-1 h-auto">
                 <Heart className={`h-4 w-4 mr-1 transition-colors ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
                 <span className="text-xs">{post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}</span>
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-green-500 group px-2 py-1 h-auto">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-green-500 group px-2 py-1 h-auto">
                 <Share2 className="h-4 w-4 mr-1" />
                 <span className="text-xs">Share</span>
             </Button>
@@ -176,13 +175,13 @@ export default function FeedPage() {
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [deleteTargetPostId, setDeleteTargetPostId] = useState<string | null>(null);
   const { toast } = useToast();
-  const [activeFilters, setActiveFilters] = useState<PostCategory[]>(postCategories); // Default to all categories
+  const [activeFilters, setActiveFilters] = useState<PostCategory[]>(postCategories); 
 
   const markPostsAsSeen = useCallback(() => {
     if (!user || posts.length === 0) return;
 
     const viewablePostIds = posts.map(p => p.id);
-    const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
+    const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; // Changed key
     let seenPostIds: string[] = [];
     
     if (typeof window !== 'undefined') {
@@ -201,11 +200,10 @@ export default function FeedPage() {
   const fetchAndFilterPosts = useCallback(() => {
     setIsLoadingPosts(true);
     if (typeof window !== 'undefined') {
-      const storedPostsStr = localStorage.getItem('campus_connect_posts');
+      const storedPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
       let fetchedAllPosts: Post[] = storedPostsStr ? JSON.parse(storedPostsStr) : [];
-      setAllStoredPosts(fetchedAllPosts); // Store all posts before any filtering
+      setAllStoredPosts(fetchedAllPosts); 
 
-      // User-based branch filtering
       let userFilteredPosts = [...fetchedAllPosts];
       if (user) {
         if (user.role === 'student' && user.branch) {
@@ -221,15 +219,12 @@ export default function FeedPage() {
             facultyBranches.some(branch => post.targetBranches.includes(branch)) 
           );
         } 
-        // Admins see all posts, no branch filtering applied here for them.
       } else {
-        // Non-logged in users see only posts targeted to 'All Branches'
         userFilteredPosts = fetchedAllPosts.filter(post => !post.targetBranches || post.targetBranches.length === 0);
       }
 
-      // Category-based filtering
       const categoryFilteredPosts = activeFilters.length === 0 || activeFilters.length === postCategories.length
-        ? userFilteredPosts // If no filters or all filters active, show all user-filtered posts
+        ? userFilteredPosts 
         : userFilteredPosts.filter(post => activeFilters.includes(post.category));
       
       setPosts(categoryFilteredPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime()));
@@ -240,7 +235,7 @@ export default function FeedPage() {
 
   useEffect(() => {
     fetchAndFilterPosts();
-  }, [fetchAndFilterPosts]); // fetchAndFilterPosts includes user and activeFilters as dependencies
+  }, [fetchAndFilterPosts]); 
 
   useEffect(() => {
     if (posts.length > 0 && user) {
@@ -265,12 +260,12 @@ export default function FeedPage() {
           const updatedPost = { ...p, likes: newLikes };
 
           if (typeof window !== 'undefined') {
-            const allPostsStr = localStorage.getItem('campus_connect_posts');
+            const allPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
             let allPostsStored: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
             const postIndex = allPostsStored.findIndex(storedPost => storedPost.id === postId);
             if (postIndex > -1) {
               allPostsStored[postIndex] = updatedPost;
-              localStorage.setItem('campus_connect_posts', JSON.stringify(allPostsStored));
+              localStorage.setItem('apsconnect_posts', JSON.stringify(allPostsStored)); // Changed key
             }
           }
           return updatedPost;
@@ -297,10 +292,10 @@ export default function FeedPage() {
     }
 
     if (typeof window !== 'undefined') {
-        let allPostsStr = localStorage.getItem('campus_connect_posts');
+        let allPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
         let allPostsStored: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
         allPostsStored = allPostsStored.filter(p => p.id !== deleteTargetPostId);
-        localStorage.setItem('campus_connect_posts', JSON.stringify(allPostsStored));
+        localStorage.setItem('apsconnect_posts', JSON.stringify(allPostsStored)); // Changed key
         
         setPosts(prevPosts => prevPosts.filter(p => p.id !== deleteTargetPostId));
         toast({title: "Post Deleted", description: `"${postToDelete.title}" has been deleted.`, duration: 3000});
@@ -313,9 +308,6 @@ export default function FeedPage() {
       const newFilters = prevFilters.includes(category)
         ? prevFilters.filter(c => c !== category)
         : [...prevFilters, category];
-      
-      // If no filters are selected, default to showing all (by effectively selecting all)
-      // Or handle this in the filtering logic directly (if newFilters.length === 0, show all)
       return newFilters;
     });
   };
@@ -325,7 +317,6 @@ export default function FeedPage() {
   };
 
   const handleClearAllFilters = () => {
-    // Setting to empty array will mean "show all" posts due to filter logic.
     setActiveFilters([]);
   };
 
@@ -340,12 +331,12 @@ export default function FeedPage() {
   
   return (
     <div className="container mx-auto px-2 sm:px-4 py-8">
-       <div className="mx-auto my-6 max-w-2xl rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-8 shadow-lg dark:bg-gray-800">
-        <div className="mb-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-3">
-            <p className="text-xl font-bold text-gray-700 dark:text-gray-200">Activity feed</p>
+       <div className="mx-auto my-6 max-w-2xl rounded-xl border border-border/50 bg-card px-4 py-8 shadow-lg dark:bg-gray-800">
+        <div className="mb-4 flex justify-between items-center border-b border-border/50 pb-3">
+            <p className="text-xl font-bold text-foreground">Activity feed</p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-sm font-medium text-primary dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500">
+                <Button variant="ghost" size="sm" className="text-sm font-medium text-primary focus:outline-none focus:ring-1 focus:ring-primary">
                   <Filter className="mr-2 h-4 w-4" /> Filter Categories
                 </Button>
               </DropdownMenuTrigger>
@@ -374,9 +365,9 @@ export default function FeedPage() {
         </div>
         {posts.length === 0 ? (
              <div className="text-center py-12">
-                <FileText className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
-                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">No Posts Yet</h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">
+                <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold text-foreground">No Posts Yet</h2>
+                <p className="text-muted-foreground mt-1">
                 {activeFilters.length > 0 && activeFilters.length < postCategories.length ? "No posts match your current filters." :
                  user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
                 </p>
@@ -387,7 +378,7 @@ export default function FeedPage() {
                 )}
             </div>
         ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="divide-y divide-border/50">
             {posts.map(post => (
                 <PostItem 
                 key={post.id} 
@@ -420,4 +411,3 @@ export default function FeedPage() {
     </div>
   );
 }
-

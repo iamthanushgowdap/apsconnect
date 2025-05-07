@@ -32,13 +32,12 @@ export default function FacultyEditPostPage() {
         return;
       }
       if (postId && typeof window !== 'undefined') {
-        const postsStr = localStorage.getItem('campus_connect_posts');
+        const postsStr = localStorage.getItem('apsconnect_posts'); // Changed key
         const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
         const postToEdit = allPosts.find(p => p.id === postId);
 
         if (postToEdit) {
           if (postToEdit.authorId !== user.uid) {
-            // Faculty trying to edit a post not authored by them (admin can use admin edit page)
             setErrorLoadingPost("Access Denied: You can only edit your own posts.");
             setInitialPostData(null);
           } else {
@@ -56,7 +55,7 @@ export default function FacultyEditPostPage() {
 
   const handleFormSubmit = async (postData: Post, attachmentsToUpload: File[]) => {
     if (!user || !initialPostData || initialPostData.authorId !== user.uid) {
-        toast({ title: "Unauthorized", description: "You cannot edit this post.", variant: "destructive" });
+        toast({ title: "Unauthorized", description: "You cannot edit this post.", variant: "destructive", duration: 3000 });
         return;
     }
     setFormSubmitting(true);
@@ -65,23 +64,24 @@ export default function FacultyEditPostPage() {
       console.log("Files to 'upload' (Faculty):", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
-        const existingPostsStr = localStorage.getItem('campus_connect_posts');
+        const existingPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
         let existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
         const postIndex = existingPosts.findIndex(p => p.id === postData.id);
         if (postIndex > -1) {
           existingPosts[postIndex] = {...postData, updatedAt: new Date().toISOString(), likes: postData.likes || [] };
         } else {
-          toast({ title: "Error", description: "Original post not found for update.", variant: "destructive" });
+          toast({ title: "Error", description: "Original post not found for update.", variant: "destructive", duration: 3000 });
           setFormSubmitting(false);
           return;
         }
-        localStorage.setItem('campus_connect_posts', JSON.stringify(existingPosts));
+        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); // Changed key
       }
 
       toast({
         title: "Post Updated Successfully",
         description: `"${postData.title}" has been updated.`,
+        duration: 3000,
       });
       router.push('/feed'); 
     } catch (error) {
@@ -90,6 +90,7 @@ export default function FacultyEditPostPage() {
         title: "Error Updating Post",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setFormSubmitting(false);
@@ -105,7 +106,6 @@ export default function FacultyEditPostPage() {
   }
 
   if (!user || user.role !== 'faculty') {
-    // This case should ideally be caught by the useEffect redirect
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">

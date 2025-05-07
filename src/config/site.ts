@@ -1,6 +1,7 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, LogIn, UserPlus } from 'lucide-react'; // Import icons
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, LogIn, UserPlus } from 'lucide-react';
+import React from 'react'; // Added for React.createElement
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
 export type NavItem = {
@@ -29,44 +30,44 @@ export type SiteConfig = {
   LATEST_APP_VERSION: string;
 };
 
-export const SiteConfig: SiteConfig = {
-  name: "CampusConnect",
-  description: "A modern platform for college communication and engagement.",
-  url: "https://campusconnect.example.com", 
-  ogImage: "https://campusconnect.example.com/og.jpg", 
-  LATEST_APP_VERSION: "1.0.1", // Used for app update notifications
+export const SiteConfigData: SiteConfig = {
+  name: "APSConnect",
+  description: "A modern platform for college communication and engagement for APS.",
+  url: "https://apsconnect.example.com", 
+  ogImage: "https://apsconnect.example.com/og.jpg", 
+  LATEST_APP_VERSION: "1.0.2", // Used for app update notifications, incremented version
   mainNav: [
     {
       title: "Home",
       href: "/",
       icon: Home,
     },
-    // {
-    //   title: "Campus Feed",
-    //   href: "/feed",
-    //   protected: true, // Visible to all logged-in users
-    //   icon: Newspaper,
-    // },
+    {
+      title: "Activity Feed",
+      href: "/feed",
+      protected: true, 
+      icon: Newspaper,
+    },
     {
       title: "Admin Dashboard",
       href: "/admin",
       protected: true,
       adminOnly: true,
-      icon: Settings, // Changed from LayoutDashboard to Settings for Admin
+      icon: Settings, 
     },
     {
       title: "Faculty Dashboard", 
       href: "/faculty", 
       protected: true,
       facultyOnly: true, 
-      icon: UserCircle, // Icon for faculty
+      icon: UserCircle, 
     },
     {
       title: "Student Dashboard",
       href: "/student",
       protected: true,
       studentOnly: true, 
-      icon: LayoutDashboard, // Icon for student
+      icon: LayoutDashboard, 
     },
     {
       title: "Login",
@@ -85,11 +86,11 @@ export const SiteConfig: SiteConfig = {
   footerNav: [
     {
       title: "Privacy Policy",
-      href: "/privacy", // These should ideally be actual pages
+      href: "/privacy", 
     },
     {
       title: "Terms of Service",
-      href: "/terms", // These should ideally be actual pages
+      href: "/terms", 
     },
   ],
    adminSidebarNav: [
@@ -110,4 +111,35 @@ export const SiteConfig: SiteConfig = {
     { title: "Dashboard", href: "/student", icon: LayoutDashboard },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
+};
+
+// Export SiteConfigData as SiteConfig for compatibility if other parts of the app expect SiteConfig
+export { SiteConfigData as SiteConfig };
+
+
+// Placeholder pages for footer links - can be expanded later
+export const PrivacyPolicyPage = (): React.ReactElement => {
+  return React.createElement(
+    'div',
+    { className: "container mx-auto px-4 py-8" },
+    React.createElement('h1', { className: "text-3xl font-bold mb-4" }, 'Privacy Policy'),
+    React.createElement(
+      'p',
+      null,
+      'Details about how user data is handled will go here. This is a placeholder for APSConnect.'
+    )
+  );
+};
+
+export const TermsOfServicePage = (): React.ReactElement => {
+  return React.createElement(
+    'div',
+    { className: "container mx-auto px-4 py-8" },
+    React.createElement('h1', { className: "text-3xl font-bold mb-4" }, 'Terms of Service'),
+    React.createElement(
+      'p',
+      null,
+      'The terms and conditions for using APSConnect will be detailed here. This is a placeholder.'
+    )
+  );
 };

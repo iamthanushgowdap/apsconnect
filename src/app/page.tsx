@@ -1,3 +1,4 @@
+
 "use client"; 
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export default function Home() {
 
       <section className="mt-12 md:mt-16 lg:mt-24">
         <div className="text-center mb-10 md:mb-12">
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Why CampusConnect?</h2>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Why {SiteConfig.name}?</h2>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground">Discover the features that make college life easier.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -89,7 +90,7 @@ export default function Home() {
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Join Your Community</h2>
             <p className="mt-3 sm:mt-4 max-w-md sm:max-w-xl mx-auto text-sm sm:text-base text-muted-foreground">
                 Connect with students from your branch, share information, and collaborate on projects.
-                CampusConnect fosters a supportive and interactive environment.
+                {SiteConfig.name} fosters a supportive and interactive environment.
             </p>
         </div>
       </section>
