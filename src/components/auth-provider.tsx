@@ -12,6 +12,7 @@ export interface User {
   branch?: Branch; // For students: their branch. For faculty: their primary/first assigned branch for display.
   usn?: string; 
   assignedBranches?: Branch[]; // For faculty, to know all their branches
+  rejectionReason?: string; // Added to show rejection reason to the user
 }
 
 interface AuthContextType {
@@ -95,6 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
        let studentBranch: Branch | undefined = credentials.branch;
        let isApproved = false;
        let currentRole: UserRole = 'pending';
+       let rejectionReason: string | undefined = undefined;
 
 
        if(registeredUserDataStr){
@@ -103,6 +105,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          studentDisplayName = registeredUserData.displayName || defaultDisplayName;
          isApproved = registeredUserData.isApproved;
          currentRole = registeredUserData.role; // Use current role from storage
+         if (!isApproved && registeredUserData.rejectionReason) {
+            rejectionReason = registeredUserData.rejectionReason;
+         }
+
 
          if(!studentBranch && credentials.usn.length >= 7) { // Derive branch if not explicitly passed
             const branchCode = credentials.usn.substring(5,7).toUpperCase() as Branch; 
@@ -125,7 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email: studentEmail, 
         displayName: studentDisplayName,
         role: currentRole, // Role will be 'pending' or 'student' based on stored profile
-        branch: studentBranch, 
+        branch: studentBranch,
+        rejectionReason, // Populate rejectionReason if present
       };
     } else {
       setIsLoading(false);

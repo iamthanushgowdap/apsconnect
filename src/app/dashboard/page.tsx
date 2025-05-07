@@ -17,21 +17,16 @@ import {
   LayoutGrid,
   CheckSquare,
   UserCircle,
-  Briefcase // Icon for faculty
+  Briefcase, // Icon for faculty
+  MessageSquareWarning, // Icon for rejection message
+  Info, // Icon for pending message
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/components/auth-provider";
-
-interface MockUserFromAuth { 
-  displayName: string | null;
-  email: string | null;
-  role: 'student' | 'admin' | 'pending' | 'faculty'; // Added faculty
-  branch?: string;
-  usn?: string;
-}
+import type { User } from "@/components/auth-provider"; // Explicitly import User type
 
 interface MockPost {
   id: string;
@@ -53,13 +48,13 @@ const mockPosts: MockPost[] = [
 export default function DashboardPage() {
   const router = useRouter(); 
   const { user: authUser, isLoading: authLoading } = useAuth();
-  const [user, setUser] = useState<MockUserFromAuth | null>(null); 
+  const [user, setUser] = useState<User | null>(null); // Use the imported User type
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading) {
       if (authUser) {
-        setUser(authUser as MockUserFromAuth); // Cast authUser to MockUserFromAuth
+        setUser(authUser); 
       } else {
         setUser(null); 
         router.push('/login'); 
@@ -101,25 +96,39 @@ export default function DashboardPage() {
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-lg mx-auto shadow-xl">
           <CardHeader>
-            <CardTitle className="text-primary text-xl sm:text-2xl">Account Pending Approval</CardTitle>
+            <CardTitle className={`text-xl sm:text-2xl ${user.rejectionReason ? 'text-destructive' : 'text-primary'}`}>
+              {user.rejectionReason ? "Account Registration Rejected" : "Account Pending Approval"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
-            <Image 
-              src="https://picsum.photos/seed/pending-approval/400/250" 
-              alt="Pending approval illustration" 
-              width={400} 
-              height={250} 
-              className="mx-auto mb-6 rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md"
-              data-ai-hint="waiting hourglass" 
-            />
+             {user.rejectionReason ? (
+                <MessageSquareWarning className="h-16 w-16 sm:h-20 sm:w-20 text-destructive mx-auto mb-4" />
+             ) : (
+                <Info className="h-16 w-16 sm:h-20 sm:w-20 text-primary mx-auto mb-4" />
+             )}
             <p className="text-lg sm:text-xl text-foreground">
-              Welcome, {user.displayName || "User"}!
+              Hi, {user.displayName || "User"}!
             </p>
             {user.usn && <p className="text-md text-muted-foreground">USN: {user.usn}</p>}
-            <p className="mt-2 text-muted-foreground">
-              Your account registration has been submitted and is currently awaiting admin approval. 
-              You will be notified once your account is approved. Please check back later.
-            </p>
+            {user.rejectionReason ? (
+              <>
+                <p className="mt-3 text-muted-foreground">
+                  Your account registration was reviewed and unfortunately could not be approved at this time.
+                </p>
+                <p className="mt-2 font-semibold text-destructive">Reason for rejection:</p>
+                <p className="mt-1 text-muted-foreground bg-destructive/10 p-3 rounded-md border border-destructive/30">
+                  {user.rejectionReason}
+                </p>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  If you believe this is an error or have questions, please contact the college administration.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-muted-foreground">
+                Your account registration has been submitted and is currently awaiting admin or faculty approval. 
+                You will be notified once your account is approved. Please check back later.
+              </p>
+            )}
             <Button variant="outline" className="mt-8" onClick={() => router.push('/')}>
               Go to Homepage
             </Button>
