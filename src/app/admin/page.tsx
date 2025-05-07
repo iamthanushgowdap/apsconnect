@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -32,19 +31,22 @@ export default function AdminDashboardPage() {
         setUser(authUser as MockUserFromAuth); 
         
         if (typeof window !== 'undefined') {
-          let users = 0;
+          let studentCount = 0;
+          let facultyCount = 0;
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key && key.startsWith('campus_connect_user_')) {
               try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
-                if (profile.role === 'student' || profile.role === 'faculty') {
-                  users++;
+                if (profile.role === 'student') {
+                  studentCount++;
+                } else if (profile.role === 'faculty') {
+                  facultyCount++;
                 }
               } catch (e) { /* ignore parse errors */ }
             }
           }
-          setTotalUsersCount(users);
+          setTotalUsersCount(studentCount + facultyCount);
 
           const postsStr = localStorage.getItem('campus_connect_posts');
           const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
@@ -96,7 +98,7 @@ export default function AdminDashboardPage() {
   }
 
   const adminStats = [
-    { title: "Total Users", value: totalUsersCount.toString(), icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
+    { title: "Total Users (Students + Faculty)", value: totalUsersCount.toString(), icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
     { title: "Content Posts", value: contentPostsCount.toString(), icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
   ];
 
@@ -116,7 +118,6 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
-              {/* Image removed */}
             </CardContent>
           </Card>
         ))}
@@ -182,8 +183,7 @@ function AdminActionCard({ title, description, icon, link, actionText }: AdminAc
         <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-end">
-        {/* Image removed */}
-        <Link href={link} className="w-full mt-auto"> {/* Added mt-auto to push button to bottom if content is short */}
+        <Link href={link} className="w-full mt-auto">
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base">
             {actionText}
           </Button>
