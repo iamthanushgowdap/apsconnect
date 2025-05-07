@@ -1,302 +1,126 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { Post, Branch, UserRole, defaultBranches } from '@/types'; 
-import { useAuth } from '@/components/auth-provider';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { formatDistanceToNow, parseISO } from 'date-fns';
-import { Loader2, FileText, Paperclip, Download, Search, Filter, Heart, Edit } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast'; 
-import { DownloadAppSection } from "@/components/layout/download-app-section";
-
-const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
-
+import React from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button'; // Assuming Button component for consistency if needed later
 
 export default function FeedPage() {
-  const { user, isLoading: authLoading } = useAuth();
-  const { toast } = useToast(); 
-  const router = useRouter();
-  const [allPosts, setAllPosts] = useState<Post[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
-  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [branchFilter, setBranchFilter] = useState<string>('all');
-  
-  const [availableBranches, setAvailableBranches] = useState<Branch[]>(defaultBranches); 
-  const postCategories: Post['category'][] = ["event", "news", "link", "note", "schedule"]; 
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
-      if (storedBranches) {
-         try {
-          const parsedBranches = JSON.parse(storedBranches);
-          if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
-            setAvailableBranches(parsedBranches);
-          } else {
-            setAvailableBranches(defaultBranches); 
-          }
-        } catch (e) {
-          console.error("Failed to parse branches for feed, using default:", e);
-          setAvailableBranches(defaultBranches); 
-        }
-      } else {
-        setAvailableBranches(defaultBranches); 
-      }
-    }
-  }, []);
-
-  const fetchPosts = () => {
-    setIsLoadingPosts(true);
-    if (typeof window !== 'undefined') {
-      const postsStr = localStorage.getItem('campus_connect_posts');
-      const loadedPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
-      loadedPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime());
-      setAllPosts(loadedPosts.map(p => ({...p, likes: p.likes || [] }))); 
-    }
-    setIsLoadingPosts(false);
-  };
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  useEffect(() => {
-    let postsToFilter = allPosts;
-
-    if (user) {
-      if (user.role === 'student') {
-        const studentBranch = user.branch; 
-        postsToFilter = postsToFilter.filter(post => 
-          post.targetBranches.length === 0 || 
-          (studentBranch && post.targetBranches.includes(studentBranch)) 
-        );
-      } else if (user.role === 'faculty' && user.assignedBranches) {
-        postsToFilter = postsToFilter.filter(post =>
-          post.targetBranches.length === 0 || 
-          user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch)) 
-        );
-      }
-    } else {
-       postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
-    }
-
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      postsToFilter = postsToFilter.filter(post =>
-        post.title.toLowerCase().includes(lowerSearchTerm) ||
-        post.content.toLowerCase().includes(lowerSearchTerm) ||
-        post.authorName.toLowerCase().includes(lowerSearchTerm)
-      );
-    }
-
-    if (categoryFilter !== 'all') {
-      postsToFilter = postsToFilter.filter(post => post.category === categoryFilter);
-    }
-    
-    if (branchFilter !== 'all') {
-        if (branchFilter === 'general') { 
-            postsToFilter = postsToFilter.filter(post => post.targetBranches.length === 0);
-        } else {
-            postsToFilter = postsToFilter.filter(post => post.targetBranches.includes(branchFilter as Branch) || post.targetBranches.length === 0);
-        }
-    }
-
-    setFilteredPosts(postsToFilter);
-  }, [allPosts, user, searchTerm, categoryFilter, branchFilter]);
-
-  useEffect(() => {
-    // Mark currently filtered (and thus visible) posts as seen
-    if (typeof window !== 'undefined' && user && filteredPosts.length > 0) {
-      const seenPostIdsKey = `campus_connect_seen_post_ids_${user.uid}`;
-      const currentSeenIdsStr = localStorage.getItem(seenPostIdsKey);
-      const currentSeenIds: string[] = currentSeenIdsStr ? JSON.parse(currentSeenIdsStr) : [];
-      
-      const newSeenIds = new Set([...currentSeenIds, ...filteredPosts.map(p => p.id)]);
-      localStorage.setItem(seenPostIdsKey, JSON.stringify(Array.from(newSeenIds)));
-      // Dispatch a custom event to notify Navbar immediately
-      window.dispatchEvent(new CustomEvent('postsSeen'));
-    }
-  }, [filteredPosts, user]);
-
-  const handleLikePost = (postId: string) => {
-    if (!user) {
-      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
-      return;
-    }
-    if (typeof window !== 'undefined') {
-      const updatedPosts = allPosts.map(post => {
-        if (post.id === postId) {
-          const currentLikes = post.likes || [];
-          if (currentLikes.includes(user.uid)) {
-            return { ...post, likes: currentLikes.filter(uid => uid !== user.uid) };
-          } else {
-            return { ...post, likes: [...currentLikes, user.uid] };
-          }
-        }
-        return post;
-      });
-      setAllPosts(updatedPosts);
-      localStorage.setItem('campus_connect_posts', JSON.stringify(updatedPosts));
-    }
-  };
-
-  const handleDownload = (attachmentName: string) => {
-      toast({ title: "Download Started (Mock)", description: `Downloading ${attachmentName}...` });
-  };
-
-  const canEditPost = (post: Post): boolean => {
-    if (!user) return false;
-    if (user.role === 'admin') return true;
-    if (user.role === 'faculty' && post.authorId === user.uid) return true;
-    return false;
-  };
-
-  const getEditLink = (post: Post): string => {
-    if (user?.role === 'admin') {
-      return `/admin/posts/edit/${post.id}`;
-    }
-    return `/faculty/content/edit/${post.id}`; 
-  };
-
-  if (authLoading || isLoadingPosts) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card className="mb-8 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">Campus Activity Feed</CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Stay updated with the latest news, events, notes, and schedules from around the campus.
-            {user?.role === 'student' && user.branch && ` Showing relevant posts for ${user.branch}.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="relative w-full sm:flex-grow">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                type="search"
-                placeholder="Search posts..."
-                className="pl-8 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
+      <div className="mx-auto my-10 max-w-lg rounded-xl border border-border bg-card px-4 py-8 shadow-lg">
+        <div className="mb-4 flex justify-between border-b border-border pb-3">
+          <p className="text-xl font-bold text-foreground">Activity feed</p>
+          {/* Placeholder for Notification Settings button functionality */}
+          <button className="text-sm font-medium text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring">
+            Notification Settings
+          </button>
+        </div>
+        <div>
+          {/* Activity Item 1: Liked Comment */}
+          <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring" tabIndex={0}>
+            <div className="relative flex items-center">
+              <Image
+                className="h-10 w-10 rounded-full object-cover"
+                src="https://picsum.photos/40/40"
+                alt="Johanson Levinsiki"
+                width={40}
+                height={40}
+                data-ai-hint="person avatar"
+              />
+              <div className="ml-4 flex flex-col sm:w-96">
+                <p className="mb-1 font-medium text-foreground">Johanson Levinsiki</p>
+                <div className="text-sm text-muted-foreground">
+                  <span className="shrink-0 mr-1 text-red-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline h-3 w-3">
+                      <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                    </svg>
+                  </span>
+                  <span className="mr-1 font-medium text-red-500">liked your comment:</span>
+                  <span className="">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
+                </div>
+              </div>
+              <span className="absolute top-0 right-2 text-sm text-muted-foreground">1min ago</span>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Filter by category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {postCategories.map(cat => <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-                { (user?.role === 'admin' || user?.role === 'faculty' || !user) && 
-                    <Select value={branchFilter} onValueChange={setBranchFilter}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filter by branch" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Branches (Visible)</SelectItem>
-                            {availableBranches.map(branch => <SelectItem key={branch} value={branch}>{branch}</SelectItem>)}
-                            <SelectItem value="general">General (No Specific Branch)</SelectItem> 
-                        </SelectContent>
-                    </Select>
-                }
-            </div>
-        </CardContent>
-      </Card>
+          </div>
 
-      {filteredPosts.length === 0 ? (
-        <div className="text-center py-12">
-          <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <p className="text-xl text-muted-foreground">No posts found matching your criteria.</p>
-          <p className="text-sm text-muted-foreground mt-1">Try adjusting your search or filters.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPosts.map(post => (
-            <Card key={post.id} className="shadow-md hover:shadow-xl transition-shadow flex flex-col">
-              <CardHeader>
-                <div className="flex justify-between items-start mb-1">
-                    <CardTitle className="text-lg font-semibold text-primary leading-tight">
-                        {post.title}
-                    </CardTitle>
-                    <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="text-xs whitespace-nowrap ml-2">
-                        {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
-                    </Badge>
+          {/* Activity Item 2: Replied to Comment */}
+          <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring" tabIndex={0}>
+            <div className="relative flex items-center">
+              <Image
+                className="h-10 w-10 rounded-full object-cover"
+                src="https://picsum.photos/40/41" // Slightly different to get a new image
+                alt="Johanson Levinsiki"
+                width={40}
+                height={40}
+                data-ai-hint="person avatar"
+              />
+              <div className="ml-4 flex flex-col sm:w-96">
+                <p className="mb-1 font-medium text-foreground">Johanson Levinsiki</p>
+                <div className="mb-2 text-sm text-muted-foreground">
+                  <span className="shrink-0 mr-1 text-primary"> {/* Changed to primary based on theme */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline h-3 w-3">
+                      <path d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 00-1.032-.211 50.89 50.89 0 00-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 002.433 3.984L7.28 21.53A.75.75 0 016 21v-4.03a48.527 48.527 0 01-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979z" />
+                      <path d="M15.75 7.5c-1.376 0-2.739.057-4.086.169C10.124 7.797 9 9.103 9 10.609v4.285c0 1.507 1.128 2.814 2.67 2.94 1.243.102 2.5.157 3.768.165l2.782 2.781a.75.75 0 001.28-.53v-2.39l.33-.026c1.542-.125 2.67-1.433 2.67-2.94v-4.286c0-1.505-1.125-2.811-2.664-2.94A49.392 49.392 0 0015.75 7.5z" />
+                    </svg>
+                  </span>
+                  <span className="mr-1 font-medium text-primary">replied to your comment:</span> {/* Changed to primary */}
+                  <span className="">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
                 </div>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Posted by {post.authorName} ({post.authorRole}) - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
-                  {post.updatedAt && parseISO(post.updatedAt).getTime() !== parseISO(post.createdAt).getTime() && ` (edited ${formatDistanceToNow(parseISO(post.updatedAt), { addSuffix: true })})`}
-                </CardDescription>
-                {post.targetBranches.length > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                        For: {post.targetBranches.join(', ')}
+                <div className="rounded-xl bg-primary/10 p-4 text-muted-foreground"> {/* Adjusted background */}
+                  <p className="text-sm">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Rerum, soluta modi? Amet, sequi distinctio.</p>
+                </div>
+              </div>
+              <span className="absolute top-0 right-2 text-sm text-muted-foreground">1min ago</span>
+            </div>
+          </div>
+
+          {/* Activity Item 3: Shared a File */}
+          <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring" tabIndex={0}>
+            <div className="relative flex items-center">
+              <Image
+                className="h-10 w-10 rounded-full object-cover"
+                src="https://picsum.photos/40/42" // Slightly different to get a new image
+                alt="Johanson Levinsiki"
+                width={40}
+                height={40}
+                data-ai-hint="person avatar"
+              />
+              <div className="ml-4 flex flex-col sm:w-96">
+                <p className="mb-1 font-medium text-foreground">Johanson Levinsiki</p>
+                <div className="mb-2 text-sm text-muted-foreground">
+                  <span className="shrink-0 mr-1 text-primary"> {/* Changed to primary */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline h-3 w-3">
+                      <path fillRule="evenodd" d="M15.75 4.5a3 3 0 11.825 2.066l-8.421 4.679a3.002 3.002 0 010 1.51l8.421 4.679a3 3 0 11-.729 1.31l-8.421-4.678a3 3 0 110-4.132l8.421-4.679a3 3 0 01-.096-.755z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  <span className="mr-1 font-medium text-primary">shared a file</span> {/* Changed to primary */}
+                </div>
+                <div className="rounded-xl bg-primary/10 p-4 text-muted-foreground"> {/* Adjusted background */}
+                  <div className="flex items-center">
+                    <span className="text-primary"> {/* Changed to primary */}
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-6 w-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                    </span>
+                    <div className="ml-4 pr-10">
+                      <p className="mb-1 text-sm font-medium text-foreground">Earnings Report 2021 | Berkshire Hathaway Inc</p>
+                      <p className="text-xs text-muted-foreground">
+                        512KB
+                        <a className="ml-1 text-primary hover:underline" href="#"> {/* Changed to primary */}
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="inline h-4 w-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                          </svg>
+                        </a>
+                      </p>
                     </div>
-                )}
-                 {post.targetBranches.length === 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                        For: All Branches
-                    </div>
-                )}
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-foreground line-clamp-4 whitespace-pre-wrap">{post.content}</p>
-                {post.attachments && post.attachments.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground mb-1">Attachments:</h4>
-                    <ul className="space-y-1">
-                      {post.attachments.map((att, index) => (
-                        <li key={index} className="text-xs flex items-center justify-between p-1.5 bg-muted/30 rounded-md hover:bg-muted/60 transition-colors">
-                          <span className="truncate max-w-[calc(100%-3rem)]">
-                            <Paperclip className="inline h-3 w-3 mr-1.5 text-primary" />
-                            {att.name} ({(att.size / (1024 * 1024)).toFixed(2)} MB)
-                          </span>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDownload(att.name)}>
-                             <Download className="h-3.5 w-3.5 text-primary" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                )}
-              </CardContent>
-               <CardFooter className="flex items-center justify-between pt-2"> 
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleLikePost(post.id)} className="px-2">
-                        <Heart className={`h-4 w-4 ${user && post.likes?.includes(user.uid) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
-                    </Button>
-                    <span className="text-xs text-muted-foreground">{post.likes?.length || 0}</span>
                 </div>
-                {canEditPost(post) && (
-                  <Link href={getEditLink(post)}>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
-                    </Button>
-                  </Link>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
+              </div>
+              <span className="absolute top-0 right-2 text-sm text-muted-foreground">1min ago</span>
+            </div>
+          </div>
         </div>
-      )}
-      <DownloadAppSection />
+      </div>
     </div>
   );
 }
