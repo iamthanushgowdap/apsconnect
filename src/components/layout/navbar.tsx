@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -29,23 +30,19 @@ export function Navbar() {
         </Link>
         <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-            if (item.adminOnly && user?.role !== 'admin') return null;
-            if (item.protected && !user && !isLoading) return null; // Hide protected if not logged in & not loading
-            if (item.hideWhenLoggedIn && user && !isLoading) return null; // Hide if logged in & not loading
+            // Handle loading state first
+            if (isLoading) {
+              // For protected, adminOnly, or facultyOnly links, don't render during loading
+              // to prevent brief flashes of links the user shouldn't see.
+              if (item.protected || item.adminOnly || item.facultyOnly) return null;
+            } else { // Not loading, apply user-based visibility rules
+              if (item.hideWhenLoggedIn && user) return null;
+              if (item.protected && !user) return null;
+              if (item.adminOnly && user?.role !== 'admin') return null;
+              if (item.facultyOnly && user?.role !== 'faculty') return null;
+              if (item.studentOnly && user?.role !== 'student') return null;
+            }
             
-            // Special handling for admin link visibility during loading
-            if (item.adminOnly && isLoading) {
-                 // If loading, don't show admin link unless we eventually confirm admin role
-                 // This might cause a flicker if user IS admin. A better approach might involve
-                 // showing a skeleton or nothing until role is confirmed.
-                 // For now, let's hide it during load to prevent non-admins seeing it briefly.
-                return null;
-            }
-            if (item.protected && isLoading) {
-                return null; // Also hide other protected links during load
-            }
-
-
             return (
               <Link
                 key={item.href}
@@ -53,7 +50,7 @@ export function Navbar() {
                 className={cn(
                   "transition-colors hover:text-primary",
                   pathname === item.href ? "text-primary" : "text-foreground/60",
-                  "text-xs sm:text-sm" // Responsive text size for nav items
+                  "text-xs sm:text-sm" 
                 )}
               >
                 {item.title}

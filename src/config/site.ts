@@ -1,10 +1,13 @@
+
 export type NavItem = {
   title: string;
   href: string;
   disabled?: boolean;
   external?: boolean;
-  protected?: boolean; // Requires login
+  protected?: boolean; // Requires login (any role)
   adminOnly?: boolean; // Requires admin role
+  facultyOnly?: boolean; // Requires faculty role
+  studentOnly?: boolean; // Requires student role
   hideWhenLoggedIn?: boolean; // Hide this link if user is logged in
   icon?: React.ComponentType<{ className?: string }>;
 };
@@ -31,15 +34,20 @@ export const SiteConfig: SiteConfig = {
     {
       title: "Dashboard",
       href: "/dashboard",
-      protected: true,
+      protected: true, // Accessible by student, faculty, admin once logged in
     },
     {
-      title: "Admin",
+      title: "Admin Panel",
       href: "/admin",
       protected: true,
       adminOnly: true,
     },
-    // Example: adding login/register to mainNav for testing, though typically they are in a separate auth actions area
+    {
+      title: "Faculty Tools", // Example link only visible to faculty
+      href: "/faculty", // Placeholder, create this route later
+      protected: true,
+      facultyOnly: true, 
+    }
     // {
     //   title: "Login",
     //   href: "/login",

@@ -10,30 +10,30 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/auth-provider";
 
-interface MockUserFromAuth { // Reflects structure from useAuth
+interface MockUserFromAuth { 
   displayName: string | null;
-  email: string | null; // Admins will have email as their identifier
-  role: 'admin' | 'student' | 'pending';
-  usn?: string; // Admins won't have USN
+  email: string | null; 
+  role: 'admin' | 'student' | 'pending' | 'faculty'; // Added faculty
+  usn?: string; 
 }
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
-  const [user, setUser] = useState<MockUserFromAuth | null>(null); // Use the interface from useAuth
+  const [user, setUser] = useState<MockUserFromAuth | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
 
 
   useEffect(() => {
     if (!authLoading) {
       if (authUser && authUser.role === 'admin') {
-        setUser(authUser);
+        setUser(authUser as MockUserFromAuth); // Cast authUser to MockUserFromAuth
       } else if (authUser && authUser.role !== 'admin'){
-        setUser(null); // Not an admin
-        router.push('/dashboard'); // Redirect non-admins
-      } else { // No authUser
+        setUser(null); 
+        router.push('/dashboard'); 
+      } else { 
         setUser(null);
-        router.push('/login'); // Redirect if not logged in
+        router.push('/login'); 
       }
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (!user) { // This covers both not logged in and not admin after initial checks
+  if (!user) { 
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -206,3 +206,4 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     </Card>
   );
 }
+

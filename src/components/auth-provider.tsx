@@ -5,20 +5,19 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import type { UserRole, Branch } from '@/types'; 
 
 export interface User {
-  uid: string; // For student, this will be USN. For admin, email.
-  email: string | null; // Student email collected at registration, admin must have one.
+  uid: string; // For student, this will be USN. For admin/faculty, email.
+  email: string | null; // Student email collected at registration, admin/faculty must have one.
   displayName: string | null;
   role: UserRole;
-  branch?: Branch; // Can be derived from USN
+  branch?: Branch; // Can be derived from USN for students
   usn?: string; // Store the full USN for students
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string /* Password for admin check if needed here */ }) => Promise<void>;
+  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<void>;
   signOut: () => Promise<void>;
-  // TODO: Add signUp if register page needs to interact with this context
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setIsLoading(true);
     try {
-      const mockUserStr = localStorage.getItem('mockUser');
+      const mockUserStr = typeof window !== 'undefined' ? localStorage.getItem('mockUser') : null;
       if (mockUserStr) {
         const storedUser = JSON.parse(mockUserStr) as User; 
         setUser(storedUser);
@@ -39,7 +38,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (e) {
       console.error("Failed to parse mockUser from localStorage", e);
-      localStorage.removeItem('mockUser'); 
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('mockUser'); 
+      }
       setUser(null); 
     } finally {
       setIsLoading(false); 
@@ -55,19 +56,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (credentials.email ? credentials.email.split('@')[0] : 
       (credentials.usn ? `User-${credentials.usn.slice(-3)}` : 'User'));
 
-    if (credentials.role === 'admin' && credentials.email) {
+    if ((credentials.role === 'admin' || credentials.role === 'faculty') && credentials.email) {
       newUser = {
         uid: credentials.email, 
         email: credentials.email,
         displayName: commonDisplayName,
-        role: credentials.role,
-        // No USN or branch for admin
+        role: credentials.role, // Will be 'admin' or 'faculty'
+        // No USN or branch for admin/faculty by default here
       };
     } else if (credentials.role === 'student' && credentials.usn) {
-      // Retrieve potential existing student details (like email) if stored during registration
-      // For this mock setup, we assume such details might be in another localStorage item or not needed for sign-in object itself
-      // This example just creates the user object for the session
-      // In a real app, you'd fetch full user profile from backend using USN
        const registeredUserKey = `campus_connect_user_${credentials.usn.toUpperCase()}`;
        const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
        let studentEmail: string | null = null;
@@ -78,14 +75,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          const registeredUserData = JSON.parse(registeredUserDataStr);
          studentEmail = registeredUserData.email;
          studentDisplayName = registeredUserData.displayName || commonDisplayName;
-         // studentBranch can also be derived from USN, e.g. credentials.usn.substring(3,5) as Branch code
+         // studentBranch can also be derived from USN, e.g. credentials.usn.substring(5,7) as Branch code
+         if(!studentBranch && credentials.usn.length >= 7) {
+            const branchCode = credentials.usn.substring(5,7).toUpperCase() as Branch; // Assuming USN is 1APYYBBBNNN format
+            if (["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"].includes(branchCode)) {
+                 studentBranch = branchCode;
+            }
+         }
        }
-
 
       newUser = {
         uid: credentials.usn.toUpperCase(), 
         usn: credentials.usn.toUpperCase(),
-        email: studentEmail, // Student email from registration
+        email: studentEmail, 
         displayName: studentDisplayName,
         role: credentials.role,
         branch: studentBranch, 
@@ -95,7 +97,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("Invalid credentials for signIn: email/USN missing for role, or role not specified.");
     }
     
-    localStorage.setItem('mockUser', JSON.stringify(newUser)); // This is the currently logged-in user session
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mockUser', JSON.stringify(newUser)); 
+    }
     setUser(newUser);
     setIsLoading(false);
   };
@@ -103,7 +107,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 200));
-    localStorage.removeItem('mockUser');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('mockUser');
+    }
     setUser(null);
     setIsLoading(false);
   };
@@ -122,3 +128,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

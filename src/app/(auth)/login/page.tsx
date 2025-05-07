@@ -37,7 +37,7 @@ const usnRegex = /^1AP\d{2}[A-Z]{2}\d{3}$/i; // i for case-insensitive input, wi
 const loginSchema = z.object({
   identifier: z.string().min(1, { message: "This field is required." }), // Will hold USN or Email
   password: z.string().min(1, { message: "Password is required." }),
-  mode: z.enum(["student", "admin"], { required_error: "Please select a login mode." })
+  mode: z.enum(["student", "admin", "faculty"], { required_error: "Please select a login mode." })
 }).superRefine((data, ctx) => {
   if (data.mode === "student") {
     if (!usnRegex.test(data.identifier)) {
@@ -47,11 +47,11 @@ const loginSchema = z.object({
         path: ["identifier"],
       });
     }
-  } else if (data.mode === "admin") {
+  } else if (data.mode === "admin" || data.mode === "faculty") {
     if (!z.string().email().safeParse(data.identifier).success) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Invalid email address for admin.",
+        message: `Invalid email address for ${data.mode}.`,
         path: ["identifier"],
       });
     }
@@ -84,7 +84,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const { identifier, password, mode } = data;
-      let role: UserRole = mode;
+      let role: UserRole = mode as UserRole; // Cast mode to UserRole
       let displayName: string | undefined;
       let targetRoute = "/dashboard";
 
@@ -95,7 +95,7 @@ export default function LoginPage() {
           targetRoute = "/admin"; 
           await signIn({ 
             email: identifier.toLowerCase(), 
-            password, // Pass password for admin auth if signIn handles it
+                            password, 
             role,
             displayName, 
           });
@@ -108,17 +108,28 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
-      } else { // Student mode
+      } else if (mode === "faculty") {
+        // Mock faculty login for now. In a real app, validate against a faculty user database.
+        // This example assumes any email/password (not admin's) is a "valid" faculty login for mock.
+        role = "faculty";
+        displayName = identifier.split('@')[0]; // Simple display name from email
+        targetRoute = "/dashboard"; // Or a specific faculty dashboard route
+        await signIn({
+          email: identifier.toLowerCase(),
+          password, // Pass password if signIn handles it
+          role,
+          displayName,
+        });
+      }
+       else { // Student mode
         role = "student";
         const usn = identifier.toUpperCase(); // Ensure USN is uppercase for consistency
         // In a real app, you'd validate USN and password against a backend.
         // For mock, we assume the USN is valid if it passes schema validation.
-        // The branch can be derived from USN if needed: usn.substring(3,5)
         await signIn({ 
           usn: usn, 
           password, // Pass password for student auth if signIn handles it
           role,
-          // displayName and branch could be fetched/derived by signIn if needed
         });
       }
 
@@ -138,6 +149,25 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   }
+  
+  const getIdentifierLabel = () => {
+    switch(loginMode) {
+      case "student": return "USN";
+      case "admin": return "Admin Email";
+      case "faculty": return "Faculty Email";
+      default: return "Identifier";
+    }
+  };
+
+  const getIdentifierPlaceholder = () => {
+    switch(loginMode) {
+      case "student": return "e.g., 1AP23CS001";
+      case "admin": return "admin@example.com";
+      case "faculty": return "faculty@example.com";
+      default: return "Enter your identifier";
+    }
+  };
+
 
   return (
     <div className="container flex min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)] items-center justify-center py-8 sm:py-12 px-4">
@@ -169,7 +199,8 @@ export default function LoginPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="student" className="text-sm sm:text-base">User (USN)</SelectItem>
+                        <SelectItem value="student" className="text-sm sm:text-base">Student (USN)</SelectItem>
+                        <SelectItem value="faculty" className="text-sm sm:text-base">Faculty (Email)</SelectItem>
                         <SelectItem value="admin" className="text-sm sm:text-base">Admin (Email)</SelectItem>
                       </SelectContent>
                     </Select>
@@ -182,11 +213,11 @@ export default function LoginPage() {
                 name="identifier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">{loginMode === "student" ? "USN" : "Email"}</FormLabel>
+                    <FormLabel className="text-sm">{getIdentifierLabel()}</FormLabel>
                     <FormControl>
                       <Input 
                         type={loginMode === "student" ? "text" : "email"} 
-                        placeholder={loginMode === "student" ? "e.g., 1AP23CS001" : "you@example.com"} 
+                        placeholder={getIdentifierPlaceholder()} 
                         {...field} 
                         className="text-sm sm:text-base"
                         onInput={loginMode === "student" ? (e) => e.currentTarget.value = e.currentTarget.value.toUpperCase() : undefined}
@@ -233,3 +264,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

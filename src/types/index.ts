@@ -1,4 +1,5 @@
-export type UserRole = "student" | "admin" | "pending";
+
+export type UserRole = "student" | "admin" | "pending" | "faculty";
 
 export type Branch = "CSE" | "ISE" | "ECE" | "ME" | "CIVIL" | "OTHER";
 
@@ -28,3 +29,4 @@ export interface Post {
   targetBranches: Branch[]; // Which branches this post is for
   // Add other post fields like attachments, expiryDate, etc.
 }
+

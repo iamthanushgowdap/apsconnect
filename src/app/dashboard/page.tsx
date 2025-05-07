@@ -16,7 +16,8 @@ import {
   GraduationCap,
   LayoutGrid,
   CheckSquare,
-  UserCircle
+  UserCircle,
+  Briefcase // Icon for faculty
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -24,10 +25,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/components/auth-provider";
 
-interface MockUserFromAuth { // Reflects structure from useAuth
+interface MockUserFromAuth { 
   displayName: string | null;
   email: string | null;
-  role: 'student' | 'admin' | 'pending';
+  role: 'student' | 'admin' | 'pending' | 'faculty'; // Added faculty
   branch?: string;
   usn?: string;
 }
@@ -52,19 +53,16 @@ const mockPosts: MockPost[] = [
 export default function DashboardPage() {
   const router = useRouter(); 
   const { user: authUser, isLoading: authLoading } = useAuth();
-  const [user, setUser] = useState<MockUserFromAuth | null>(null); // Use the interface from useAuth
+  const [user, setUser] = useState<MockUserFromAuth | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading) {
       if (authUser) {
-        setUser(authUser);
-        // Branch can be derived from USN if needed
-        // Example: authUser.usn?.substring(5,7) if USN format is 1APYYBBBNNN
-        // For now, relying on branch being set during login/registration mock
+        setUser(authUser as MockUserFromAuth); // Cast authUser to MockUserFromAuth
       } else {
-        setUser(null); // Ensure user is null if authUser is null
-        router.push('/login'); // Redirect if not authenticated
+        setUser(null); 
+        router.push('/login'); 
       }
       setIsLoading(false);
     }
@@ -88,7 +86,6 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    // This case should ideally be handled by the redirect in useEffect
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <p>You need to be logged in to view this page.</p>
@@ -132,8 +129,21 @@ export default function DashboardPage() {
     );
   }
 
-  const userBranchFromUsn = user.usn ? user.usn.substring(5, 7) : user.branch; // Example: 1APYY<BB>NNN
-  const userBranchPosts = mockPosts.filter(post => !post.branch || post.branch === "General" || post.branch === userBranchFromUsn);
+  const userBranchFromUsn = user.role === 'student' && user.usn ? user.usn.substring(5, 7) : user.branch;
+  const userBranchPosts = mockPosts.filter(post => 
+    user.role === 'faculty' || user.role === 'admin' || // Faculty/Admin see all posts or general posts
+    !post.branch || post.branch === "General" || post.branch === userBranchFromUsn
+  );
+
+  const getRoleSpecificGreeting = () => {
+    if (user.role === 'faculty') {
+      return `Welcome to your Faculty Dashboard.`;
+    }
+    if (user.role === 'admin') {
+      return `Welcome to your Admin Access Dashboard.`
+    }
+    return `Welcome to your ${userBranchFromUsn ? `${userBranchFromUsn} ` : ''}Dashboard.`;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -142,8 +152,9 @@ export default function DashboardPage() {
           Hello, {user.displayName || "User"}!
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground mt-1">
-          Welcome to your {userBranchFromUsn ? `${userBranchFromUsn} ` : ''}Dashboard. 
-          {user.usn && <span className="block text-sm sm:text-base">USN: {user.usn}</span>}
+          {getRoleSpecificGreeting()}
+          {user.usn && user.role === 'student' && <span className="block text-sm sm:text-base">USN: {user.usn}</span>}
+           {user.email && (user.role === 'faculty' || user.role === 'admin') && <span className="block text-sm sm:text-base">Email: {user.email}</span>}
         </p>
       </div>
 
@@ -155,16 +166,16 @@ export default function DashboardPage() {
           description="Check your latest alerts"
           link="#" 
           dataAiHint="bell icon"
-          color="bg-red-500/10 text-red-500" // This is an example of direct color use, ideally use theme colors
+          colorConfig="bg-red-500/10 text-red-500"
         />
         <StatCard 
-          title="Upcoming Deadlines" 
-          value="2 Tasks" 
-          icon={<CheckSquare className="h-5 w-5 sm:h-6 sm:w-6" />} 
-          description="Assignments & Submissions"
+          title={user.role === 'faculty' ? "My Classes" : "Upcoming Deadlines"} 
+          value={user.role === 'faculty' ? "3 Sections" : "2 Tasks"} 
+          icon={user.role === 'faculty' ? <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" /> : <CheckSquare className="h-5 w-5 sm:h-6 sm:w-6" />} 
+          description={user.role === 'faculty' ? "Manage your course sections" : "Assignments & Submissions"}
           link="#" 
-          dataAiHint="checklist tasks"
-          color="bg-yellow-500/10 text-yellow-500" // This is an example of direct color use, ideally use theme colors
+          dataAiHint={user.role === 'faculty' ? "teacher classroom" : "checklist tasks"}
+          colorConfig="bg-yellow-500/10 text-yellow-500"
         />
         <StatCard 
           title="My Courses" 
@@ -173,7 +184,7 @@ export default function DashboardPage() {
           description="Access your course materials"
           link="#" 
           dataAiHint="graduation cap"
-          color="bg-green-500/10 text-green-500" // This is an example of direct color use, ideally use theme colors
+          colorConfig="bg-green-500/10 text-green-500"
         />
       </div>
       
@@ -181,8 +192,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl sm:text-2xl">Recent Updates {userBranchFromUsn ? `for ${userBranchFromUsn}`: ''}</CardTitle>
-              <CardDescription>Latest posts relevant to you and your branch.</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl">Recent Updates {userBranchFromUsn && user.role === 'student' ? `for ${userBranchFromUsn}`: ''}</CardTitle>
+              <CardDescription>Latest posts relevant to you {user.role === 'student' && 'and your branch'}.</CardDescription>
             </CardHeader>
             <CardContent>
               {userBranchPosts.length > 0 ? (
@@ -194,7 +205,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-center py-10">
                   <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No new updates specific to your branch at the moment.</p>
+                  <p className="text-muted-foreground">No new updates at the moment.</p>
                 </div>
               )}
               <div className="mt-8 text-center">
@@ -212,7 +223,8 @@ export default function DashboardPage() {
               <CardTitle className="text-lg sm:text-xl">Quick Links</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <QuickLinkItem href="/academics/schedule" icon={<CalendarDays className="h-5 w-5"/>} label="Class Schedule" />
+              {user.role === 'student' && <QuickLinkItem href="/academics/schedule" icon={<CalendarDays className="h-5 w-5"/>} label="Class Schedule" />}
+              {user.role === 'faculty' && <QuickLinkItem href="/faculty/courses" icon={<Briefcase className="h-5 w-5"/>} label="My Courses" />}
               <QuickLinkItem href="/resources/library" icon={<BookOpen className="h-5 w-5"/>} label="Library Portal" />
               <QuickLinkItem href="/profile/settings" icon={<Settings className="h-5 w-5"/>} label="Profile Settings" />
               <QuickLinkItem href="/feed" icon={<LayoutGrid className="h-5 w-5"/>} label="Full Activity Feed" />
@@ -245,15 +257,15 @@ interface StatCardProps {
   link?: string;
   dataAiHint: string;
   description?: string;
-  color?: string;
+  colorConfig?: string; // Changed from color to colorConfig to avoid conflict with HTML color attribute
 }
 
-function StatCard({ title, value, icon, link, dataAiHint, description, color = "bg-accent/10 text-accent" }: StatCardProps) {
+function StatCard({ title, value, icon, link, dataAiHint, description, colorConfig = "bg-accent/10 text-accent" }: StatCardProps) {
   const cardContent = (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <CardTitle className="text-sm sm:text-base font-semibold text-foreground">{title}</CardTitle>
-        <div className={`p-2 sm:p-2.5 rounded-lg ${color}`}>{icon}</div>
+        <div className={`p-2 sm:p-2.5 rounded-lg ${colorConfig}`}>{icon}</div>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between">
         <div>
@@ -333,3 +345,4 @@ function QuickActionLink({ href, icon, label }: QuickActionLinkProps) {
     </Link>
   );
 }
+
