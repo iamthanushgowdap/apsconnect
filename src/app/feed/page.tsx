@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -5,13 +6,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, User } from '@/components/auth-provider';
 import type { Post, PostAttachment } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Heart, MessageSquare, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter } from 'lucide-react';
+import { Loader2, Heart, MessageSquare, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MessageCircle, MapPin } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,12 +44,9 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
   const router = useRouter();
 
   const handleDownload = (attachment: PostAttachment) => {
-    // In a real app, this would trigger a download from a URL.
-    // For mock, we just show a toast.
     toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}...` });
-    // Simulating file download with a placeholder link
     const link = document.createElement('a');
-    link.href = `data:${attachment.type};base64,`; // Placeholder data URI
+    link.href = `data:${attachment.type};base64,`; 
     link.download = attachment.name;
     document.body.appendChild(link);
     link.click();
@@ -84,83 +82,88 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
     }
   };
 
+  const getPostIcon = (category: Post['category']) => {
+    switch(category) {
+      case 'event': return <CalendarDays className="inline h-3 w-3 mr-1 text-indigo-500" />;
+      case 'news': return <Newspaper className="inline h-3 w-3 mr-1 text-green-500" />;
+      case 'link': return <Paperclip className="inline h-3 w-3 mr-1 text-yellow-500" />;
+      case 'note': return <BookOpen className="inline h-3 w-3 mr-1 text-purple-500" />;
+      case 'schedule': return <CalendarDays className="inline h-3 w-3 mr-1 text-teal-500" />;
+      default: return <FileText className="inline h-3 w-3 mr-1 text-gray-500" />;
+    }
+  }
 
   return (
-    <Card className="w-full shadow-lg rounded-xl overflow-hidden border border-border/60">
-      <CardHeader className="p-4 sm:p-5 border-b border-border/50">
-        <div className="flex items-start space-x-3">
-          <Avatar className="h-11 w-11">
-            {/* Add AvatarImage if author has one, e.g. src={post.authorAvatarUrl} */}
-            <AvatarImage src={`https://picsum.photos/seed/${post.authorId}/44/44`} alt={post.authorName} data-ai-hint="person avatar"/>
-            <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <div className="flex justify-between items-start">
-                <div>
-                    <CardTitle className="text-base sm:text-lg font-semibold text-foreground leading-tight">{post.title}</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground mt-0.5">
-                        By {post.authorName} ({post.authorRole}) - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
-                    </CardDescription>
+    <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 dark:focus:ring-gray-700" tabIndex={0}>
+      <div className="relative flex items-start">
+        <Avatar className="h-10 w-10 shrink-0">
+           <AvatarImage src={`https://picsum.photos/seed/${post.authorId}/40/40`} alt={post.authorName} data-ai-hint="person avatar"/>
+          <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
+        </Avatar>
+        <div className="ml-4 flex flex-col sm:w-96">
+          <p className="mb-1 font-medium text-gray-700 dark:text-gray-200">{post.authorName} ({post.authorRole})</p>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {getPostIcon(post.category)}
+            <span className="mr-1 font-medium text-primary dark:text-blue-400">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}:</span>
+            <span className="line-clamp-2">{post.title}</span>
+          </div>
+          <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            {post.targetBranches && post.targetBranches.length > 0 ? (
+                <><MapPin className="inline h-3 w-3 mr-1" /> For: {post.targetBranches.join(', ')}</>
+            ) : (
+                <><Users className="inline h-3 w-3 mr-1" /> For: All Branches</>
+            )}
+          </div>
+           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap line-clamp-3">{post.content}</p>
+
+          {post.attachments && post.attachments.length > 0 && (
+            <div className="mt-3 rounded-xl bg-blue-50 dark:bg-gray-700 p-3">
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Attachments:</h4>
+              {post.attachments.map((att, index) => (
+                <div key={index} className="flex items-center text-xs text-gray-700 dark:text-gray-300 mb-1">
+                  <Paperclip className="h-3.5 w-3.5 mr-1.5 text-blue-500 dark:text-blue-400 shrink-0" />
+                  <span className="truncate flex-grow pr-2">{att.name} ({(att.size / (1024*1024)).toFixed(2)} MB)</span>
+                  <Button variant="link" size="sm" onClick={() => handleDownload(att)} className="p-0 h-auto text-blue-600 dark:text-blue-400 hover:underline">
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                { (canEdit || canDelete) && (
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="absolute top-0 right-0 flex items-center space-x-1">
+             <span className="text-xs text-gray-400 dark:text-gray-500">{formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}</span>
+            {(canEdit || canDelete) && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-1">
-                            <Settings className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                            <Settings className="h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        {canEdit && <DropdownMenuItem onClick={handleEdit}><Edit3 className="mr-2 h-4 w-4" />Edit Post</DropdownMenuItem>}
-                        {canDelete && <DropdownMenuItem onClick={() => onDeletePost(post.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Delete Post</DropdownMenuItem>}
+                        {canEdit && <DropdownMenuItem onClick={handleEdit}><Edit3 className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>}
+                        {canDelete && <DropdownMenuItem onClick={() => onDeletePost(post.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>}
                     </DropdownMenuContent>
                 </DropdownMenu>
-                )}
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-5 space-y-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <IconComponent className="h-4 w-4 text-primary"/> 
-            <Badge variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"} className="capitalize">
-                {post.category}
-            </Badge>
-            {post.targetBranches && post.targetBranches.length > 0 && (
-                <Badge variant="outline">For: {post.targetBranches.join(', ')}</Badge>
-            )}
-            {(!post.targetBranches || post.targetBranches.length === 0) && (
-                <Badge variant="outline">For: All Branches</Badge>
             )}
         </div>
-        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{post.content}</p>
-        {post.attachments && post.attachments.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Attachments:</h4>
-            <ul className="space-y-1.5">
-              {post.attachments.map((att, index) => (
-                <li key={index} className="text-xs">
-                  <Button variant="outline" size="sm" onClick={() => handleDownload(att)} className="w-full justify-start text-left h-auto py-1.5 px-2.5">
-                    <Paperclip className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
-                    <span className="truncate flex-grow">{att.name} ({(att.size / (1024*1024)).toFixed(2)} MB)</span>
-                    <Download className="h-3.5 w-3.5 ml-2 flex-shrink-0 text-muted-foreground" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="p-4 sm:p-5 border-t border-border/50 flex items-center justify-start">
-        <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="text-muted-foreground hover:text-red-500 group">
-          <Heart className={`h-4 w-4 mr-1.5 transition-colors ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
-          {post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}
-        </Button>
-        {/* Placeholder for comments if added later */}
-        {/* <Button variant="ghost" size="sm" className="ml-2 text-muted-foreground hover:text-primary">
-          <MessageSquare className="h-4 w-4 mr-1.5" /> 0 Comments
-        </Button> */}
-      </CardFooter>
-    </Card>
+      </div>
+       <div className="mt-3 flex items-center justify-start space-x-2 pl-14">
+            <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="text-gray-500 dark:text-gray-400 hover:text-red-500 group px-2 py-1 h-auto">
+                <Heart className={`h-4 w-4 mr-1 transition-colors ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
+                <span className="text-xs">{post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}</span>
+            </Button>
+             {/* Placeholder for comments */}
+            <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-blue-500 group px-2 py-1 h-auto">
+                <MessageCircle className="h-4 w-4 mr-1" />
+                <span className="text-xs">Comment</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-green-500 group px-2 py-1 h-auto">
+                <Share2 className="h-4 w-4 mr-1" />
+                <span className="text-xs">Share</span>
+            </Button>
+        </div>
+    </div>
   );
 }
 
@@ -187,7 +190,6 @@ export default function FeedPage() {
         const newSeenIds = Array.from(new Set([...seenPostIds, ...viewablePostIds]));
         localStorage.setItem(seenPostIdsKey, JSON.stringify(newSeenIds));
         
-        // Dispatch custom event to notify navbar
         window.dispatchEvent(new CustomEvent('postsSeen'));
     }
   }, [user, posts]);
@@ -203,20 +205,17 @@ export default function FeedPage() {
         if (user.role === 'student' && user.branch) {
           const studentBranch = user.branch;
           allPosts = allPosts.filter(post => 
-            post.targetBranches.length === 0 || // General posts
-            post.targetBranches.includes(studentBranch) // Posts for student's branch
+            post.targetBranches.length === 0 || 
+            post.targetBranches.includes(studentBranch) 
           );
         } else if (user.role === 'faculty' && user.assignedBranches) {
           const facultyBranches = user.assignedBranches;
           allPosts = allPosts.filter(post => 
-            post.targetBranches.length === 0 || // General posts
-            facultyBranches.some(branch => post.targetBranches.includes(branch)) // Posts for faculty's branches
+            post.targetBranches.length === 0 || 
+            facultyBranches.some(branch => post.targetBranches.includes(branch)) 
           );
         } 
-        // Admin sees all posts implicitly
       } else {
-        // Non-logged in users might see only general posts, or none
-        // For now, let's assume they see general posts if any are marked as such
         allPosts = allPosts.filter(post => post.targetBranches.length === 0);
       }
 
@@ -238,7 +237,7 @@ export default function FeedPage() {
 
   const handleLikePost = (postId: string) => {
     if (!user) {
-      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
+      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive", duration: 3000 });
       return;
     }
     setPosts(prevPosts =>
@@ -251,7 +250,6 @@ export default function FeedPage() {
             : [...currentLikes, user.uid];
           const updatedPost = { ...p, likes: newLikes };
 
-          // Update localStorage
           if (typeof window !== 'undefined') {
             const allPostsStr = localStorage.getItem('campus_connect_posts');
             let allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
@@ -279,7 +277,7 @@ export default function FeedPage() {
     if (!postToDelete) return;
 
     if (!(user.role === 'admin' || (user.role === 'faculty' && postToDelete.authorId === user.uid))) {
-        toast({title: "Unauthorized", description: "You cannot delete this post.", variant: "destructive"});
+        toast({title: "Unauthorized", description: "You cannot delete this post.", variant: "destructive", duration: 3000});
         setDeleteTargetPostId(null);
         return;
     }
@@ -291,7 +289,7 @@ export default function FeedPage() {
         localStorage.setItem('campus_connect_posts', JSON.stringify(allPosts));
         
         setPosts(prevPosts => prevPosts.filter(p => p.id !== deleteTargetPostId));
-        toast({title: "Post Deleted", description: `"${postToDelete.title}" has been deleted.`});
+        toast({title: "Post Deleted", description: `"${postToDelete.title}" has been deleted.`, duration: 3000});
     }
     setDeleteTargetPostId(null);
   };
@@ -306,47 +304,41 @@ export default function FeedPage() {
   
   return (
     <div className="container mx-auto px-2 sm:px-4 py-8">
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center">
-                <Newspaper className="mr-3 h-7 w-7" /> Activity Feed
-            </h1>
-            <p className="text-sm text-muted-foreground">Latest updates, news, and events from around the campus.</p>
+       <div className="mx-auto my-6 max-w-2xl rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-8 shadow-lg dark:bg-gray-800">
+        <div className="mb-4 flex justify-between border-b border-gray-200 dark:border-gray-600 pb-3">
+            <p className="text-xl font-bold text-gray-700 dark:text-gray-200">Activity feed</p>
+            {/* Placeholder for filter button. Can be a DropdownMenu or Dialog */}
+            <Button variant="ghost" size="sm" className="text-sm font-medium text-primary dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500">
+            <Filter className="mr-2 h-4 w-4" /> Notification Settings
+            </Button>
         </div>
-        {/* Placeholder for Notification Settings or Filter button functionality */}
-        <Button variant="outline" size="sm" className="mt-2 sm:mt-0">
-          <Filter className="mr-2 h-4 w-4" /> Filter Feed
-        </Button>
+        {posts.length === 0 ? (
+             <div className="text-center py-12">
+                <FileText className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">No Posts Yet</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">
+                {user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
+                </p>
+                {user && (user.role === 'admin' || user.role === 'faculty') && (
+                <Link href={user.role === 'admin' ? "/admin/posts/new" : "/faculty/content/new"} className="mt-4 inline-block">
+                    <Button>Create New Post</Button>
+                </Link>
+                )}
+            </div>
+        ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {posts.map(post => (
+                <PostItem 
+                key={post.id} 
+                post={post} 
+                currentUser={user} 
+                onLikePost={handleLikePost}
+                onDeletePost={confirmDeletePost}
+                />
+            ))}
+            </div>
+        )}
       </div>
-
-      {posts.length === 0 ? (
-        <Card className="text-center py-12 shadow-md rounded-xl border border-border/60">
-          <CardContent>
-            <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold text-foreground">No Posts Yet</h2>
-            <p className="text-muted-foreground mt-1">
-              {user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
-            </p>
-            {user && (user.role === 'admin' || user.role === 'faculty') && (
-              <Link href={user.role === 'admin' ? "/admin/posts/new" : "/faculty/content/new"} className="mt-4 inline-block">
-                <Button>Create New Post</Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6 max-w-2xl mx-auto">
-          {posts.map(post => (
-            <PostItem 
-              key={post.id} 
-              post={post} 
-              currentUser={user} 
-              onLikePost={handleLikePost}
-              onDeletePost={confirmDeletePost}
-            />
-          ))}
-        </div>
-      )}
 
     <AlertDialog open={!!deleteTargetPostId} onOpenChange={() => setDeleteTargetPostId(null)}>
         <AlertDialogContent>
