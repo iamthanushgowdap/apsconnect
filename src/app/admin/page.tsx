@@ -1,9 +1,10 @@
+
 "use client";
 
 // import { useAuth } from "@/components/auth-provider"; // Replace with actual auth
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, BellDot, FilePlus2, Users, Settings, ShieldCheck } from "lucide-react";
+import { BarChart3, BellDot, FilePlus2, Users, Settings, ShieldCheck, FileText } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -196,3 +197,4 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     </Card>
   );
 }
+
