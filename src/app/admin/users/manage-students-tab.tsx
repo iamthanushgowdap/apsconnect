@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, AlertCircle, Users, Loader2, Search, XCircle, MessageSquareWarning, Info } from 'lucide-react';
+import { CheckCircle, AlertCircle, Users, Loader2, Search, XCircle, MessageSquareWarning, Info, KeyRound } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -19,6 +19,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
+
 
 interface ManageStudentsTabProps {
   actor: User; // The user performing the actions (admin or faculty)
@@ -28,6 +31,16 @@ const rejectionFormSchema = z.object({
   reason: z.string().min(10, { message: "Rejection reason must be at least 10 characters." }).max(500, { message: "Reason cannot exceed 500 characters." }),
 });
 type RejectionFormValues = z.infer<typeof rejectionFormSchema>;
+
+const adminChangePasswordSchema = z.object({
+  newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
+  confirmNewPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmNewPassword, {
+  message: "New passwords do not match.",
+  path: ["confirmNewPassword"],
+});
+type AdminChangePasswordFormValues = z.infer<typeof adminChangePasswordSchema>;
+
 
 export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
@@ -39,21 +52,19 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   const [isApproveDialogVisible, setIsApproveDialogVisible] = useState(false);
   const [isRejectDialogVisible, setIsRejectDialogVisible] = useState(false);
 
+  const [studentToChangePassword, setStudentToChangePassword] = useState<UserProfile | null>(null);
+  const [isChangePasswordDialogVisible, setIsChangePasswordDialogVisible] = useState(false);
+
   const rejectionForm = useForm<RejectionFormValues>({
     resolver: zodResolver(rejectionFormSchema),
     defaultValues: { reason: "" },
   });
 
-  // This function might be less critical if branch is directly set at registration
-  // and not derived from USN parts for management purposes.
-  const getBranchFromUsn = (usn?: string): string | undefined => {
-    if (!usn || usn.length < 7) return undefined;
-    const branchCode = usn.substring(5, 7).toUpperCase();
-    // Since Branch is now string, we might not need to validate against defaultBranches here
-    // unless there's a specific business rule.
-    // For now, just return the code.
-    return branchCode;
-  };
+  const adminChangePasswordForm = useForm<AdminChangePasswordFormValues>({
+    resolver: zodResolver(adminChangePasswordSchema),
+    defaultValues: { newPassword: "", confirmNewPassword: "" },
+  });
+
 
   const fetchUsers = useCallback(() => {
     setIsLoading(true);
@@ -64,7 +75,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         if (key && key.startsWith('campus_connect_user_')) {
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
-            if (user.uid && user.usn) { // All users with USN (students or pending students)
+            if (user.uid && user.usn) { 
               users.push(user);
             }
           } catch (error) {
@@ -75,7 +86,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
 
       if (actor.role === 'faculty' && actor.assignedBranches) {
         users = users.filter(user => {
-          const studentBranch = user.branch; // Directly use the stored branch
+          const studentBranch = user.branch; 
           return studentBranch && actor.assignedBranches!.includes(studentBranch);
         });
       }
@@ -97,6 +108,12 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     setStudentToProcess(student);
     rejectionForm.reset();
     setIsRejectDialogVisible(true);
+  };
+  
+  const openChangePasswordDialog = (student: UserProfile) => {
+    setStudentToChangePassword(student);
+    adminChangePasswordForm.reset();
+    setIsChangePasswordDialogVisible(true);
   };
 
   const handleApproveStudent = () => {
@@ -202,10 +219,47 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     setStudentToProcess(null);
     rejectionForm.reset();
   };
+
+  const handleAdminChangePassword = (data: AdminChangePasswordFormValues) => {
+    if (!studentToChangePassword || !studentToChangePassword.usn) return;
+    const usn = studentToChangePassword.usn;
+
+    if (typeof window !== 'undefined' && actor.role === 'admin') {
+      const userKey = `campus_connect_user_${usn}`;
+      const userDataStr = localStorage.getItem(userKey);
+      if (userDataStr) {
+        try {
+          const userProfile = JSON.parse(userDataStr) as UserProfile;
+          userProfile.password = data.newPassword;
+          localStorage.setItem(userKey, JSON.stringify(userProfile));
+          toast({
+            title: "Password Changed",
+            description: `Password for ${userProfile.displayName || usn} has been updated by admin.`,
+          });
+        } catch (error) {
+          toast({
+            title: 'Error Changing Password',
+            description: 'Could not update student password.',
+            variant: 'destructive',
+          });
+          console.error("Error changing student password by admin:", error);
+        }
+      }
+    } else {
+       toast({
+            title: 'Unauthorized',
+            description: 'Only administrators can perform this action.',
+            variant: 'destructive',
+        });
+    }
+    setIsChangePasswordDialogVisible(false);
+    setStudentToChangePassword(null);
+    adminChangePasswordForm.reset();
+  };
   
   const filteredUsers = allUsers.filter(user => {
     const searchLower = searchTerm.toLowerCase();
-    const branch = user.branch; // Use the stored branch directly
+    const branch = user.branch; 
     return (
       user.displayName?.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
@@ -313,7 +367,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                   <TableHead>Status</TableHead>
                   <TableHead>Processed By</TableHead>
                   <TableHead>Processed Date</TableHead>
-                  <TableHead>Details</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -340,32 +394,34 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                       {student.isApproved && student.approvalDate ? new Date(student.approvalDate).toLocaleDateString() : 
                        student.rejectedDate ? new Date(student.rejectedDate).toLocaleDateString() : 'N/A'}
                     </TableCell>
-                    <TableCell>
-                      {student.rejectionReason && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                               <MessageSquareWarning className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs break-words">
-                            <p className="font-semibold">Rejection Reason:</p>
-                            <p>{student.rejectionReason}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                       {student.isApproved && (
-                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                               <Info className="h-4 w-4 text-green-600" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs break-words">
-                            <p>Approved</p>
-                          </TooltipContent>
-                        </Tooltip>
-                       )}
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {student.rejectionReason && (
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
+                                        <MessageSquareWarning className="mr-2 h-4 w-4 text-destructive" />
+                                        <span>Reason: {student.rejectionReason.substring(0,20)}{student.rejectionReason.length > 20 ? '...' : ''}</span>
+                                        {/* Full reason can be in a tooltip for the item or a separate view details dialog */}
+                                    </DropdownMenuItem>
+                                )}
+                                {student.isApproved && (
+                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
+                                        <Info className="mr-2 h-4 w-4 text-green-600" /> Approved
+                                    </DropdownMenuItem>
+                                )}
+                                {actor.role === 'admin' && (student.role === 'student' || student.role === 'pending') && (
+                                    <DropdownMenuItem onClick={() => openChangePasswordDialog(student)}>
+                                        <KeyRound className="mr-2 h-4 w-4" /> Change Password
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -434,6 +490,64 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Admin Change Student Password Dialog */}
+      <Dialog open={isChangePasswordDialogVisible && actor.role === 'admin'} onOpenChange={(isOpen) => {
+        setIsChangePasswordDialogVisible(isOpen);
+        if (!isOpen) {
+          setStudentToChangePassword(null);
+          adminChangePasswordForm.reset();
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change Password for {studentToChangePassword?.displayName || studentToChangePassword?.usn}</DialogTitle>
+            <DialogDescription>
+              Set a new password for this student. The student will need to be informed of their new password.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...adminChangePasswordForm}>
+            <form onSubmit={adminChangePasswordForm.handleSubmit(handleAdminChangePassword)} className="space-y-4 py-2 pb-4">
+              <FormField
+                control={adminChangePasswordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={adminChangePasswordForm.control}
+                name="confirmNewPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <DialogClose asChild>
+                   <Button type="button" variant="outline" onClick={() => setStudentToChangePassword(null)}>Cancel</Button>
+                </DialogClose>
+                <Button type="submit" disabled={adminChangePasswordForm.formState.isSubmitting}>
+                  {adminChangePasswordForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Set New Password
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
     </div>
     </TooltipProvider>
   );
