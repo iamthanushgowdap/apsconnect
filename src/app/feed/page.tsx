@@ -5,12 +5,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, User } from '@/components/auth-provider';
-import type { Post, PostAttachment } from '@/types';
+import type { Post, PostAttachment, PostCategory } from '@/types'; // Added PostCategory
+import { postCategories } from '@/types'; // Import postCategories
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Heart, MessageSquare, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MessageCircle, MapPin, Users } from 'lucide-react'; // Added Users
+import { Loader2, Heart, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MapPin, Users } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation'; 
 import {
@@ -18,7 +19,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -44,16 +47,8 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
   const router = useRouter();
 
   const handleDownload = (attachment: PostAttachment) => {
-    toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}...` });
+    toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}...`, duration: 3000 });
     // This is a mock download. In a real app, you'd use the file URL.
-    // For base64 data URI (if stored like that for small files):
-    // const link = document.createElement('a');
-    // link.href = attachment.url; // Assuming attachment.url is a data URI or direct link
-    // link.download = attachment.name;
-    // document.body.appendChild(link);
-    // link.click();
-    // document.body.removeChild(link);
-    // Simulating with a blob if no direct URL
     const blob = new Blob(["Mock file content for " + attachment.name], { type: attachment.type });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -95,12 +90,12 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
 
   const getPostIcon = (category: Post['category']) => {
     switch(category) {
-      case 'event': return <CalendarDays className="inline h-3 w-3 mr-1 text-indigo-500" />;
-      case 'news': return <Newspaper className="inline h-3 w-3 mr-1 text-green-500" />;
-      case 'link': return <Paperclip className="inline h-3 w-3 mr-1 text-yellow-500" />;
-      case 'note': return <BookOpen className="inline h-3 w-3 mr-1 text-purple-500" />;
-      case 'schedule': return <CalendarDays className="inline h-3 w-3 mr-1 text-teal-500" />;
-      default: return <FileText className="inline h-3 w-3 mr-1 text-gray-500" />;
+      case 'event': return <CalendarDays className="inline h-3 w-3 mr-1 text-indigo-500 dark:text-indigo-400" />;
+      case 'news': return <Newspaper className="inline h-3 w-3 mr-1 text-green-500 dark:text-green-400" />;
+      case 'link': return <Paperclip className="inline h-3 w-3 mr-1 text-yellow-500 dark:text-yellow-400" />;
+      case 'note': return <BookOpen className="inline h-3 w-3 mr-1 text-purple-500 dark:text-purple-400" />;
+      case 'schedule': return <CalendarDays className="inline h-3 w-3 mr-1 text-teal-500 dark:text-teal-400" />;
+      default: return <FileText className="inline h-3 w-3 mr-1 text-gray-500 dark:text-gray-400" />;
     }
   }
 
@@ -108,14 +103,14 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
     <div className="mb-3 space-y-4 py-2 focus:outline-none focus:ring-1 dark:focus:ring-gray-700" tabIndex={0}>
       <div className="relative flex items-start">
         <Avatar className="h-10 w-10 shrink-0">
-           <AvatarImage src={`https://picsum.photos/seed/${post.authorId}/40/40`} alt={post.authorName} data-ai-hint="person avatar"/>
+           <AvatarImage src={`https://picsum.photos/seed/${post.authorId}/40/40`} alt={post.authorName || 'Author Avatar'} data-ai-hint="person avatar"/>
           <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
         </Avatar>
         <div className="ml-4 flex flex-col sm:w-96">
           <p className="mb-1 font-medium text-gray-700 dark:text-gray-200">{post.authorName} ({post.authorRole})</p>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {getPostIcon(post.category)}
-            <span className="mr-1 font-medium text-primary dark:text-blue-400">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}:</span>
+            <span className="mr-1 font-medium text-primary dark:text-primary-foreground">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}:</span>
             <span className="line-clamp-2">{post.title}</span>
           </div>
           <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
@@ -164,11 +159,6 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
                 <Heart className={`h-4 w-4 mr-1 transition-colors ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
                 <span className="text-xs">{post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}</span>
             </Button>
-             {/* Placeholder for comments */}
-            <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-blue-500 group px-2 py-1 h-auto">
-                <MessageCircle className="h-4 w-4 mr-1" />
-                <span className="text-xs">Comment</span>
-            </Button>
             <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-green-500 group px-2 py-1 h-auto">
                 <Share2 className="h-4 w-4 mr-1" />
                 <span className="text-xs">Share</span>
@@ -181,10 +171,12 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
 
 export default function FeedPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const [allStoredPosts, setAllStoredPosts] = useState<Post[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [deleteTargetPostId, setDeleteTargetPostId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [activeFilters, setActiveFilters] = useState<PostCategory[]>(postCategories); // Default to all categories
 
   const markPostsAsSeen = useCallback(() => {
     if (!user || posts.length === 0) return;
@@ -206,40 +198,49 @@ export default function FeedPage() {
   }, [user, posts]);
 
 
-  const fetchPosts = useCallback(() => {
+  const fetchAndFilterPosts = useCallback(() => {
     setIsLoadingPosts(true);
     if (typeof window !== 'undefined') {
       const storedPostsStr = localStorage.getItem('campus_connect_posts');
-      let allPosts: Post[] = storedPostsStr ? JSON.parse(storedPostsStr) : [];
-      
+      let fetchedAllPosts: Post[] = storedPostsStr ? JSON.parse(storedPostsStr) : [];
+      setAllStoredPosts(fetchedAllPosts); // Store all posts before any filtering
+
+      // User-based branch filtering
+      let userFilteredPosts = [...fetchedAllPosts];
       if (user) {
         if (user.role === 'student' && user.branch) {
           const studentBranch = user.branch;
-          allPosts = allPosts.filter(post => 
+          userFilteredPosts = fetchedAllPosts.filter(post => 
             !post.targetBranches || post.targetBranches.length === 0 || 
             post.targetBranches.includes(studentBranch) 
           );
         } else if (user.role === 'faculty' && user.assignedBranches) {
           const facultyBranches = user.assignedBranches;
-          allPosts = allPosts.filter(post => 
+          userFilteredPosts = fetchedAllPosts.filter(post => 
             !post.targetBranches || post.targetBranches.length === 0 || 
             facultyBranches.some(branch => post.targetBranches.includes(branch)) 
           );
         } 
-        // Admins see all posts, no filtering needed here unless specifically designed
+        // Admins see all posts, no branch filtering applied here for them.
       } else {
         // Non-logged in users see only posts targeted to 'All Branches'
-        allPosts = allPosts.filter(post => !post.targetBranches || post.targetBranches.length === 0);
+        userFilteredPosts = fetchedAllPosts.filter(post => !post.targetBranches || post.targetBranches.length === 0);
       }
 
-      setPosts(allPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime()));
+      // Category-based filtering
+      const categoryFilteredPosts = activeFilters.length === 0 || activeFilters.length === postCategories.length
+        ? userFilteredPosts // If no filters or all filters active, show all user-filtered posts
+        : userFilteredPosts.filter(post => activeFilters.includes(post.category));
+      
+      setPosts(categoryFilteredPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime()));
     }
     setIsLoadingPosts(false);
-  }, [user]);
+  }, [user, activeFilters]);
+
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    fetchAndFilterPosts();
+  }, [fetchAndFilterPosts]); // fetchAndFilterPosts includes user and activeFilters as dependencies
 
   useEffect(() => {
     if (posts.length > 0 && user) {
@@ -307,6 +308,28 @@ export default function FeedPage() {
     setDeleteTargetPostId(null);
   };
 
+  const handleFilterChange = (category: PostCategory) => {
+    setActiveFilters(prevFilters => {
+      const newFilters = prevFilters.includes(category)
+        ? prevFilters.filter(c => c !== category)
+        : [...prevFilters, category];
+      
+      // If no filters are selected, default to showing all (by effectively selecting all)
+      // Or handle this in the filtering logic directly (if newFilters.length === 0, show all)
+      return newFilters;
+    });
+  };
+
+  const handleSelectAllFilters = () => {
+    setActiveFilters(postCategories);
+  };
+
+  const handleClearAllFilters = () => {
+    // Setting to empty array will mean "show all" posts due to filter logic.
+    setActiveFilters([]);
+  };
+
+
   if (authLoading || isLoadingPosts) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
@@ -318,19 +341,44 @@ export default function FeedPage() {
   return (
     <div className="container mx-auto px-2 sm:px-4 py-8">
        <div className="mx-auto my-6 max-w-2xl rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-8 shadow-lg dark:bg-gray-800">
-        <div className="mb-4 flex justify-between border-b border-gray-200 dark:border-gray-600 pb-3">
+        <div className="mb-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-3">
             <p className="text-xl font-bold text-gray-700 dark:text-gray-200">Activity feed</p>
-            {/* Placeholder for filter button. Can be a DropdownMenu or Dialog */}
-            <Button variant="ghost" size="sm" className="text-sm font-medium text-primary dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500">
-            <Filter className="mr-2 h-4 w-4" /> Notification Settings
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-sm font-medium text-primary dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500">
+                  <Filter className="mr-2 h-4 w-4" /> Filter Categories
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {postCategories.map(category => (
+                  <DropdownMenuCheckboxItem
+                    key={category}
+                    checked={activeFilters.includes(category)}
+                    onCheckedChange={() => handleFilterChange(category)}
+                    onSelect={(e) => e.preventDefault()} 
+                  >
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleSelectAllFilters}>
+                  Select All
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleClearAllFilters}>
+                  Clear All (Show All)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </div>
         {posts.length === 0 ? (
              <div className="text-center py-12">
                 <FileText className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
                 <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">No Posts Yet</h2>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
-                {user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
+                {activeFilters.length > 0 && activeFilters.length < postCategories.length ? "No posts match your current filters." :
+                 user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
                 </p>
                 {user && (user.role === 'admin' || user.role === 'faculty') && (
                 <Link href={user.role === 'admin' ? "/admin/posts/new" : "/faculty/content/new"} className="mt-4 inline-block">
