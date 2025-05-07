@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
+  FormDescription, 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Renamed CardDescription to avoid conflict
@@ -117,7 +116,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="text-sm">Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Thanush Gowda P" {...field} className="text-sm sm:text-base"/>
+                      <Input placeholder="Thanush Gowda P" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
@@ -130,7 +129,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="text-sm">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base"/>
+                      <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
@@ -165,11 +164,12 @@ export default function RegisterPage() {
                             }
                             field.onChange(e); // Ensure react-hook-form is updated
                           }}
+                          suppressHydrationWarning
                         />
                       </FormControl>
                     </div>
                     <FormDescription className="text-xs sm:text-sm">
-                      YY: Year (e.g., 23), BB: Branch Code (e.g., CS), NNN: Roll No (e.g., 001)
+                      e.g., 23CS001
                     </FormDescription>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
@@ -182,7 +182,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="text-sm">Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
+                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
@@ -195,13 +195,13 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="text-sm">Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
+                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading} suppressHydrationWarning>
                 {isLoading ? "Registering..." : "Register"}
               </Button>
             </form>
@@ -219,4 +219,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
