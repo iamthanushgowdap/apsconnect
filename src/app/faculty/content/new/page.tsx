@@ -32,18 +32,20 @@ export default function FacultyCreatePostPage() {
     setFormSubmitting(true);
     try {
       // Mock file upload - in real app, upload attachmentsToUpload here
-      console.log("Post data to save (Faculty):", postData);
+      console.log("Post data to save (Faculty):", {...postData, likes: postData.likes || []});
       console.log("Files to 'upload' (Faculty):", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
         const existingPostsStr = localStorage.getItem('campus_connect_posts');
         const existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
-        const postIndex = existingPosts.findIndex(p => p.id === postData.id);
+        const finalPostData = {...postData, likes: postData.likes || []};
+
+        const postIndex = existingPosts.findIndex(p => p.id === finalPostData.id);
         if (postIndex > -1) {
-            existingPosts[postIndex] = postData;
+            existingPosts[postIndex] = finalPostData;
         } else {
-            existingPosts.push(postData);
+            existingPosts.push(finalPostData);
         }
         localStorage.setItem('campus_connect_posts', JSON.stringify(existingPosts));
       }
@@ -52,7 +54,7 @@ export default function FacultyCreatePostPage() {
         title: "Post Created Successfully",
         description: `"${postData.title}" has been published.`,
       });
-      router.push('/faculty/content'); // Redirect to faculty content management page (to be created)
+      router.push('/faculty/content'); // Redirect to faculty content management page
     } catch (error) {
       console.error("Error creating post:", error);
       toast({
@@ -101,3 +103,4 @@ export default function FacultyCreatePostPage() {
     </div>
   );
 }
+

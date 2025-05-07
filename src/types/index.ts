@@ -65,5 +65,7 @@ export interface Post {
   // Otherwise, it's targeted to the specified branches.
   targetBranches: Branch[]; 
   attachments: PostAttachment[];
+  likes?: string[]; // Array of user UIDs who liked the post
 }
+
 

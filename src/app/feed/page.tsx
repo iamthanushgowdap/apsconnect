@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { Loader2, FileText, Paperclip, Download, Search, Filter, ChevronRight } from 'lucide-react';
+import { Loader2, FileText, Paperclip, Download, Search, Filter, Heart, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast'; 
 
 const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
@@ -20,6 +21,7 @@ const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
 export default function FeedPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast(); 
+  const router = useRouter();
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
@@ -51,15 +53,19 @@ export default function FeedPage() {
     }
   }, []);
 
-  useEffect(() => {
+  const fetchPosts = () => {
     setIsLoadingPosts(true);
     if (typeof window !== 'undefined') {
       const postsStr = localStorage.getItem('campus_connect_posts');
       const loadedPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
       loadedPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime());
-      setAllPosts(loadedPosts);
+      setAllPosts(loadedPosts.map(p => ({...p, likes: p.likes || [] }))); // Ensure likes array exists
     }
     setIsLoadingPosts(false);
+  };
+
+  useEffect(() => {
+    fetchPosts();
   }, []);
 
   useEffect(() => {
@@ -109,6 +115,49 @@ export default function FeedPage() {
     setFilteredPosts(postsToFilter);
   }, [allPosts, user, searchTerm, categoryFilter, branchFilter]);
 
+  const handleLikePost = (postId: string) => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      const updatedPosts = allPosts.map(post => {
+        if (post.id === postId) {
+          const currentLikes = post.likes || [];
+          if (currentLikes.includes(user.uid)) {
+            // Unlike
+            return { ...post, likes: currentLikes.filter(uid => uid !== user.uid) };
+          } else {
+            // Like
+            return { ...post, likes: [...currentLikes, user.uid] };
+          }
+        }
+        return post;
+      });
+      setAllPosts(updatedPosts);
+      localStorage.setItem('campus_connect_posts', JSON.stringify(updatedPosts));
+    }
+  };
+
+  const handleDownload = (attachmentName: string) => {
+      toast({ title: "Download Started (Mock)", description: `Downloading ${attachmentName}...` });
+  };
+
+  const canEditPost = (post: Post): boolean => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'faculty' && post.authorId === user.uid) return true;
+    return false;
+  };
+
+  const getEditLink = (post: Post): string => {
+    if (user?.role === 'admin') {
+      return `/admin/posts/edit/${post.id}`;
+    }
+    // Only faculty author gets this link if canEditPost is true for them
+    return `/faculty/content/edit/${post.id}`; 
+  };
+
   if (authLoading || isLoadingPosts) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
@@ -117,9 +166,6 @@ export default function FeedPage() {
     );
   }
   
-  const handleDownload = (attachmentName: string) => {
-      toast({ title: "Download Started (Mock)", description: `Downloading ${attachmentName}...` });
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -189,6 +235,7 @@ export default function FeedPage() {
                 </div>
                 <CardDescription className="text-xs text-muted-foreground">
                   Posted by {post.authorName} ({post.authorRole}) - {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
+                  {post.updatedAt && parseISO(post.updatedAt).getTime() !== parseISO(post.createdAt).getTime() && ` (edited ${formatDistanceToNow(parseISO(post.updatedAt), { addSuffix: true })})`}
                 </CardDescription>
                 {post.targetBranches.length > 0 && (
                     <div className="text-xs text-muted-foreground mt-1">
@@ -222,8 +269,20 @@ export default function FeedPage() {
                   </div>
                 )}
               </CardContent>
-               <CardFooter className="flex-col items-start pt-2"> 
-                {/* Image Removed */}
+               <CardFooter className="flex items-center justify-between pt-2"> 
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleLikePost(post.id)} className="px-2">
+                        <Heart className={`h-4 w-4 ${user && post.likes?.includes(user.uid) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">{post.likes?.length || 0}</span>
+                </div>
+                {canEditPost(post) && (
+                  <Link href={getEditLink(post)}>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
+                    </Button>
+                  </Link>
+                )}
               </CardFooter>
             </Card>
           ))}
@@ -232,3 +291,4 @@ export default function FeedPage() {
     </div>
   );
 }
+

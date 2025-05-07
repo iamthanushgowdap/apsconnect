@@ -33,18 +33,20 @@ export default function AdminCreatePostPage() {
     try {
       // In a real app, attachmentsToUpload would be uploaded to a storage service here.
       // For this mock, we'll just store their metadata.
-      console.log("Post data to save:", postData);
+      console.log("Post data to save:", {...postData, likes: postData.likes || []});
       console.log("Files to 'upload':", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
         const existingPostsStr = localStorage.getItem('campus_connect_posts');
         const existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
-        const postIndex = existingPosts.findIndex(p => p.id === postData.id);
+        const finalPostData = {...postData, likes: postData.likes || []};
+
+        const postIndex = existingPosts.findIndex(p => p.id === finalPostData.id);
         if (postIndex > -1) {
-            existingPosts[postIndex] = postData; // Update existing post
+            existingPosts[postIndex] = finalPostData; // Update existing post
         } else {
-            existingPosts.push(postData); // Add new post
+            existingPosts.push(finalPostData); // Add new post
         }
         localStorage.setItem('campus_connect_posts', JSON.stringify(existingPosts));
       }
@@ -53,7 +55,7 @@ export default function AdminCreatePostPage() {
         title: "Post Created Successfully",
         description: `"${postData.title}" has been published.`,
       });
-      router.push('/admin/posts'); // Redirect to a posts management page (to be created) or admin dashboard
+      router.push('/admin'); // Redirect to admin dashboard
     } catch (error) {
       console.error("Error creating post:", error);
       toast({
@@ -102,3 +104,4 @@ export default function AdminCreatePostPage() {
     </div>
   );
 }
+
