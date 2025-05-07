@@ -61,8 +61,8 @@
     --popover: 220 15% 15%;
     --popover-foreground: 210 17% 90%;
 
-    --primary: 0 0% 0%; /* Black */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 0 0% 100%; /* White */
+    --primary-foreground: 0 0% 0%; /* Black */
 
     --secondary: 220 15% 20%;
     --secondary-foreground: 210 17% 95%;
@@ -78,17 +78,17 @@
 
     --border: 220 15% 25%;
     --input: 220 15% 20%;
-    --ring: 0 0% 0%; /* Primary black for ring */
+    --ring: 0 0% 100%; /* White for ring in dark mode */
 
     /* Sidebar variables for dark mode */
     --sidebar-background: 220 15% 15%; /* Dark card color */
     --sidebar-foreground: 210 17% 90%; /* Light Gray/White */
-    --sidebar-primary: 0 0% 0%; /* Black */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-primary: 0 0% 100%; /* White */
+    --sidebar-primary-foreground: 0 0% 0%; /* Black */
     --sidebar-accent: 256 50% 55%; /* Lighter Purple #7963c4 for dark mode */
     --sidebar-accent-foreground: 0 0% 100%; /* White */
     --sidebar-border: 220 15% 25%;
-    --sidebar-ring: 0 0% 0%; /* Primary black for ring */
+    --sidebar-ring: 0 0% 100%; /* White for ring in dark mode */
     
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
