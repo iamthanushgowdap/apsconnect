@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
           let currentFacultyCount = 0;
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('apsconnect_user_')) { // Changed key
+            if (key && key.startsWith('apsconnect_user_')) { 
               try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
                 if (profile.role === 'student' && profile.isApproved) { 
@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
           setStudentCount(currentStudentCount);
           setFacultyCount(currentFacultyCount);
 
-          const postsStr = localStorage.getItem('apsconnect_posts'); // Changed key
+          const postsStr = localStorage.getItem('apsconnect_posts'); 
           const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           setContentPostsCount(posts.length);
         }
@@ -253,3 +253,4 @@ function StyledActionCard({ title, description, icon, link, actionText, disabled
     </Card>
   );
 }
+
