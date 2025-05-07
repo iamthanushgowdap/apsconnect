@@ -80,6 +80,7 @@ export function CreatePostForm({
   formDescription = initialData ? 'Update the details of the post.' : 'Fill in the details to create a new post for the campus community.',
 }: CreatePostFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth(); // Call useAuth at the top level
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialData?.attachments.map(att => new File([], att.name, {type: att.type})) ?? []); // For displaying names
   
   const form = useForm<PostFormValues>({
@@ -154,7 +155,6 @@ export function CreatePostForm({
 
 
   const onSubmit = async (data: PostFormValues) => {
-    const { user } = useAuth(); // Get user inside submit to ensure it's current
     if (!user || (user.role !== 'admin' && user.role !== 'faculty')) {
       toast({ title: "Unauthorized", description: "You are not authorized to create posts.", variant: "destructive" });
       return;
