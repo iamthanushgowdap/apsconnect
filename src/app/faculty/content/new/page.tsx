@@ -71,7 +71,7 @@ export default function FacultyCreatePostPage() {
             timestamp={postData.createdAt}
           />
         ),
-        duration: 8000,
+        duration: 5000, // Changed duration to 5 seconds
       });
       router.push('/faculty/content'); 
     } catch (error) {
@@ -97,7 +97,7 @@ export default function FacultyCreatePostPage() {
   if (!user || user.role !== 'faculty') {
      return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto shadow-lg">
+        <Card className="w-full max-w-md mx-auto shadow-xl">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
           </CardHeader>
