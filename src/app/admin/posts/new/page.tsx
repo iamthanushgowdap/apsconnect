@@ -11,6 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { NewPostToast } from '@/components/notifications/new-post-toast';
+
+const getInitials = (name?: string | null) => {
+  if (!name) return "??";
+  const parts = name.split(" ");
+  if (parts.length > 1) {
+    return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
 
 export default function AdminCreatePostPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -31,8 +41,6 @@ export default function AdminCreatePostPage() {
   const handleFormSubmit = async (postData: Post, attachmentsToUpload: File[]) => {
     setFormSubmitting(true);
     try {
-      // In a real app, attachmentsToUpload would be uploaded to a storage service here.
-      // For this mock, we'll just store their metadata.
       console.log("Post data to save:", {...postData, likes: postData.likes || []});
       console.log("Files to 'upload':", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
@@ -44,18 +52,28 @@ export default function AdminCreatePostPage() {
 
         const postIndex = existingPosts.findIndex(p => p.id === finalPostData.id);
         if (postIndex > -1) {
-            existingPosts[postIndex] = finalPostData; // Update existing post
+            existingPosts[postIndex] = finalPostData; 
         } else {
-            existingPosts.push(finalPostData); // Add new post
+            existingPosts.push(finalPostData); 
         }
         localStorage.setItem('campus_connect_posts', JSON.stringify(existingPosts));
       }
 
       toast({
-        title: "Posted Successfully",
-        description: `"${postData.title}" has been published.`,
+        variant: "raw",
+        description: (
+          <NewPostToast
+            authorName={postData.authorName}
+            authorInitials={getInitials(postData.authorName)}
+            // authorImage: user?.avatarUrl, // If you have avatar URLs
+            postCategory={postData.category}
+            postTitle={postData.title}
+            timestamp={postData.createdAt}
+          />
+        ),
+        duration: 8000,
       });
-      router.push('/admin'); // Redirect to admin dashboard
+      router.push('/admin'); 
     } catch (error) {
       console.error("Error creating post:", error);
       toast({
@@ -104,4 +122,3 @@ export default function AdminCreatePostPage() {
     </div>
   );
 }
-

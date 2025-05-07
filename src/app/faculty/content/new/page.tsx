@@ -11,6 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { NewPostToast } from '@/components/notifications/new-post-toast';
+
+const getInitials = (name?: string | null) => {
+  if (!name) return "??";
+  const parts = name.split(" ");
+  if (parts.length > 1) {
+     return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
 
 export default function FacultyCreatePostPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -31,7 +41,6 @@ export default function FacultyCreatePostPage() {
   const handleFormSubmit = async (postData: Post, attachmentsToUpload: File[]) => {
     setFormSubmitting(true);
     try {
-      // Mock file upload - in real app, upload attachmentsToUpload here
       console.log("Post data to save (Faculty):", {...postData, likes: postData.likes || []});
       console.log("Files to 'upload' (Faculty):", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
@@ -51,10 +60,20 @@ export default function FacultyCreatePostPage() {
       }
 
       toast({
-        title: "Posted Successfully",
-        description: `"${postData.title}" has been published.`,
+        variant: "raw",
+        description: (
+          <NewPostToast
+            authorName={postData.authorName}
+            authorInitials={getInitials(postData.authorName)}
+            // authorImage: user?.avatarUrl, // If you have avatar URLs
+            postCategory={postData.category}
+            postTitle={postData.title}
+            timestamp={postData.createdAt}
+          />
+        ),
+        duration: 8000,
       });
-      router.push('/faculty/content'); // Redirect to faculty content management page
+      router.push('/faculty/content'); 
     } catch (error) {
       console.error("Error creating post:", error);
       toast({
@@ -103,4 +122,3 @@ export default function FacultyCreatePostPage() {
     </div>
   );
 }
-
