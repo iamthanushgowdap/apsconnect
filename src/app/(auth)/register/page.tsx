@@ -27,7 +27,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { branches, Branch } from "@/types";
-// import { useAuth } from "@/components/auth-provider"; // Import your actual auth hook
+// import { useAuth } from "@/components/auth-provider"; 
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -45,7 +45,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  // const { signUp } = useAuth(); // Replace with your actual signUp function
+  // const { signUp } = useAuth(); 
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RegisterFormValues>({
@@ -62,16 +62,23 @@ export default function RegisterPage() {
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
     try {
-      // Placeholder for actual registration logic
-      // await signUp(data.email, data.password, data.displayName, data.branch);
       console.log("Simulating registration with:", data);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
       
       toast({
         title: "Registration Submitted",
         description: "Your registration is pending admin approval. You will be notified once approved.",
       });
-      router.push("/login"); // Redirect to login or a pending approval page
+      // Simulate setting a mock user with 'pending' state
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mockUser', JSON.stringify({ 
+            displayName: data.displayName, 
+            email: data.email, 
+            role: 'pending', 
+            branch: data.branch 
+        }));
+      }
+      router.push("/dashboard"); // Redirect to dashboard to show pending message
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -84,25 +91,25 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="container flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
-      <Card className="w-full max-w-lg shadow-xl">
+    <div className="container flex min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)] items-center justify-center py-8 sm:py-12 px-4">
+      <Card className="w-full max-w-sm sm:max-w-lg shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight text-primary">Create an Account</CardTitle>
-          <CardDescription>Join CampusConnect to stay updated with college activities.</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Create an Account</CardTitle>
+          <CardDescription className="text-sm sm:text-base">Join CampusConnect to stay updated with college activities.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
               <FormField
                 control={form.control}
                 name="displayName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel className="text-sm">Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input placeholder="John Doe" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
@@ -111,11 +118,11 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-sm">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
+                      <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
@@ -124,22 +131,22 @@ export default function RegisterPage() {
                 name="branch"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Branch</FormLabel>
+                    <FormLabel className="text-sm">Branch</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="text-sm sm:text-base">
                           <SelectValue placeholder="Select your branch" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {branches.map((branch) => (
-                          <SelectItem key={branch} value={branch}>
+                          <SelectItem key={branch} value={branch} className="text-sm sm:text-base">
                             {branch}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
@@ -148,11 +155,11 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-sm">Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
@@ -161,20 +168,20 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel className="text-sm">Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
                 {isLoading ? "Registering..." : "Register"}
               </Button>
             </form>
           </Form>
-          <div className="mt-6 text-center text-sm">
+          <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
             <p>
               Already have an account?{" "}
               <Link href="/login" className="font-medium text-primary hover:underline">
@@ -187,3 +194,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-// import { useAuth } from "@/components/auth-provider"; // Import your actual auth hook
+// import { useAuth } from "@/components/auth-provider"; 
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -28,7 +28,7 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
-  // const { sendPasswordResetEmail } = useAuth(); // Replace with your actual function
+  // const { sendPasswordResetEmail } = useAuth(); 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -42,10 +42,8 @@ export default function ForgotPasswordPage() {
   async function onSubmit(data: ForgotPasswordFormValues) {
     setIsLoading(true);
     try {
-      // Placeholder for actual password reset logic
-      // await sendPasswordResetEmail(data.email);
       console.log("Simulating password reset request for:", data.email);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
 
       toast({
         title: "Password Reset Email Sent",
@@ -64,11 +62,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="container flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="container flex min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)] items-center justify-center py-8 sm:py-12 px-4">
+      <Card className="w-full max-w-sm sm:max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight text-primary">Forgot Password</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Forgot Password</CardTitle>
+          <CardDescription className="text-sm sm:text-base">
             {isSubmitted 
               ? "Check your email for reset instructions." 
               : "Enter your email address and we'll send you a link to reset your password."}
@@ -77,31 +75,31 @@ export default function ForgotPasswordPage() {
         <CardContent>
           {!isSubmitted ? (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-sm">Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="you@example.com" {...field} />
+                        <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base"/>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm"/>
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
                   {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
               </form>
             </Form>
           ) : (
             <div className="text-center">
-              <p className="text-muted-foreground">Didn't receive an email? Check your spam folder or try again later.</p>
+              <p className="text-muted-foreground text-sm sm:text-base">Didn't receive an email? Check your spam folder or try again later.</p>
             </div>
           )}
-          <div className="mt-6 text-center text-sm">
+          <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
             <Link href="/login" className="font-medium text-primary hover:underline">
               Back to Login
             </Link>
@@ -111,3 +109,4 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+

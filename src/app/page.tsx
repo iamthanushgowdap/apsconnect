@@ -13,33 +13,33 @@ export default function Home() {
   const { user, isLoading } = useAuth(); 
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-16">
+    <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
       <section className="text-center">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-primary">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-primary">
           Welcome to {SiteConfig.name}
         </h1>
-        <p className="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
+        <p className="mt-4 sm:mt-6 max-w-md sm:max-w-lg md:max-w-2xl mx-auto text-md sm:text-lg md:text-xl text-muted-foreground">
           Your central hub for all college-related information, events, and resources. Stay connected, stay informed.
         </p>
-        <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
           {isLoading ? (
             <>
-              <Skeleton className="h-12 w-40 rounded-md" />
-              <Skeleton className="h-12 w-28 rounded-md" />
+              <Skeleton className="h-11 w-36 sm:h-12 sm:w-40 rounded-md" />
+              <Skeleton className="h-11 w-24 sm:h-12 sm:w-28 rounded-md" />
             </>
           ) : user ? (
             <Link 
               href="/dashboard" 
-              className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground" }))}
+              className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto" }))}
             >
               Go to Dashboard <Rocket className="ml-2 h-5 w-5" />
             </Link>
           ) : (
             <>
-              <Link href="/register" className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground" }))}>
+              <Link href="/register" className={cn(buttonVariants({ size: "lg", className: "bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto" }))}>
                 Get Started <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-              <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
+              <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg", className: "w-full sm:w-auto" }))}>
                 Login
               </Link>
             </>
@@ -47,26 +47,26 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mt-16 md:mt-24">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-semibold tracking-tight">Why CampusConnect?</h2>
-          <p className="mt-2 text-muted-foreground">Discover the features that make college life easier.</p>
+      <section className="mt-12 md:mt-16 lg:mt-24">
+        <div className="text-center mb-10 md:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Why CampusConnect?</h2>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">Discover the features that make college life easier.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           <FeatureCard
-            icon={<Newspaper className="h-10 w-10 text-primary" />}
+            icon={<Newspaper className="h-8 w-8 md:h-10 md:w-10 text-primary" />}
             title="Latest News & Announcements"
             description="Never miss important updates from the college administration and various departments."
             dataAiHint="news paper"
           />
           <FeatureCard
-            icon={<CalendarDays className="h-10 w-10 text-primary" />}
+            icon={<CalendarDays className="h-8 w-8 md:h-10 md:w-10 text-primary" />}
             title="Event Schedules"
             description="Keep track of upcoming workshops, seminars, cultural fests, and sports events."
             dataAiHint="calendar schedule"
           />
           <FeatureCard
-            icon={<BookOpen className="h-10 w-10 text-primary" />}
+            icon={<BookOpen className="h-8 w-8 md:h-10 md:w-10 text-primary" />}
             title="Academic Resources"
             description="Access notes, important links, and schedules shared by faculty and departments."
             dataAiHint="open book"
@@ -74,21 +74,23 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mt-16 md:mt-24 py-12 bg-card rounded-lg shadow-lg">
-        <div className="container mx-auto px-6 text-center">
-            <h2 className="text-3xl font-semibold tracking-tight">Join Your Community</h2>
-            <p className="mt-4 max-w-xl mx-auto text-muted-foreground">
+      <section className="mt-12 md:mt-16 lg:mt-24 py-10 md:py-12 bg-card rounded-lg shadow-lg">
+        <div className="container mx-auto px-4 sm:px-6 text-center">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Join Your Community</h2>
+            <p className="mt-3 sm:mt-4 max-w-md sm:max-w-xl mx-auto text-sm sm:text-base text-muted-foreground">
                 Connect with students from your branch, share information, and collaborate on projects.
                 CampusConnect fosters a supportive and interactive environment.
             </p>
-            <Image 
-              src="https://picsum.photos/800/400" 
-              alt="Community engagement" 
-              width={800} 
-              height={400} 
-              className="mt-8 rounded-lg mx-auto shadow-md"
-              data-ai-hint="students collaborating"
-            />
+            <div className="mt-6 sm:mt-8 mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl">
+              <Image 
+                src="https://picsum.photos/800/400" 
+                alt="Community engagement" 
+                width={800} 
+                height={400} 
+                className="rounded-lg shadow-md w-full h-auto"
+                data-ai-hint="students collaborating"
+              />
+            </div>
         </div>
       </section>
     </div>
@@ -104,20 +106,23 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description, dataAiHint }: FeatureCardProps) {
   return (
-    <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
-      <div className="mb-4 p-3 bg-primary/10 rounded-full">
+    <div className="bg-card p-4 sm:p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+      <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-primary/10 rounded-full">
         {icon}
       </div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
-      <Image 
-        src={`https://picsum.photos/seed/${title.replace(/\s+/g, '-')}/300/200`} 
-        alt={title} 
-        width={300} 
-        height={200} 
-        className="mt-4 rounded-md object-cover aspect-[3/2]"
-        data-ai-hint={dataAiHint}
-      />
+      <h3 className="text-lg sm:text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-muted-foreground text-xs sm:text-sm">{description}</p>
+      <div className="mt-4 w-full aspect-[3/2] max-w-xs sm:max-w-sm">
+        <Image 
+          src={`https://picsum.photos/seed/${title.replace(/\s+/g, '-')}/300/200`} 
+          alt={title} 
+          width={300} 
+          height={200} 
+          className="rounded-md object-cover w-full h-full"
+          data-ai-hint={dataAiHint}
+        />
+      </div>
     </div>
   );
 }
+

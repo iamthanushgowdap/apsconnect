@@ -5,6 +5,7 @@ export type NavItem = {
   external?: boolean;
   protected?: boolean; // Requires login
   adminOnly?: boolean; // Requires admin role
+  hideWhenLoggedIn?: boolean; // Hide this link if user is logged in
   icon?: React.ComponentType<{ className?: string }>;
 };
 
@@ -38,7 +39,17 @@ export const SiteConfig: SiteConfig = {
       protected: true,
       adminOnly: true,
     },
-    // Add more links like "Events", "News" later
+    // Example: adding login/register to mainNav for testing, though typically they are in a separate auth actions area
+    // {
+    //   title: "Login",
+    //   href: "/login",
+    //   hideWhenLoggedIn: true,
+    // },
+    // {
+    //   title: "Register",
+    //   href: "/register",
+    //   hideWhenLoggedIn: true,
+    // },
   ],
   footerNav: [
     {
@@ -51,3 +62,4 @@ export const SiteConfig: SiteConfig = {
     },
   ],
 };
+

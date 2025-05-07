@@ -1,4 +1,3 @@
-
 "use client";
 
 // import { useAuth } from "@/components/auth-provider"; // Replace with actual auth
@@ -51,17 +50,15 @@ export default function AdminDashboardPage() {
   }
 
   if (!user || user.role !== 'admin') {
-    // In a real app, this would be handled by route protection / middleware
-    // router.push('/login'); // or '/unauthorized'
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
             <CardHeader>
-                <CardTitle className="text-destructive">Access Denied</CardTitle>
+                <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
             </CardHeader>
             <CardContent>
-                <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
-                <p className="text-lg text-muted-foreground">You do not have permission to view this page.</p>
+                <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+                <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
                 <Link href="/dashboard">
                     <Button variant="outline" className="mt-6">Go to Dashboard</Button>
                 </Link>
@@ -72,27 +69,27 @@ export default function AdminDashboardPage() {
   }
 
   const adminStats = [
-    { title: "Total Users", value: "1250", icon: <Users className="h-8 w-8 text-primary" />, dataAiHint: "group people" },
-    { title: "Pending Approvals", value: "15", icon: <BellDot className="h-8 w-8 text-primary" />, dataAiHint: "notification bell" },
-    { title: "Content Posts", value: "280", icon: <FilePlus2 className="h-8 w-8 text-primary" />, dataAiHint: "document plus" },
+    { title: "Total Users", value: "1250", icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "group people" },
+    { title: "Pending Approvals", value: "15", icon: <BellDot className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "notification bell" },
+    { title: "Content Posts", value: "280", icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "document plus" },
   ];
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">Admin Dashboard</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {adminStats.map(stat => (
           <Card key={stat.title} className="shadow-md hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
               {stat.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stat.value}</div>
+              <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
                <Image 
                 src={`https://picsum.photos/seed/${stat.title.replace(/\s+/g, '-')}/200/100`} 
                 alt={stat.title} 
@@ -110,7 +107,7 @@ export default function AdminDashboardPage() {
         <AdminActionCard
           title="User Management"
           description="View, approve, and manage student and faculty accounts."
-          icon={<Users className="h-10 w-10 text-accent" />}
+          icon={<Users className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/users"
           actionText="Manage Users"
           dataAiHint="users list"
@@ -118,7 +115,7 @@ export default function AdminDashboardPage() {
         <AdminActionCard
           title="Content Creation"
           description="Post news, events, notes, and schedules for specific branches."
-          icon={<FilePlus2 className="h-10 w-10 text-accent" />}
+          icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/posts/new"
           actionText="Create New Post"
           dataAiHint="writing document"
@@ -126,7 +123,7 @@ export default function AdminDashboardPage() {
         <AdminActionCard
           title="Pending Approvals"
           description="Review and approve new user registrations."
-          icon={<BellDot className="h-10 w-10 text-accent" />}
+          icon={<BellDot className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/approvals"
           actionText="View Approvals"
           dataAiHint="checklist approval"
@@ -134,7 +131,7 @@ export default function AdminDashboardPage() {
         <AdminActionCard
           title="Branch Management"
           description="Define and manage college branches (CSE, ISE, etc.)."
-          icon={<BarChart3 className="h-10 w-10 text-accent" />}
+          icon={<BarChart3 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/branches"
           actionText="Manage Branches"
           dataAiHint="organization chart"
@@ -142,7 +139,7 @@ export default function AdminDashboardPage() {
         <AdminActionCard
           title="Site Settings"
           description="Configure general application settings and preferences."
-          icon={<Settings className="h-10 w-10 text-accent" />}
+          icon={<Settings className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/settings"
           actionText="Configure Settings"
           dataAiHint="gears settings"
@@ -150,7 +147,7 @@ export default function AdminDashboardPage() {
          <AdminActionCard
           title="View All Content"
           description="Browse and manage all posted content across branches."
-          icon={<FileText className="h-10 w-10 text-accent" />}
+          icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
           link="/admin/posts"
           actionText="Manage Content"
           dataAiHint="files folder"
@@ -174,10 +171,10 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     <Card className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-center space-x-3 mb-3">
-          <div className="p-3 bg-accent/10 rounded-full">{icon}</div>
-          <CardTitle className="text-xl">{title}</CardTitle>
+          <div className="p-2 sm:p-3 bg-accent/10 rounded-full">{icon}</div>
+          <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
         </div>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-end">
         <Image 
@@ -189,7 +186,7 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
             data-ai-hint={dataAiHint}
         />
         <Link href={link} className="w-full">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base">
             {actionText}
           </Button>
         </Link>

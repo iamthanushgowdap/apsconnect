@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/auth-provider"; // Import the centralized auth hook
+import { useAuth } from "@/components/auth-provider"; 
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -31,7 +31,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { signIn } = useAuth(); // Use signIn from the centralized auth hook
+  const { signIn } = useAuth(); 
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -45,12 +45,9 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-      // Use the signIn method from AuthProvider
-      // For mock purposes, we'll pass basic info. Real app would send credentials to a backend.
       await signIn({ 
         email: data.email, 
-        // displayName: data.email.split('@')[0], // AuthProvider's signIn handles default displayName
-        role: 'student' // Default role for this mock login
+        role: 'student' 
       });
 
       toast({
@@ -70,25 +67,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="container flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="container flex min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)] items-center justify-center py-8 sm:py-12 px-4">
+      <Card className="w-full max-w-sm sm:max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight text-primary">Login to CampusConnect</CardTitle>
-          <CardDescription>Enter your credentials to access your account.</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Login to CampusConnect</CardTitle>
+          <CardDescription className="text-sm sm:text-base">Enter your credentials to access your account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-sm">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
+                      <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
@@ -97,20 +94,20 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-sm">Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
           </Form>
-          <div className="mt-6 text-center text-sm">
+          <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
             <p>
               Don&apos;t have an account?{" "}
               <Link href="/register" className="font-medium text-primary hover:underline">
@@ -128,3 +125,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
