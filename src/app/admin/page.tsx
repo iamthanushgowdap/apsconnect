@@ -1,14 +1,14 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import type { UserProfile, Post } from "@/types";
+import { DownloadAppSection } from "@/components/layout/download-app-section";
 
 interface MockUserFromAuth { 
   displayName: string | null;
@@ -79,14 +79,16 @@ export default function AdminDashboardPage() {
 
   if (isLoading || authLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <div className="animate-pulse space-y-8 w-full">
-          <div className="h-10 w-1/2 rounded bg-muted"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2].map(i => <Card key={i} className="h-36 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5].map(i => <Card key={i} className="h-64 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
+          <div className="animate-pulse space-y-8 w-full">
+            <div className="h-10 w-1/2 rounded bg-muted"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2].map(i => <Card key={i} className="h-36 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5].map(i => <Card key={i} className="h-64 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
+            </div>
           </div>
         </div>
       </div>
@@ -95,12 +97,12 @@ export default function AdminDashboardPage() {
 
   if (!user) { 
     return (
-      <div className="text-center">
+       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
             <CardHeader>
                 <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-center">
                 <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
                 <Link href="/dashboard">
@@ -118,20 +120,20 @@ export default function AdminDashboardPage() {
       value: (studentCount + facultyCount).toString(), 
       breakdown: `Students: ${studentCount}, Faculty: ${facultyCount}`,
       icon: <Users className="h-6 w-6" />,
-      bgColorClass: "bg-blue-100 dark:bg-blue-900/30",
-      iconColorClass: "text-blue-600 dark:text-blue-400",
+      bgColorClass: "bg-accent/10 dark:bg-accent/20",
+      iconColorClass: "text-accent",
     },
     { 
       title: "Content Posts", 
       value: contentPostsCount.toString(), 
       icon: <FilePlus2 className="h-6 w-6" />,
-      bgColorClass: "bg-purple-100 dark:bg-purple-900/30",
-      iconColorClass: "text-purple-600 dark:text-purple-400",
+      bgColorClass: "bg-primary/10 dark:bg-primary/20",
+      iconColorClass: "text-primary",
     },
   ];
 
   return (
-    <div className="space-y-10">
+    <div className="container mx-auto px-4 py-8 space-y-10">
       <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">Admin Dashboard</h1>
         <p className="text-md sm:text-lg text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
@@ -205,6 +207,7 @@ export default function AdminDashboardPage() {
             </div>
         </CardContent>
       </Card>
+      <DownloadAppSection />
     </div>
   );
 }

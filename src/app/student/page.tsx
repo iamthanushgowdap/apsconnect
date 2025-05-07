@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -30,6 +29,7 @@ import {
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
+import { DownloadAppSection } from "@/components/layout/download-app-section";
 
 interface RecentPostItemProps {
   post: Post;
@@ -126,7 +126,7 @@ const StudentDashboardPage = () => {
 
   if (pageLoading || authLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
@@ -134,12 +134,12 @@ const StudentDashboardPage = () => {
 
   if (!studentUser) {
     return (
-      <div className="text-center">
+       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
             <Link href="/dashboard">
@@ -211,7 +211,6 @@ const StudentDashboardPage = () => {
             actionText="Manage Profile"
             disabled={isRejected}
           />
-          {/* Campus Feed card removed as it's in the user dropdown now */}
         </div>
       </section>
       
@@ -240,6 +239,7 @@ const StudentDashboardPage = () => {
           )}
         </section>
       )}
+      <DownloadAppSection />
     </div>
   );
 }

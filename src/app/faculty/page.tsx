@@ -1,13 +1,13 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight, Newspaper } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useAuth, User } from "@/components/auth-provider";
+import { DownloadAppSection } from "@/components/layout/download-app-section";
 
 export default function FacultyDashboardPage() {
   const router = useRouter();
@@ -30,20 +30,22 @@ export default function FacultyDashboardPage() {
 
   if (pageLoading || authLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
 
   if (!facultyUser) {
     return (
-      <div className="text-center">
+       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
             <Link href="/dashboard">
@@ -60,7 +62,7 @@ export default function FacultyDashboardPage() {
     : 'Not Assigned';
 
   return (
-    <div className="space-y-10">
+    <div className="container mx-auto px-4 py-8 space-y-10">
       <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">
           Faculty Dashboard
@@ -76,7 +78,7 @@ export default function FacultyDashboardPage() {
             <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Key Actions</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StyledActionCard
                 title="Manage Students"
                 description="View, approve, and manage student accounts within your assigned branches."
@@ -98,9 +100,17 @@ export default function FacultyDashboardPage() {
                 link="/profile/settings" 
                 actionText="View Profile"
             />
+             <StyledActionCard
+                title="View Content Feed"
+                description="Browse content relevant to your branches."
+                icon={<FileText />}
+                link="/feed" 
+                actionText="View Feed"
+            />
             </div>
         </CardContent>
       </Card>
+      <DownloadAppSection />
     </div>
   );
 }

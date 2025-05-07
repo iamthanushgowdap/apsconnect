@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Loader2, FileText, Paperclip, Download, Search, Filter, Heart, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast'; 
+import { DownloadAppSection } from "@/components/layout/download-app-section";
 
 const BRANCH_STORAGE_KEY = 'campus_connect_managed_branches';
 
@@ -295,6 +296,7 @@ export default function FeedPage() {
           ))}
         </div>
       )}
+      <DownloadAppSection />
     </div>
   );
 }
