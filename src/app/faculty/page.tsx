@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2, ArrowRight, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -30,7 +30,7 @@ export default function FacultyDashboardPage() {
 
   if (pageLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
@@ -38,7 +38,7 @@ export default function FacultyDashboardPage() {
 
   if (!facultyUser) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="text-center">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
@@ -60,7 +60,7 @@ export default function FacultyDashboardPage() {
     : 'Not Assigned';
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-12 space-y-10">
+    <div className="space-y-10">
       <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">
           Faculty Dashboard
@@ -76,7 +76,7 @@ export default function FacultyDashboardPage() {
             <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Key Actions</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Adjusted grid columns */}
             <StyledActionCard
                 title="Manage Students"
                 description="View, approve, and manage student accounts within your assigned branches."
@@ -92,19 +92,20 @@ export default function FacultyDashboardPage() {
                 actionText="Create New Post"
             />
             <StyledActionCard
+                title="Campus Feed"
+                description="See the latest news, events, and announcements."
+                icon={<Newspaper />}
+                link="/feed"
+                actionText="View Campus Feed"
+            />
+            <StyledActionCard
                 title="My Profile"
                 description="View and edit your faculty profile details."
                 icon={<UserCircle />}
                 link="/profile/settings" 
                 actionText="View Profile"
             />
-            <StyledActionCard
-                title="View Content Feed"
-                description="Browse and manage content relevant to your branches."
-                icon={<FileText />}
-                link="/feed" 
-                actionText="View Feed"
-            />
+            {/* Removed the "View Content Feed" card as "Campus Feed" is more general */}
             </div>
         </CardContent>
       </Card>

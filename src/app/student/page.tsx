@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -47,7 +46,7 @@ function RecentPostItem({ post }: RecentPostItemProps) {
   const IconComponent = post?.category && categoryIcons[post.category] ? categoryIcons[post.category] : FileText;
 
   return (
-    <Card className="shadow-md hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col h-full bg-background border border-border/50 rounded-xl overflow-hidden">
+    <Card className="shadow-md hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col h-full bg-background border border-border/50 rounded-2xl overflow-hidden">
       <CardHeader className="pb-2 pt-5 px-6">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-3">
@@ -83,7 +82,7 @@ function RecentPostItem({ post }: RecentPostItemProps) {
   );
 }
 
-
+// StudentDashboardPage Component
 const StudentDashboardPage = () => {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
@@ -126,7 +125,7 @@ const StudentDashboardPage = () => {
 
   if (pageLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
@@ -134,7 +133,7 @@ const StudentDashboardPage = () => {
 
   if (!studentUser) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="text-center">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
@@ -156,8 +155,8 @@ const StudentDashboardPage = () => {
   const isApprovedStudent = studentUser.role === 'student';
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-12 space-y-10">
-      <header className="text-center sm:text-left">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <header className="mb-8 text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">
           Hello, {studentUser.displayName || studentUser.usn}!
         </h1>
@@ -168,7 +167,7 @@ const StudentDashboardPage = () => {
       </header>
 
       {isPendingApproval && (
-        <Card className="bg-yellow-50 border-2 border-yellow-400 shadow-lg dark:bg-yellow-900/30 dark:border-yellow-600 rounded-xl">
+        <Card className="mb-8 bg-yellow-50 border-2 border-yellow-400 shadow-lg dark:bg-yellow-900/30 dark:border-yellow-600 rounded-xl">
           <CardHeader className="flex flex-row items-center gap-4 pb-3 pt-5 px-5">
             <Bell className="h-8 w-8 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
             <div>
@@ -182,7 +181,7 @@ const StudentDashboardPage = () => {
       )}
 
       {isRejected && (
-        <Card className="bg-red-50 border-2 border-red-400 shadow-lg dark:bg-red-900/30 dark:border-red-600 rounded-xl">
+        <Card className="mb-8 bg-red-50 border-2 border-red-400 shadow-lg dark:bg-red-900/30 dark:border-red-600 rounded-xl">
           <CardHeader className="flex flex-row items-center gap-4 pb-3 pt-5 px-5">
             <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 flex-shrink-0" />
              <div>
@@ -200,59 +199,45 @@ const StudentDashboardPage = () => {
         </Card>
       )}
 
-      <Card className="shadow-xl rounded-xl border border-border/70">
-        <CardHeader>
-            <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Quick Links</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ActionCard
-                title="My Profile"
-                description="View and update your personal information and password."
-                icon={<UserCircle className="h-10 w-10 text-accent" />}
-                link="/profile/settings"
-                actionText="Manage Profile"
-                disabled={isRejected}
-            />
-            <ActionCard
-                title="Campus Feed"
-                description="See the latest news, events, and announcements."
-                icon={<Newspaper className="h-10 w-10 text-accent" />}
-                link="/feed"
-                actionText="View Full Feed"
-                disabled={isPendingApproval || isRejected}
-            />
-            </div>
-        </CardContent>
-      </Card>
+      <section className="mb-12">
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Quick Links</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ActionCard
+            title="My Profile"
+            description="View and update your personal information and password."
+            icon={<UserCircle className="h-10 w-10 text-accent" />}
+            link="/profile/settings"
+            actionText="Manage Profile"
+            disabled={isRejected}
+          />
+           {/* Campus Feed card removed from here */}
+        </div>
+      </section>
       
-
       {isApprovedStudent && (
-        <Card className="shadow-xl rounded-xl border border-border/70">
-            <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-primary">Recent Updates</CardTitle>
-                <Link href="/feed" className="text-sm text-primary hover:underline flex items-center gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-                </Link>
-            </CardHeader>
-            <CardContent>
-            {recentPosts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recentPosts.map(post => (
-                    <RecentPostItem key={post.id} post={post} />
-                ))}
-                </div>
-            ) : (
-                <Card className="shadow-none border-border/50 rounded-lg">
-                <CardContent className="py-10 text-center">
-                    <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-lg text-muted-foreground">No recent posts relevant to you.</p>
-                    <p className="text-sm text-muted-foreground mt-1">The campus feed might have more updates.</p>
-                </CardContent>
-                </Card>
-            )}
-            </CardContent>
-        </Card>
+        <section className="mt-10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-primary">Recent Updates</h2>
+            <Link href="/feed" className="text-sm text-primary hover:underline flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {recentPosts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentPosts.map(post => (
+                <RecentPostItem key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <Card className="shadow-lg border-border/50 rounded-xl">
+              <CardContent className="py-10 text-center">
+                <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-lg text-muted-foreground">No recent posts relevant to you.</p>
+                <p className="text-sm text-muted-foreground mt-1">The campus feed might have more updates.</p>
+              </CardContent>
+            </Card>
+          )}
+        </section>
       )}
     </div>
   );
@@ -269,7 +254,7 @@ interface ActionCardProps {
 
 function ActionCard({ title, description, icon, link, actionText, disabled = false }: ActionCardProps) {
   return (
-    <Card className={`shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
+    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
       <CardHeader className="pb-4 pt-5 px-5">
         <div className="flex items-start space-x-4">
           <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>

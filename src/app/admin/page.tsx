@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -30,18 +30,17 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [user, setUser] = useState<MockUserFromAuth | null>(null); 
-  const [isPageLoading, setIsPageLoading] = useState(true); // Local page loading state
+  const [isLoading, setIsLoading] = useState(true);
   const [studentCount, setStudentCount] = useState(0);
   const [facultyCount, setFacultyCount] = useState(0);
   const [contentPostsCount, setContentPostsCount] = useState(0);
 
 
   useEffect(() => {
-    if (!authLoading) { // Only proceed once auth context is resolved
+    if (!authLoading) {
       if (authUser && authUser.role === 'admin') {
-        setUser(authUser as MockUserFromAuth);
+        setUser(authUser as MockUserFromAuth); 
         
-        // Fetch admin-specific data (stats)
         if (typeof window !== 'undefined') {
           let currentStudentCount = 0;
           let currentFacultyCount = 0;
@@ -65,22 +64,22 @@ export default function AdminDashboardPage() {
           const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           setContentPostsCount(posts.length);
         }
-      } else {
-        setUser(null); // Clear local user if not admin or no authUser
-        if (authUser) { // Logged in, but not admin
-          router.replace('/dashboard'); // Redirect to a general dashboard or student/faculty specific one
-        } else { // Not logged in
-          router.replace('/login');
-        }
+
+      } else if (authUser && authUser.role !== 'admin'){
+        setUser(null); 
+        router.push('/dashboard'); 
+      } else { 
+        setUser(null);
+        router.push('/login'); 
       }
-      setIsPageLoading(false); // Page has processed auth state
+      setIsLoading(false);
     }
   }, [authUser, authLoading, router]);
 
 
-  if (authLoading || isPageLoading) { // Show loader if auth is loading OR page is still processing
+  if (isLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <div className="animate-pulse space-y-8 w-full">
           <div className="h-10 w-1/2 rounded bg-muted"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -94,11 +93,9 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (!user) { // If local user state is not set (because authUser wasn't admin or redirects are happening)
-    // This content might briefly show if redirects are slow, or if there's an issue.
-    // Ideally, the user is redirected away before this renders significantly.
+  if (!user) { 
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="text-center">
         <Card className="max-w-md mx-auto shadow-2xl border-destructive">
             <CardHeader>
                 <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
@@ -106,10 +103,8 @@ export default function AdminDashboardPage() {
             <CardContent>
                 <ShieldCheck className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
-                <Link href={authUser ? (authUser.role === 'student' ? '/student' : authUser.role === 'faculty' ? '/faculty' : '/dashboard') : '/login'}>
-                    <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">
-                      {authUser ? "Go to My Dashboard" : "Go to Login"}
-                    </Button>
+                <Link href="/dashboard">
+                    <Button variant="outline" className="mt-6 border-primary text-primary hover:bg-primary/10">Go to Dashboard</Button>
                 </Link>
             </CardContent>
         </Card>
@@ -130,13 +125,13 @@ export default function AdminDashboardPage() {
       title: "Content Posts", 
       value: contentPostsCount.toString(), 
       icon: <FilePlus2 className="h-6 w-6" />,
-      bgColorClass: "bg-purple-100 dark:bg-purple-900/30", // Changed from green to purple
-      iconColorClass: "text-purple-600 dark:text-purple-400", // Changed from green to purple
+      bgColorClass: "bg-purple-100 dark:bg-purple-900/30",
+      iconColorClass: "text-purple-600 dark:text-purple-400",
     },
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-12 space-y-10">
+    <div className="space-y-10">
       <header className="text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary mb-2">Admin Dashboard</h1>
         <p className="text-md sm:text-lg text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
@@ -185,6 +180,13 @@ export default function AdminDashboardPage() {
                 icon={<FilePlus2 />}
                 link="/admin/posts/new"
                 actionText="Create New Post"
+            />
+             <StyledActionCard
+                title="Campus Feed"
+                description="See the latest news, events, and announcements."
+                icon={<Newspaper />}
+                link="/feed"
+                actionText="View Campus Feed"
             />
             <StyledActionCard
                 title="Branch Management"
@@ -247,4 +249,3 @@ function StyledActionCard({ title, description, icon, link, actionText, disabled
     </Card>
   );
 }
-
