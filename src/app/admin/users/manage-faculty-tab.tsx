@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox'; // For multi-branch selection
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
 import {
   Form,
@@ -37,12 +37,17 @@ import {
 const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits.").optional().or(z.literal('')), // Optional
-  password: z.string().min(6, "Password must be at least 6 characters."),
-  confirmPassword: z.string(),
-  branch: z.enum(availableBranches, { required_error: "Branch is required." }),
-  // role is fixed to 'faculty' on creation
-}).refine(data => data.password === data.confirmPassword, {
+  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits.").optional().or(z.literal('')),
+  password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')), // Optional for edit
+  confirmPassword: z.string().optional().or(z.literal('')),
+  assignedBranches: z.array(z.enum(availableBranches)).min(1, "At least one branch must be selected."),
+  facultyTitle: z.string().optional().or(z.literal('')),
+}).refine(data => {
+  if (data.password || data.confirmPassword) { // Only validate confirmPassword if password is being set/changed
+    return data.password === data.confirmPassword;
+  }
+  return true;
+}, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
@@ -65,7 +70,8 @@ export default function ManageFacultyTab() {
       phoneNumber: "",
       password: "",
       confirmPassword: "",
-      branch: undefined,
+      assignedBranches: [],
+      facultyTitle: "",
     },
   });
 
@@ -108,16 +114,25 @@ export default function ManageFacultyTab() {
         return;
       }
 
+      if (!editingFaculty && !data.password) {
+        form.setError("password", { type: "manual", message: "Password is required for new faculty." });
+        return;
+      }
+
+      const existingProfile = editingFaculty ? facultyMembers.find(f => f.uid === editingFaculty.uid) : null;
+
       const facultyProfile: UserProfile = {
-        uid: data.email.toLowerCase(), // Use email as UID for faculty
+        uid: data.email.toLowerCase(),
         displayName: data.displayName,
         email: data.email.toLowerCase(),
         phoneNumber: data.phoneNumber || undefined,
-        password: data.password, // !!! MOCK ONLY: Store password for login simulation
-        branch: data.branch,
+        // Password logic: update if provided, otherwise keep existing (for edit) or set (for new)
+        password: data.password ? data.password : (editingFaculty && existingProfile?.password ? existingProfile.password : data.password!),
+        assignedBranches: data.assignedBranches,
+        facultyTitle: data.facultyTitle || undefined,
         role: 'faculty',
-        registrationDate: editingFaculty ? editingFaculty.registrationDate : new Date().toISOString(),
-        isApproved: true, // Faculty created by admin are auto-approved
+        registrationDate: editingFaculty?.registrationDate || new Date().toISOString(),
+        isApproved: true, 
       };
 
       localStorage.setItem(facultyUserKey, JSON.stringify(facultyProfile));
@@ -138,8 +153,9 @@ export default function ManageFacultyTab() {
       displayName: faculty.displayName || "",
       email: faculty.email,
       phoneNumber: faculty.phoneNumber || "",
-      branch: faculty.branch,
-      password: "", // Clear password fields for editing
+      assignedBranches: faculty.assignedBranches || [],
+      facultyTitle: faculty.facultyTitle || "",
+      password: "", 
       confirmPassword: "",
     });
     setIsFormOpen(true);
@@ -147,17 +163,15 @@ export default function ManageFacultyTab() {
   
   const openCreateDialog = () => {
     setEditingFaculty(null);
-    form.reset();
+    form.reset(); // Reset to default values including empty assignedBranches
     setIsFormOpen(true);
   }
-
 
   const handleDeleteFaculty = (email: string) => {
      if (typeof window !== 'undefined') {
         const confirmed = window.confirm("Are you sure you want to delete this faculty member? This action cannot be undone.");
         if (confirmed) {
             localStorage.removeItem(`campus_connect_user_${email.toLowerCase()}`);
-            // Also remove from mockUser if they were logged in
             const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr);
@@ -179,7 +193,8 @@ export default function ManageFacultyTab() {
     return (
       faculty.displayName?.toLowerCase().includes(searchLower) ||
       faculty.email.toLowerCase().includes(searchLower) ||
-      faculty.branch?.toLowerCase().includes(searchLower) ||
+      faculty.assignedBranches?.some(b => b.toLowerCase().includes(searchLower)) ||
+      faculty.facultyTitle?.toLowerCase().includes(searchLower) ||
       faculty.phoneNumber?.includes(searchLower)
     );
   });
@@ -202,7 +217,7 @@ export default function ManageFacultyTab() {
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Faculty
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingFaculty ? "Edit Faculty Member" : "Add New Faculty Member"}</DialogTitle>
             <DialogDescription>
@@ -246,22 +261,56 @@ export default function ManageFacultyTab() {
               />
               <FormField
                 control={form.control}
-                name="branch"
+                name="facultyTitle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Branch</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select branch" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableBranches.map(branch => (
-                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Title/Role (e.g., Professor, HOD)</FormLabel>
+                    <FormControl><Input placeholder="Professor of CSE" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="assignedBranches"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Assigned Branches</FormLabel>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md">
+                      {availableBranches.map((branch) => (
+                        <FormField
+                          key={branch}
+                          control={form.control}
+                          name="assignedBranches"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={branch}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(branch)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), branch])
+                                        : field.onChange(
+                                            (field.value || []).filter(
+                                              (value) => value !== branch
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {branch}
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -313,7 +362,7 @@ export default function ManageFacultyTab() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search faculty by name, email, branch, phone..."
+              placeholder="Search faculty..."
               className="pl-8 w-full sm:w-1/2 lg:w-1/3"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -331,9 +380,9 @@ export default function ManageFacultyTab() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Branch</TableHead>
+                  <TableHead>Title/Role</TableHead>
+                  <TableHead>Branches</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -342,11 +391,13 @@ export default function ManageFacultyTab() {
                   <TableRow key={faculty.uid}>
                     <TableCell>{faculty.displayName || 'N/A'}</TableCell>
                     <TableCell>{faculty.email}</TableCell>
-                    <TableCell>{faculty.branch || 'N/A'}</TableCell>
-                    <TableCell>{faculty.phoneNumber || 'N/A'}</TableCell>
+                    <TableCell>{faculty.facultyTitle || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge variant="default" className="bg-primary/20 text-primary hover:bg-primary/30">Faculty</Badge>
+                        {faculty.assignedBranches && faculty.assignedBranches.length > 0 
+                          ? faculty.assignedBranches.join(', ') 
+                          : 'N/A'}
                     </TableCell>
+                    <TableCell>{faculty.phoneNumber || 'N/A'}</TableCell>
                     <TableCell className="text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => openEditDialog(faculty)}>
                             <Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span>

@@ -9,8 +9,9 @@ export interface User {
   email: string | null; 
   displayName: string | null;
   role: UserRole;
-  branch?: Branch; 
+  branch?: Branch; // For students: their branch. For faculty: their primary/first assigned branch for display.
   usn?: string; 
+  assignedBranches?: Branch[]; // For faculty, to know all their branches
 }
 
 interface AuthContextType {
@@ -75,7 +76,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email: facultyProfile.email,
             displayName: facultyProfile.displayName || defaultDisplayName,
             role: 'faculty',
-            branch: facultyProfile.branch,
+            branch: facultyProfile.assignedBranches && facultyProfile.assignedBranches.length > 0 ? facultyProfile.assignedBranches[0] : undefined,
+            assignedBranches: facultyProfile.assignedBranches,
           };
         } else {
           setIsLoading(false);
@@ -92,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
        let studentDisplayName: string | null = defaultDisplayName;
        let studentBranch: Branch | undefined = credentials.branch;
        let isApproved = false;
-       let role: UserRole = 'pending';
+       let currentRole: UserRole = 'pending';
 
 
        if(registeredUserDataStr){
@@ -100,19 +102,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          studentEmail = registeredUserData.email;
          studentDisplayName = registeredUserData.displayName || defaultDisplayName;
          isApproved = registeredUserData.isApproved;
-         role = registeredUserData.role;
+         currentRole = registeredUserData.role; // Use current role from storage
 
-         if(!studentBranch && credentials.usn.length >= 7) {
+         if(!studentBranch && credentials.usn.length >= 7) { // Derive branch if not explicitly passed
             const branchCode = credentials.usn.substring(5,7).toUpperCase() as Branch; 
             if (["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"].includes(branchCode)) {
                  studentBranch = branchCode;
             }
+         } else if (registeredUserData.branch) { // Use stored branch if available
+            studentBranch = registeredUserData.branch;
          }
        } else {
-          // If not found in detailed storage, maybe it's an old mock or schema implies it should exist.
-          // For now, we'll proceed, but login might fail if isApproved is false or role is 'pending'
-          // depending on app logic elsewhere (e.g. dashboard page).
-          // This path means the student profile wasn't created during registration, which is unlikely with current flow.
+          // This case implies a student is trying to log in without prior registration data.
+          // For the mock setup, this shouldn't happen as registration creates the record.
+          // If it does, they would be treated as 'pending' and without specific profile data.
+          // isApproved remains false, role remains 'pending'.
        }
 
       newUser = {
@@ -120,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         usn: credentials.usn.toUpperCase(),
         email: studentEmail, 
         displayName: studentDisplayName,
-        role: role, // Use the role from stored profile (could be 'pending' or 'student')
+        role: currentRole, // Role will be 'pending' or 'student' based on stored profile
         branch: studentBranch, 
       };
     } else {

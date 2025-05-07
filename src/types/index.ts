@@ -11,14 +11,23 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   role: UserRole;
-  branch?: Branch; // Can be derived from USN for students or set for faculty
+  
+  // Student-specific fields
   usn?: string; // University Seat Number for students
+  branch?: Branch; // Student's single branch (derived from USN or set)
   registrationDate: string; // ISO string format (e.g., new Date().toISOString())
   isApproved: boolean;
+  approvedByUid?: string; // UID of admin/faculty who approved
+  approvedByDisplayName?: string; // Display name of admin/faculty who approved
+
+  // Faculty-specific fields
+  assignedBranches?: Branch[]; // Branches faculty is associated with
+  facultyTitle?: string; // e.g., "Professor", "HOD of CSE"
   phoneNumber?: string; // Primarily for faculty, set by admin
+  
   // !!! MOCK ONLY: In a real application, NEVER store plaintext passwords.
-  // This is included here to simulate admin setting a password for faculty.
-  password?: string;
+  // This is included here to simulate admin setting/updating a password for faculty.
+  password?: string; 
 }
 
 export interface Post {
@@ -33,3 +42,4 @@ export interface Post {
   targetBranches: Branch[]; // Which branches this post is for
   // Add other post fields like attachments, expiryDate, etc.
 }
+

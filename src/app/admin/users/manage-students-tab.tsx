@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch } from '@/types';
+import { UserProfile } from '@/types'; // Branch type not directly used here
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,12 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, AlertCircle, Users, Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/components/auth-provider'; // To get current admin details
 
 export default function ManageStudentsTab() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const { user: adminUser } = useAuth(); // Get current admin user
 
   const fetchUsers = useCallback(() => {
     setIsLoading(true);
@@ -26,7 +28,6 @@ export default function ManageStudentsTab() {
         if (key && key.startsWith('campus_connect_user_')) {
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
-            // Ensure it's a student or pending student profile (identified by USN in uid)
             if (user.uid && user.usn && (user.role === 'student' || user.role === 'pending')) {
               users.push(user);
             }
@@ -45,7 +46,7 @@ export default function ManageStudentsTab() {
   }, [fetchUsers]);
 
   const handleApproveStudent = (usn: string) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && adminUser) {
       const userKey = `campus_connect_user_${usn}`;
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
@@ -53,23 +54,26 @@ export default function ManageStudentsTab() {
           const user = JSON.parse(userDataStr) as UserProfile;
           user.role = 'student';
           user.isApproved = true;
+          user.approvedByUid = adminUser.uid;
+          user.approvedByDisplayName = adminUser.displayName || adminUser.email || 'Admin';
+          
           localStorage.setItem(userKey, JSON.stringify(user));
           
-          // Also update mockUser if this user is currently logged in and pending
           const mockUserStr = localStorage.getItem('mockUser');
           if (mockUserStr) {
             const mockUser = JSON.parse(mockUserStr);
             if (mockUser.usn === usn && mockUser.role === 'pending') {
               mockUser.role = 'student';
+              // Potentially add approvedBy info to mockUser if needed for immediate UI update elsewhere
               localStorage.setItem('mockUser', JSON.stringify(mockUser));
             }
           }
 
           toast({
             title: 'Student Approved',
-            description: `${user.displayName || user.usn} has been approved.`,
+            description: `${user.displayName || user.usn} has been approved by ${user.approvedByDisplayName}.`,
           });
-          fetchUsers(); // Refresh list
+          fetchUsers(); 
         } catch (error) {
           toast({
             title: 'Error Approving Student',
@@ -79,16 +83,24 @@ export default function ManageStudentsTab() {
           console.error("Error approving student:", error);
         }
       }
+    } else if (!adminUser) {
+        toast({
+            title: 'Error',
+            description: 'Admin user details not found. Cannot approve student.',
+            variant: 'destructive',
+        });
     }
   };
   
   const filteredUsers = allUsers.filter(user => {
     const searchLower = searchTerm.toLowerCase();
+    const branch = user.branch || user.usn?.substring(5,7);
     return (
       user.displayName?.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
       user.usn?.toLowerCase().includes(searchLower) ||
-      user.branch?.toLowerCase().includes(searchLower)
+      branch?.toLowerCase().includes(searchLower) ||
+      user.approvedByDisplayName?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -152,12 +164,12 @@ export default function ManageStudentsTab() {
             <Users className="text-primary h-6 w-6" />
             Approved Students List
           </CardTitle>
-           <CardDescription>View and manage all approved student accounts.</CardDescription>
+           <CardDescription>View and manage all approved student accounts. Search by name, USN, email, branch, or approver.</CardDescription>
            <div className="relative mt-2">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search students by name, USN, email, branch..."
+              placeholder="Search approved students..."
               className="pl-8 w-full sm:w-1/2 lg:w-1/3"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -178,6 +190,7 @@ export default function ManageStudentsTab() {
                   <TableHead>Email</TableHead>
                   <TableHead>Branch</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Approved By</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -190,7 +203,7 @@ export default function ManageStudentsTab() {
                     <TableCell>
                       <Badge variant="default" className="bg-green-500/20 text-green-700 hover:bg-green-500/30">Approved</Badge>
                     </TableCell>
-                    {/* Add actions like Edit/Delete/View Profile if needed later */}
+                    <TableCell>{student.approvedByDisplayName || 'N/A'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
