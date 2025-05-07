@@ -34,7 +34,13 @@ export const SiteConfig: SiteConfig = {
     {
       title: "Dashboard",
       href: "/dashboard",
-      protected: true, // Accessible by student, faculty, admin once logged in
+      protected: true, 
+    },
+    {
+      title: "Campus Feed",
+      href: "/feed",
+      // public or protected based on app logic, assume public for now or protected
+      // protected: true, 
     },
     {
       title: "Admin Panel",
@@ -49,15 +55,17 @@ export const SiteConfig: SiteConfig = {
       facultyOnly: true, 
     }
     // {
-    //   title: "Login",
-    //   href: "/login",
-    //   hideWhenLoggedIn: true,
+    //   title: "Create Post (Admin)", // Example of a more specific link if needed
+    //   href: "/admin/posts/new",
+    //   protected: true,
+    //   adminOnly: true,
     // },
     // {
-    //   title: "Register",
-    //   href: "/register",
-    //   hideWhenLoggedIn: true,
-    // },
+    //   title: "Create Post (Faculty)", // Example
+    //   href: "/faculty/content/new",
+    //   protected: true,
+    //   facultyOnly: true,
+    // }
   ],
   footerNav: [
     {

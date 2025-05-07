@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
           title="Content Creation"
           description="Post news, events, notes, and schedules for specific branches."
           icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/posts/new" // Assuming this route will exist
+          link="/admin/posts/new"
           actionText="Create New Post"
           dataAiHint="writing document"
         />
@@ -199,3 +199,4 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     </Card>
   );
 }
+

@@ -38,15 +38,30 @@ export interface UserProfile {
   password?: string; 
 }
 
+export type PostCategory = "event" | "news" | "link" | "note" | "schedule";
+export const postCategories: PostCategory[] = ["event", "news", "link", "note", "schedule"];
+
+export interface PostAttachment {
+  name: string;
+  type: string;
+  size: number;
+  // In a real app, this would be a URL to the stored file
+  // For mock, we might store a data URI if small, or just name/type
+}
+
 export interface Post {
   id: string;
   title: string;
   content: string;
-  authorId: string;
-  authorName: string; // Denormalized for easier display
+  authorId: string; // UID of admin/faculty
+  authorName: string; // Display name for convenience
+  authorRole: UserRole; // Role of the author ('admin' or 'faculty')
   createdAt: string; // ISO string format
   updatedAt?: string; // ISO string format
-  category: "event" | "news" | "link" | "note" | "schedule";
-  targetBranches: Branch[]; // Which branches this post is for
-  // Add other post fields like attachments, expiryDate, etc.
+  category: PostCategory;
+  // If targetBranches is empty, it's considered a general post for all branches.
+  // Otherwise, it's targeted to the specified branches.
+  targetBranches: Branch[]; 
+  attachments: PostAttachment[];
 }
+

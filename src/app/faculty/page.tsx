@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, Loader2, FileText } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, Loader2, FileText, FilePlus2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -80,6 +80,14 @@ export default function FacultyDashboardPage() {
           dataAiHint="students group"
         />
         <FacultyActionCard
+          title="Create Content"
+          description="Post news, events, or notes for your assigned branches."
+          icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
+          link="/faculty/content/new"
+          actionText="Create New Post"
+          dataAiHint="writing document"
+        />
+        <FacultyActionCard
           title="My Profile"
           description="View and edit your faculty profile details."
           icon={<UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
@@ -88,10 +96,10 @@ export default function FacultyDashboardPage() {
           dataAiHint="profile page"
         />
          <FacultyActionCard
-          title="Content Management"
-          description="View and manage content relevant to your branches."
+          title="View Content"
+          description="Browse and manage content relevant to your branches."
           icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/faculty/content" // Placeholder, to be implemented later
+          link="/faculty/content" // This will be the feed/management page for faculty
           actionText="Manage Content"
           dataAiHint="documents files"
         />
@@ -137,3 +145,4 @@ function FacultyActionCard({ title, description, icon, link, actionText, dataAiH
     </Card>
   );
 }
+
