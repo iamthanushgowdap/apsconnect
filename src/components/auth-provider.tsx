@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -16,7 +17,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (credentials: { email: string; role?: UserRole, displayName?: string, branch?: Branch }) => Promise<void>;
+  signIn: (credentials: { email: string; role: UserRole, displayName?: string, branch?: Branch }) => Promise<void>;
   signOut: () => Promise<void>;
   // TODO: Add signUp if register page needs to interact with this context
 }
@@ -33,21 +34,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const mockUserStr = localStorage.getItem('mockUser');
       if (mockUserStr) {
-        const storedUser = JSON.parse(mockUserStr) as User;
+        const storedUser = JSON.parse(mockUserStr) as User; // Potentially User type needs to be enforced better here
         setUser(storedUser);
       } else {
         setUser(null); // Explicitly set user to null if not found
       }
     } catch (e) {
       console.error("Failed to parse mockUser from localStorage", e);
-      localStorage.removeItem('mockUser');
+      localStorage.removeItem('mockUser'); // Clear corrupted data
       setUser(null); // Explicitly set user to null on error
     } finally {
       setIsLoading(false); // Set loading to false once processing is done
     }
   }, []);
 
-  const signIn = async (credentials: { email: string; role?: UserRole, displayName?: string, branch?: Branch }) => {
+  const signIn = async (credentials: { email: string; role: UserRole, displayName?: string, branch?: Branch }) => {
     setIsLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -55,9 +56,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const newUser: User = {
       uid: credentials.email, // Using email as UID for mock purposes
       email: credentials.email,
-      displayName: credentials.displayName || credentials.email.split('@')[0],
-      role: credentials.role || 'student',
-      branch: credentials.branch,
+      displayName: credentials.displayName || credentials.email.split('@')[0], // Default displayName if not provided
+      role: credentials.role, // Role is now explicitly passed
+      branch: credentials.branch, // Branch can also be passed
     };
     
     localStorage.setItem('mockUser', JSON.stringify(newUser));
@@ -88,4 +89,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

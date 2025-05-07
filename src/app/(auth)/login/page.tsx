@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,16 +18,28 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth-provider"; 
+import type { UserRole } from "@/types";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string().min(1, { message: "Password is required." }), // Min 1 for admin, can be more for users
+  mode: z.enum(["student", "admin"], { required_error: "Please select a login mode."})
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
+
+const ADMIN_EMAIL = "admin@gmail.com";
+const ADMIN_PASSWORD = "admin123";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,22 +52,52 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
+      mode: "student",
     },
   });
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
+      const { email, password, mode } = data;
+      let role: UserRole = mode;
+      let displayName: string | undefined;
+      let targetRoute = "/dashboard";
+
+      if (mode === "admin") {
+        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+          role = "admin";
+          displayName = "Admin User";
+          targetRoute = "/admin"; 
+        } else {
+          toast({
+            title: "Login Failed",
+            description: "Invalid admin credentials.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // For student mode, password validation can be more strict if needed via schema
+        // For now, we use the generic signIn
+        role = "student";
+        // displayName will be derived in signIn or could be fetched
+      }
+
       await signIn({ 
-        email: data.email, 
-        role: 'student' 
+        email, 
+        role,
+        displayName, 
+        // For students, branch could be part of their profile, not set at login
       });
 
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: `Welcome back${displayName ? `, ${displayName}` : ''}!`,
       });
-      router.push("/dashboard");
+      router.push(targetRoute);
+
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -102,6 +145,27 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="mode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Login as</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="text-sm sm:text-base">
+                          <SelectValue placeholder="Select login mode" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="student" className="text-sm sm:text-base">User</SelectItem>
+                        <SelectItem value="admin" className="text-sm sm:text-base">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs sm:text-sm"/>
+                  </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
@@ -125,4 +189,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
