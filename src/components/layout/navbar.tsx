@@ -4,59 +4,21 @@ import Link from "next/link";
 import { SiteConfig } from "@/config/site";
 import { Icons } from "@/components/icons";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-// Placeholder for auth state - replace with actual auth context/hook
-import React, { useEffect, useState } from 'react';
-
-
-// Mock auth state for UI development
-// In a real app, this would come from AuthContext or a similar hook
-interface MockAuthContextType {
-  user: { name: string; role: 'student' | 'admin' } | null;
-  isLoading: boolean;
-  login: () => void;
-  logout: () => void;
-  register: () => void;
-}
-
-const useMockAuth = (): MockAuthContextType => {
-  const [user, setUser] = useState<{ name: string; role: 'student' | 'admin' } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate fetching auth state
-    const storedUser = localStorage.getItem('mockUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = () => {
-    const mockUserData = { name: 'Test User', role: 'student' as 'student' | 'admin' };
-    localStorage.setItem('mockUser', JSON.stringify(mockUserData));
-    setUser(mockUserData);
-  };
-  
-  const logout = () => {
-    localStorage.removeItem('mockUser');
-    setUser(null);
-  };
-
-  const register = () => {
-    // For UI testing, just log that register was called
-    console.log("Register function called");
-  }
-
-
-  return { user, isLoading, login, logout, register };
-};
+import { useAuth } from "@/components/auth-provider"; // Import the centralized auth hook
+import React from 'react';
 
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, isLoading, logout } = useMockAuth(); // Replace with actual auth hook
+  const router = useRouter();
+  const { user, isLoading, signOut } = useAuth(); // Use the centralized auth hook
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/'); // Redirect to homepage after logout
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -88,8 +50,8 @@ export function Navbar() {
             <div className="h-8 w-20 animate-pulse rounded-md bg-muted"></div>
           ) : user ? (
             <>
-              <span className="text-sm text-muted-foreground hidden sm:inline">Hi, {user.name}</span>
-              <Button variant="outline" size="sm" onClick={logout}>
+              <span className="text-sm text-muted-foreground hidden sm:inline">Hi, {user.displayName || user.email}</span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
             </>

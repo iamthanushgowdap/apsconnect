@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // Changed from 'next/navigation'
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-// import { useAuth } from "@/components/auth-provider"; // Import your actual auth hook
+import { useAuth } from "@/components/auth-provider"; // Import the centralized auth hook
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -31,7 +31,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  // const { signIn } = useAuth(); // Replace with your actual signIn function
+  const { signIn } = useAuth(); // Use signIn from the centralized auth hook
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -45,24 +45,23 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-      // Placeholder for actual sign-in logic
-      // await signIn(data.email, data.password);
-      console.log("Simulating login with:", data);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-      // Mock successful login:
-      localStorage.setItem('mockUser', JSON.stringify({ name: data.email.split('@')[0], email: data.email, role: 'student' }));
-
+      // Use the signIn method from AuthProvider
+      // For mock purposes, we'll pass basic info. Real app would send credentials to a backend.
+      await signIn({ 
+        email: data.email, 
+        // displayName: data.email.split('@')[0], // AuthProvider's signIn handles default displayName
+        role: 'student' // Default role for this mock login
+      });
 
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-      router.push("/dashboard"); // Redirect to dashboard or appropriate page
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: error.message || "Invalid credentials or an unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
