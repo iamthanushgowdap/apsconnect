@@ -16,7 +16,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Added FormDescription
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Renamed CardDescription to avoid conflict
@@ -117,7 +117,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="text-sm">Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} className="text-sm sm:text-base"/>
+                      <Input placeholder="Thanush Gowda P" {...field} className="text-sm sm:text-base"/>
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                       <span className="text-sm sm:text-base font-medium p-2.5 border border-input rounded-md bg-muted">1AP</span>
                       <FormControl>
                         <Input 
-                          placeholder="YYBBBNNN (e.g., 23CS001)" 
+                          placeholder="e.g., 23CS001" 
                           {...field} 
                           className="text-sm sm:text-base"
                           maxLength={7}
