@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -6,7 +7,7 @@ import Link from "next/link";
 import { useAuth, User } from "@/components/auth-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ShieldCheck, UserCircle, Bell, AlertTriangle, Newspaper, BookOpen, CalendarDays, FileText, ArrowRight } from "lucide-react";
+import { Loader2, ShieldCheck, UserCircle, Bell, AlertTriangle, Newspaper, BookOpen, CalendarDays, FileText, ArrowRight, Paperclip } from "lucide-react"; // Added Paperclip
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
