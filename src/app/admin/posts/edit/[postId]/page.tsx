@@ -20,7 +20,7 @@ export default function AdminEditPostPage() {
   
   const [pageLoading, setPageLoading] = useState(true);
   const [formSubmitting, setFormSubmitting] = useState(false);
-  const [initialPostData, setInitialPostData = useState<Post | null>(null);
+  const [initialPostData, setInitialPostData] = useState<Post | null>(null);
   const [errorLoadingPost, setErrorLoadingPost] = useState<string | null>(null);
 
   const postId = params?.postId as string;
