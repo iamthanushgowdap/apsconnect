@@ -51,7 +51,7 @@ export default function FacultyCreatePostPage() {
       }
 
       toast({
-        title: "Post Created Successfully",
+        title: "Posted Successfully",
         description: `"${postData.title}" has been published.`,
       });
       router.push('/faculty/content'); // Redirect to faculty content management page

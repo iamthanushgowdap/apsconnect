@@ -52,7 +52,7 @@ export default function AdminCreatePostPage() {
       }
 
       toast({
-        title: "Post Created Successfully",
+        title: "Posted Successfully",
         description: `"${postData.title}" has been published.`,
       });
       router.push('/admin'); // Redirect to admin dashboard
