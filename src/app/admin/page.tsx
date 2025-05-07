@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,20 @@ interface MockUserFromAuth {
   usn?: string; 
 }
 
+interface AdminStat {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  breakdown?: string; // Optional field for user breakdown
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [user, setUser] = useState<MockUserFromAuth | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
-  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [studentCount, setStudentCount] = useState(0);
+  const [facultyCount, setFacultyCount] = useState(0);
   const [contentPostsCount, setContentPostsCount] = useState(0);
 
 
@@ -31,22 +40,23 @@ export default function AdminDashboardPage() {
         setUser(authUser as MockUserFromAuth); 
         
         if (typeof window !== 'undefined') {
-          let studentCount = 0;
-          let facultyCount = 0;
+          let currentStudentCount = 0;
+          let currentFacultyCount = 0;
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key && key.startsWith('campus_connect_user_')) {
               try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
-                if (profile.role === 'student') {
-                  studentCount++;
+                if (profile.role === 'student' && profile.isApproved) { // Count only approved students
+                  currentStudentCount++;
                 } else if (profile.role === 'faculty') {
-                  facultyCount++;
+                  currentFacultyCount++;
                 }
               } catch (e) { /* ignore parse errors */ }
             }
           }
-          setTotalUsersCount(studentCount + facultyCount);
+          setStudentCount(currentStudentCount);
+          setFacultyCount(currentFacultyCount);
 
           const postsStr = localStorage.getItem('campus_connect_posts');
           const posts: Post[] = postsStr ? JSON.parse(postsStr) : [];
@@ -97,9 +107,18 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const adminStats = [
-    { title: "Total Users (Students + Faculty)", value: totalUsersCount.toString(), icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
-    { title: "Content Posts", value: contentPostsCount.toString(), icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> },
+  const adminStats: AdminStat[] = [
+    { 
+      title: "Total Users", 
+      value: (studentCount + facultyCount).toString(), 
+      breakdown: `Students: ${studentCount}, Faculty: ${facultyCount}`,
+      icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> 
+    },
+    { 
+      title: "Content Posts", 
+      value: contentPostsCount.toString(), 
+      icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /> 
+    },
   ];
 
   return (
@@ -118,6 +137,7 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
+              {stat.breakdown && <p className="text-xs text-muted-foreground pt-1">{stat.breakdown}</p>}
             </CardContent>
           </Card>
         ))}
