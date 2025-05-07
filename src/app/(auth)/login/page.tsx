@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react"; // Removed useEffect as it's not used here.
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,15 +27,14 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/auth-provider"; 
+import { useAuth, User } from "@/components/auth-provider"; 
 import type { UserRole } from "@/types";
 
-// USN format: 1APYYBBNNN (e.g., 1AP23CS001)
-// YY = 2 digits, BB = 2 letters, NNN = 3 digits
-const usnRegex = /^1AP\d{2}[A-Z]{2}\d{3}$/i; // i for case-insensitive input, will be uppercased
+
+const usnRegex = /^1AP\d{2}[A-Z]{2}\d{3}$/i; 
 
 const loginSchema = z.object({
-  identifier: z.string().min(1, { message: "This field is required." }), // Will hold USN or Email
+  identifier: z.string().min(1, { message: "This field is required." }), 
   password: z.string().min(1, { message: "Password is required." }),
   mode: z.enum(["student", "admin", "faculty"], { required_error: "Please select a login mode." })
 }).superRefine((data, ctx) => {
@@ -60,7 +59,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const ADMIN_EMAIL = "admin@gmail.com"; // Case-insensitive comparison later
+const ADMIN_EMAIL = "admin@gmail.com"; 
 const ADMIN_PASSWORD = "admin123";
 
 export default function LoginPage() {
@@ -84,21 +83,18 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const { identifier, password, mode } = data;
-      let role: UserRole = mode as UserRole; // Cast mode to UserRole
-      let displayName: string | undefined;
       let targetRoute = "/dashboard";
+      let loggedInUser: User;
 
       if (mode === "admin") {
         if (identifier.toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-          role = "admin";
-          displayName = "Admin User";
-          targetRoute = "/admin"; 
-          await signIn({ 
+          loggedInUser = await signIn({ 
             email: identifier.toLowerCase(), 
-                            password, 
-            role,
-            displayName, 
+            password, 
+            role: "admin",
+            displayName: "Admin User", 
           });
+          targetRoute = "/admin";
         } else {
           toast({
             title: "Login Failed",
@@ -109,33 +105,26 @@ export default function LoginPage() {
           return;
         }
       } else if (mode === "faculty") {
-        // Mock faculty login for now. In a real app, validate against a faculty user database.
-        // This example assumes any email/password (not admin's) is a "valid" faculty login for mock.
-        role = "faculty";
-        displayName = identifier.split('@')[0]; // Simple display name from email
-        targetRoute = "/dashboard"; // Or a specific faculty dashboard route
-        await signIn({
+        loggedInUser = await signIn({
           email: identifier.toLowerCase(),
-          password, // Pass password if signIn handles it
-          role,
-          displayName,
+          password,
+          role: "faculty",
         });
-      }
-       else { // Student mode
-        role = "student";
-        const usn = identifier.toUpperCase(); // Ensure USN is uppercase for consistency
-        // In a real app, you'd validate USN and password against a backend.
-        // For mock, we assume the USN is valid if it passes schema validation.
-        await signIn({ 
+        // displayName will be set by signIn from stored profile if available
+        targetRoute = "/dashboard"; 
+      } else { // Student mode
+        const usn = identifier.toUpperCase();
+        loggedInUser = await signIn({ 
           usn: usn, 
-          password, // Pass password for student auth if signIn handles it
-          role,
+          password, 
+          role: "student",
         });
+         // displayName will be set by signIn from stored profile if available
       }
 
       toast({
         title: "Login Successful",
-        description: `Welcome back${displayName ? `, ${displayName}` : ''}!`,
+        description: `Welcome back${loggedInUser.displayName ? `, ${loggedInUser.displayName}` : ''}!`,
       });
       router.push(targetRoute);
 
@@ -188,8 +177,8 @@ export default function LoginPage() {
                     <Select 
                       onValueChange={(value) => {
                         field.onChange(value);
-                        form.setValue("identifier", ""); // Clear identifier on mode change
-                        form.clearErrors("identifier"); // Clear validation errors
+                        form.setValue("identifier", ""); 
+                        form.clearErrors("identifier"); 
                       }} 
                       defaultValue={field.value}
                     >
@@ -264,4 +253,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,23 +19,22 @@ import {
   FormDescription, 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Renamed CardDescription to avoid conflict
+import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast";
-// import { branches, Branch } from "@/types"; // Branch is now part of USN
+import type { UserProfile } from "@/types";
 
-// Regex for YYBBBNNN: 2 digits, 2 letters, 3 digits
+
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }), // Retain email for communication/recovery
+  email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
   usnSuffix: z.string()
     .length(7, { message: "USN Suffix must be 7 characters (e.g., 23CS001)." })
     .regex(usnSuffixRegex, { message: "Format: YYBBBNNN (e.g., 23CS001 where YY is year, BB branch, NNN roll no)." })
     .transform(val => {
-      // Ensure branch code is uppercase
       return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
     }),
 }).refine(data => data.password === data.confirmPassword, {
@@ -62,25 +62,34 @@ export default function RegisterPage() {
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
-    const fullUsn = `1AP${data.usnSuffix}`; // data.usnSuffix already has branch code in uppercase due to Zod transform
+    const fullUsn = `1AP${data.usnSuffix}`; 
     
     try {
       console.log("Simulating registration with:", { ...data, usn: fullUsn });
       await new Promise(resolve => setTimeout(resolve, 1500)); 
       
-      // Store a more complete "profile" for mock purposes, which login could potentially use
       if (typeof window !== 'undefined') {
-        const userProfileData = { 
+        const userProfileData: UserProfile = { 
+            uid: fullUsn,
             displayName: data.displayName, 
             email: data.email, 
-            role: 'pending', // Initial role
+            role: 'pending', 
             usn: fullUsn,
-            // branch: fullUsn.substring(3,5) // Example: "CS"
+            // branch can be derived from USN: fullUsn.substring(5,7)
+            registrationDate: new Date().toISOString(),
+            isApproved: false,
+            // Password is NOT stored in the UserProfile for students via registration for security mock.
         };
         localStorage.setItem(`campus_connect_user_${fullUsn}`, JSON.stringify(userProfileData));
         
-        // Set current session to pending user
-        localStorage.setItem('mockUser', JSON.stringify(userProfileData));
+        // Set current session to pending user for immediate dashboard feedback
+        localStorage.setItem('mockUser', JSON.stringify({
+            uid: fullUsn,
+            displayName: data.displayName,
+            email: data.email,
+            role: 'pending',
+            usn: fullUsn,
+        }));
       }
 
       toast({
@@ -149,7 +158,7 @@ export default function RegisterPage() {
                           {...field} 
                           className="text-sm sm:text-base"
                           maxLength={7}
-                          onInput={(e) => { // Auto-uppercase for branch code part as user types
+                          onInput={(e) => { 
                             const inputVal = e.currentTarget.value;
                             if (inputVal.length >= 2 && inputVal.length <=4) {
                                 const yearPart = inputVal.substring(0,2);
@@ -162,7 +171,7 @@ export default function RegisterPage() {
                                 const rollPart = inputVal.substring(4);
                                 e.currentTarget.value = yearPart + branchPart + rollPart;
                             }
-                            field.onChange(e); // Ensure react-hook-form is updated
+                            field.onChange(e); 
                           }}
                           suppressHydrationWarning
                         />

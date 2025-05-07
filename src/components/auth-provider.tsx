@@ -2,21 +2,21 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { UserRole, Branch } from '@/types'; 
+import type { UserRole, Branch, UserProfile } from '@/types'; 
 
 export interface User {
-  uid: string; // For student, this will be USN. For admin/faculty, email.
-  email: string | null; // Student email collected at registration, admin/faculty must have one.
+  uid: string; 
+  email: string | null; 
   displayName: string | null;
   role: UserRole;
-  branch?: Branch; // Can be derived from USN for students
-  usn?: string; // Store the full USN for students
+  branch?: Branch; 
+  usn?: string; 
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<void>;
+  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<User>; // Return User on success
   signOut: () => Promise<void>;
 }
 
@@ -47,41 +47,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => {
+  const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }): Promise<User> => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
 
     let newUser: User;
-    const commonDisplayName = credentials.displayName || 
+    const defaultDisplayName = credentials.displayName || 
       (credentials.email ? credentials.email.split('@')[0] : 
       (credentials.usn ? `User-${credentials.usn.slice(-3)}` : 'User'));
 
-    if ((credentials.role === 'admin' || credentials.role === 'faculty') && credentials.email) {
+    if (credentials.role === 'admin' && credentials.email) {
       newUser = {
         uid: credentials.email, 
         email: credentials.email,
-        displayName: commonDisplayName,
-        role: credentials.role, // Will be 'admin' or 'faculty'
-        // No USN or branch for admin/faculty by default here
+        displayName: defaultDisplayName,
+        role: credentials.role,
       };
+    } else if (credentials.role === 'faculty' && credentials.email && credentials.password) {
+      const facultyUserKey = `campus_connect_user_${credentials.email.toLowerCase()}`;
+      const facultyUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(facultyUserKey) : null;
+
+      if (facultyUserDataStr) {
+        const facultyProfile = JSON.parse(facultyUserDataStr) as UserProfile;
+        if (facultyProfile.role === 'faculty' && facultyProfile.password === credentials.password) {
+          newUser = {
+            uid: facultyProfile.uid,
+            email: facultyProfile.email,
+            displayName: facultyProfile.displayName || defaultDisplayName,
+            role: 'faculty',
+            branch: facultyProfile.branch,
+          };
+        } else {
+          setIsLoading(false);
+          throw new Error("Invalid faculty credentials or account not found.");
+        }
+      } else {
+        setIsLoading(false);
+        throw new Error("Faculty account not found.");
+      }
     } else if (credentials.role === 'student' && credentials.usn) {
        const registeredUserKey = `campus_connect_user_${credentials.usn.toUpperCase()}`;
        const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
        let studentEmail: string | null = null;
-       let studentDisplayName: string | null = commonDisplayName;
+       let studentDisplayName: string | null = defaultDisplayName;
        let studentBranch: Branch | undefined = credentials.branch;
+       let isApproved = false;
+       let role: UserRole = 'pending';
+
 
        if(registeredUserDataStr){
-         const registeredUserData = JSON.parse(registeredUserDataStr);
+         const registeredUserData = JSON.parse(registeredUserDataStr) as UserProfile;
          studentEmail = registeredUserData.email;
-         studentDisplayName = registeredUserData.displayName || commonDisplayName;
-         // studentBranch can also be derived from USN, e.g. credentials.usn.substring(5,7) as Branch code
+         studentDisplayName = registeredUserData.displayName || defaultDisplayName;
+         isApproved = registeredUserData.isApproved;
+         role = registeredUserData.role;
+
          if(!studentBranch && credentials.usn.length >= 7) {
-            const branchCode = credentials.usn.substring(5,7).toUpperCase() as Branch; // Assuming USN is 1APYYBBBNNN format
+            const branchCode = credentials.usn.substring(5,7).toUpperCase() as Branch; 
             if (["CSE", "ISE", "ECE", "ME", "CIVIL", "OTHER"].includes(branchCode)) {
                  studentBranch = branchCode;
             }
          }
+       } else {
+          // If not found in detailed storage, maybe it's an old mock or schema implies it should exist.
+          // For now, we'll proceed, but login might fail if isApproved is false or role is 'pending'
+          // depending on app logic elsewhere (e.g. dashboard page).
+          // This path means the student profile wasn't created during registration, which is unlikely with current flow.
        }
 
       newUser = {
@@ -89,12 +120,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         usn: credentials.usn.toUpperCase(),
         email: studentEmail, 
         displayName: studentDisplayName,
-        role: credentials.role,
+        role: role, // Use the role from stored profile (could be 'pending' or 'student')
         branch: studentBranch, 
       };
     } else {
       setIsLoading(false);
-      throw new Error("Invalid credentials for signIn: email/USN missing for role, or role not specified.");
+      throw new Error("Invalid credentials for signIn: email/USN or password missing for role, or role not specified.");
     }
     
     if (typeof window !== 'undefined') {
@@ -102,6 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setUser(newUser);
     setIsLoading(false);
+    return newUser;
   };
 
   const signOut = async () => {
