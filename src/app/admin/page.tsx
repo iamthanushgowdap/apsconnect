@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, BellDot, FilePlus2, Users, Settings, ShieldCheck, FileText, UserCircle } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, FileText, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -13,7 +13,7 @@ import { useAuth } from "@/components/auth-provider";
 interface MockUserFromAuth { 
   displayName: string | null;
   email: string | null; 
-  role: 'admin' | 'student' | 'pending' | 'faculty'; // Added faculty
+  role: 'admin' | 'student' | 'pending' | 'faculty';
   usn?: string; 
 }
 
@@ -27,7 +27,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (!authLoading) {
       if (authUser && authUser.role === 'admin') {
-        setUser(authUser as MockUserFromAuth); // Cast authUser to MockUserFromAuth
+        setUser(authUser as MockUserFromAuth); 
       } else if (authUser && authUser.role !== 'admin'){
         setUser(null); 
         router.push('/dashboard'); 
@@ -74,8 +74,9 @@ export default function AdminDashboardPage() {
 
   const adminStats = [
     { title: "Total Users", value: "1250", icon: <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "group people" },
-    { title: "Pending Approvals", value: "15", icon: <BellDot className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "notification bell" },
     { title: "Content Posts", value: "280", icon: <FilePlus2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "document plus" },
+    // Example of another stat if needed
+    // { title: "Active Sessions", value: "75", icon: <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />, dataAiHint: "pulse chart" },
   ];
 
   return (
@@ -85,7 +86,7 @@ export default function AdminDashboardPage() {
         <p className="text-sm sm:text-base text-muted-foreground">Manage CampusConnect content, users, and settings.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         {adminStats.map(stat => (
           <Card key={stat.title} className="shadow-md hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -120,23 +121,15 @@ export default function AdminDashboardPage() {
           title="Content Creation"
           description="Post news, events, notes, and schedules for specific branches."
           icon={<FilePlus2 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/posts/new"
+          link="/admin/posts/new" // Assuming this route will exist
           actionText="Create New Post"
           dataAiHint="writing document"
-        />
-        <AdminActionCard
-          title="Pending Approvals"
-          description="Review and approve new user registrations."
-          icon={<BellDot className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/approvals"
-          actionText="View Approvals"
-          dataAiHint="checklist approval"
         />
         <AdminActionCard
           title="Branch Management"
           description="Define and manage college branches (CSE, ISE, etc.)."
           icon={<BarChart3 className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/branches"
+          link="/admin/branches" // Assuming this route will exist
           actionText="Manage Branches"
           dataAiHint="organization chart"
         />
@@ -144,7 +137,7 @@ export default function AdminDashboardPage() {
           title="Site Settings"
           description="Configure general application settings and preferences."
           icon={<Settings className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/settings"
+          link="/admin/settings" // Assuming this route will exist
           actionText="Configure Settings"
           dataAiHint="gears settings"
         />
@@ -152,7 +145,7 @@ export default function AdminDashboardPage() {
           title="View All Content"
           description="Browse and manage all posted content across branches."
           icon={<FileText className="h-8 w-8 sm:h-10 sm:w-10 text-accent" />}
-          link="/admin/posts"
+          link="/admin/posts" // Assuming this route will exist
           actionText="Manage Content"
           dataAiHint="files folder"
         />
@@ -206,4 +199,3 @@ function AdminActionCard({ title, description, icon, link, actionText, dataAiHin
     </Card>
   );
 }
-

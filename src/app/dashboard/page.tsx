@@ -17,16 +17,16 @@ import {
   LayoutGrid,
   CheckSquare,
   UserCircle,
-  Briefcase, // Icon for faculty
-  MessageSquareWarning, // Icon for rejection message
-  Info, // Icon for pending message
+  Briefcase, 
+  MessageSquareWarning, 
+  Info, 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/components/auth-provider";
-import type { User } from "@/components/auth-provider"; // Explicitly import User type
+import type { User } from "@/components/auth-provider"; 
 
 interface MockPost {
   id: string;
@@ -48,7 +48,7 @@ const mockPosts: MockPost[] = [
 export default function DashboardPage() {
   const router = useRouter(); 
   const { user: authUser, isLoading: authLoading } = useAuth();
-  const [user, setUser] = useState<User | null>(null); // Use the imported User type
+  const [user, setUser] = useState<User | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
   const userBranchFromUsn = user.role === 'student' && user.usn ? user.usn.substring(5, 7) : user.branch;
   const userBranchPosts = mockPosts.filter(post => 
-    user.role === 'faculty' || user.role === 'admin' || // Faculty/Admin see all posts or general posts
+    user.role === 'faculty' || user.role === 'admin' || 
     !post.branch || post.branch === "General" || post.branch === userBranchFromUsn
   );
 
@@ -248,7 +248,6 @@ export default function DashboardPage() {
               <CardContent className="grid grid-cols-1 gap-3">
                 <QuickActionLink href="/admin/users" icon={<Users className="h-5 w-5 mr-2" />} label="Manage Users" />
                 <QuickActionLink href="/admin/posts/new" icon={<FileText className="h-5 w-5 mr-2" />} label="Create Post" />
-                <QuickActionLink href="/admin/approvals" icon={<Bell className="h-5 w-5 mr-2" />} label="Pending Approvals" />
                 <QuickActionLink href="/admin" icon={<UserCircle className="h-5 w-5 mr-2"/>} label="Admin Dashboard" />
               </CardContent>
             </Card>
@@ -266,7 +265,7 @@ interface StatCardProps {
   link?: string;
   dataAiHint: string;
   description?: string;
-  colorConfig?: string; // Changed from color to colorConfig to avoid conflict with HTML color attribute
+  colorConfig?: string; 
 }
 
 function StatCard({ title, value, icon, link, dataAiHint, description, colorConfig = "bg-accent/10 text-accent" }: StatCardProps) {
@@ -354,4 +353,3 @@ function QuickActionLink({ href, icon, label }: QuickActionLinkProps) {
     </Link>
   );
 }
-
