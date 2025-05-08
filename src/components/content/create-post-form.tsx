@@ -29,7 +29,7 @@ const ALLOWED_FILE_TYPES = [
   'text/plain',
   'video/mp4', 'video/webm', 'video/ogg'
 ];
-const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; 
 
 const postFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(150, "Title cannot exceed 150 characters."),
@@ -78,7 +78,7 @@ export function CreatePostForm({
   isLoading,
   submitButtonText = initialData ? 'Update Post' : 'Create Post',
   formTitle = initialData ? 'Edit Post' : 'Create New Post',
-  formDescription = initialData ? 'Update the details of the post.' : 'Fill in the details to create a new post for the APS community.',
+  formDescription = initialData ? 'Update the details of the post.' : 'Fill in the details to create a new post for the APSConnect community.',
 }: CreatePostFormProps) {
   const { toast } = useToast();
   const { user } = useAuth(); 
@@ -179,6 +179,16 @@ export function CreatePostForm({
       return;
     }
 
+    let authorAvatarUrl: string | undefined = undefined;
+    if (typeof window !== 'undefined') {
+      const userProfileStr = localStorage.getItem(`apsconnect_user_${user.uid}`);
+      if (userProfileStr) {
+        const userProfile = JSON.parse(userProfileStr) as UserProfile;
+        authorAvatarUrl = userProfile.avatarDataUrl;
+      }
+    }
+
+
     const filesToUpload: File[] = selectedFiles; 
     const newAttachments: PostAttachment[] = filesToUpload.map(file => ({
       name: file.name,
@@ -206,6 +216,7 @@ export function CreatePostForm({
       authorId: user.uid,
       authorName: user.displayName || user.email || "APSConnect User",
       authorRole: user.role,
+      authorAvatarUrl: authorAvatarUrl,
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       likes: initialData?.likes || [],
@@ -383,3 +394,4 @@ export function CreatePostForm({
     </Card>
   );
 }
+

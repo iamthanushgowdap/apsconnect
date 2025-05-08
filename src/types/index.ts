@@ -13,6 +13,7 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   role: UserRole;
+  avatarDataUrl?: string; // Stores the profile picture as a base64 data URI
   
   // Student-specific fields
   usn?: string; // University Seat Number for students
@@ -58,6 +59,7 @@ export interface Post {
   authorId: string; // UID of admin/faculty
   authorName: string; // Display name for convenience
   authorRole: UserRole; // Role of the author ('admin' or 'faculty')
+  authorAvatarUrl?: string; // Optional avatar of the post author
   createdAt: string; // ISO string format
   updatedAt?: string; // ISO string format
   category: PostCategory;

@@ -9,7 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider"; 
 import React, { useEffect, useState } from 'react';
-import type { Post } from "@/types";
+import type { Post, UserProfile } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,7 @@ export function Navbar() {
   const router = useRouter();
   const { user, isLoading, signOut } = useAuth(); 
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
 
   const calculateUnseenPosts = React.useCallback(() => {
     if (typeof window === 'undefined' || !user ) { 
@@ -65,10 +66,27 @@ export function Navbar() {
 
   useEffect(() => {
     calculateUnseenPosts();
+    if (user && typeof window !== 'undefined') {
+      const userProfileStr = localStorage.getItem(`apsconnect_user_${user.uid}`);
+      if (userProfileStr) {
+        const userProfile = JSON.parse(userProfileStr) as UserProfile;
+        setUserAvatarUrl(userProfile.avatarDataUrl);
+      }
+    } else {
+      setUserAvatarUrl(undefined);
+    }
+
 
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'apsconnect_posts' || (user && event.key === `apsconnect_seen_post_ids_${user.uid}`)) { 
         calculateUnseenPosts();
+      }
+      if (user && event.key === `apsconnect_user_${user.uid}`) {
+        const updatedProfileStr = localStorage.getItem(`apsconnect_user_${user.uid}`);
+        if (updatedProfileStr) {
+          const updatedProfile = JSON.parse(updatedProfileStr) as UserProfile;
+          setUserAvatarUrl(updatedProfile.avatarDataUrl);
+        }
       }
     };
 
@@ -130,18 +148,18 @@ export function Navbar() {
         </Link>
         <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-            // Filter items based on auth state and role
-            if (isLoading) { // While loading, only show non-protected, non-role-specific items
+            if (isLoading) { 
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
-            } else { // After loading
+            } else { 
               if (item.hideWhenLoggedIn && user) return null; 
               if (item.protected && !user) return null;       
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
               if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
+              // Hide Activity Feed from mainNav if user is logged in, as it's in dropdown
+              if (item.title === "Activity Feed" && user) return null;
             }
             
-            // If the item passes all filters, render it
             return (
                 <Link
                     key={item.href}
@@ -154,11 +172,6 @@ export function Navbar() {
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
-                    {item.title === "Activity Feed" && user && unseenPostsCount > 0 && (
-                         <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
-                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
-                         </span>
-                    )}
                 </Link>
             );
           })}
@@ -171,7 +184,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={`https://picsum.photos/seed/${user.uid}/40/40`} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
+                    <AvatarImage src={userAvatarUrl || `https://picsum.photos/seed/${user.uid}/40/40`} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
                     <AvatarFallback>
                       {user.displayName ? (
                         getUserInitials(user.displayName)
@@ -244,3 +257,4 @@ export function Navbar() {
     </header>
   );
 }
+

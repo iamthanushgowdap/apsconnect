@@ -103,16 +103,16 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
   }
 
   return (
-    <div className="relative flex items-center py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+    <div className="relative flex items-start py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
       {/* Author Avatar */}
-      <Avatar className="h-10 w-10 rounded-full object-cover">
+      <Avatar className="h-10 w-10 rounded-full object-cover mt-1">
         <AvatarImage
-          src={`https://picsum.photos/seed/${post.authorId}/40/40`}
+          src={post.authorAvatarUrl || `https://picsum.photos/seed/${post.authorId}/40/40`}
           alt={`${post.authorName || 'Author'}'s avatar`}
           data-ai-hint="person avatar"
         />
         <AvatarFallback>
-          {"AB"} {/* Simplified static content */}
+          {getInitials(post.authorName)}
         </AvatarFallback>
       </Avatar>
 
@@ -163,7 +163,7 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
-                       <MoreHorizontal className="h-4 w-4" /> {/* Changed from Settings */}
+                       <MoreHorizontal className="h-4 w-4" /> 
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
