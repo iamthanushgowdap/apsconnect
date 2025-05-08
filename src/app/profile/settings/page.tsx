@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
 import type { UserProfile } from '@/types';
-import { Loader2, ShieldCheck, UserCircle, Edit3, Trash2, Camera } from 'lucide-react';
+import { Loader2, ShieldCheck, Edit3, Trash2, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,9 +36,9 @@ const profileSchema = z.object({
   currentPassword: z.string().optional(),
   newPassword: z.string().optional(),
   confirmNewPassword: z.string().optional(),
-  currentEmail: z.string().email({ message: "Invalid current email address." }).optional(),
-  newEmail: z.string().email({ message: "Invalid new email address." }).optional(),
-  confirmNewEmail: z.string().optional(),
+  currentEmail: z.string().email({ message: "Invalid current email address." }).optional().or(z.literal('')),
+  newEmail: z.string().email({ message: "Invalid new email address." }).optional().or(z.literal('')),
+  confirmNewEmail: z.string().optional().or(z.literal('')),
 })
 .superRefine((data, ctx) => {
   // Password change validation
@@ -89,6 +89,29 @@ const readFileAsDataURL = (file: File): Promise<string> => {
   });
 };
 
+const getProfileInitials = (profile: UserProfile | null): string => {
+  if (!profile) return "??";
+  const nameSource = profile.displayName || profile.email || profile.usn;
+  if (!nameSource) return "??";
+  
+  const nameParts = nameSource.split(/[\s@]+/); 
+  if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
+    const firstInitial = nameParts[0][0];
+    let secondInitial = '';
+    const lastPart = nameParts[nameParts.length - 1];
+    if (lastPart && lastPart.length > 0 && nameParts.length > 1) {
+       secondInitial = lastPart[0];
+    } else if (nameParts[0].length > 1) {
+      secondInitial = nameParts[0][1];
+    }
+    return `${firstInitial}${secondInitial}`.toUpperCase();
+  }
+  if (nameSource.length >=2) return nameSource.substring(0, 2).toUpperCase();
+  if (nameSource.length === 1) return nameSource.substring(0,1).toUpperCase();
+  return "??";
+};
+
+
 export default function ProfileSettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -126,7 +149,6 @@ export default function ProfileSettingsPage() {
           setAvatarPreview(parsedProfile.avatarDataUrl || null);
           form.reset({ 
             displayName: parsedProfile.displayName || "",
-            // Email fields are not pre-filled by default for change operation
             currentEmail: "", 
             newEmail: "",
             confirmNewEmail: ""
@@ -145,7 +167,7 @@ export default function ProfileSettingsPage() {
           setAvatarPreview(null);
           form.reset({ displayName: defaultAdminProfile.displayName || "" });
         } else {
-          router.push('/login'); // Profile not found, redirect
+          router.push('/login'); 
         }
       } else if (!authUser) {
         router.push('/login');
@@ -157,7 +179,7 @@ export default function ProfileSettingsPage() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // Max 2MB for avatar
+      if (file.size > 2 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant: "destructive" });
         return;
       }
@@ -181,7 +203,6 @@ export default function ProfileSettingsPage() {
     let changesMade = false;
     const updatedProfileData = { ...userProfile };
 
-    // Check if any actual data to update is provided
     const isDisplayNameChanged = data.displayName && data.displayName !== userProfile.displayName;
     const isPasswordChanged = !!data.newPassword;
     const isEmailChanged = !!data.newEmail;
@@ -196,24 +217,21 @@ export default function ProfileSettingsPage() {
     setFormSubmitting(true);
 
     try {
-      // Profile Picture Update
       if (selectedFile) {
         updatedProfileData.avatarDataUrl = await readFileAsDataURL(selectedFile);
         changesMade = true;
-      } else if (avatarPreview === null && userProfile.avatarDataUrl) { // Avatar removed
+      } else if (avatarPreview === null && userProfile.avatarDataUrl) { 
         updatedProfileData.avatarDataUrl = undefined;
         changesMade = true;
       }
 
-      // Display Name Update
       if (data.displayName && data.displayName !== userProfile.displayName) {
         updatedProfileData.displayName = data.displayName;
         changesMade = true;
       }
 
-      // Password Update
       if (data.newPassword) {
-        if (!data.currentPassword) { // Redundant due to schema, but good practice
+        if (!data.currentPassword) { 
              form.setError("currentPassword", { message: "Current password is required."});
              setFormSubmitting(false); return;
         }
@@ -228,12 +246,11 @@ export default function ProfileSettingsPage() {
         changesMade = true;
       }
 
-      // Email Update
       let oldEmailKey: string | null = null;
       let newEmailKey: string | null = null;
 
       if (data.newEmail) {
-        if (!data.currentEmail) { // Redundant
+        if (!data.currentEmail) { 
             form.setError("currentEmail", { message: "Current email is required."});
             setFormSubmitting(false); return;
         }
@@ -249,10 +266,10 @@ export default function ProfileSettingsPage() {
           setFormSubmitting(false); return;
         }
 
-        oldEmailKey = `apsconnect_user_${userProfile.uid}`; // uid is email for admin/faculty
+        oldEmailKey = `apsconnect_user_${userProfile.uid}`; 
         updatedProfileData.email = data.newEmail.toLowerCase();
         if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
-          updatedProfileData.uid = data.newEmail.toLowerCase(); // UID changes for admin/faculty
+          updatedProfileData.uid = data.newEmail.toLowerCase(); 
           newEmailKey = `apsconnect_user_${updatedProfileData.uid}`;
         }
         changesMade = true;
@@ -274,14 +291,13 @@ export default function ProfileSettingsPage() {
 
         const updatedAuthUser: User = {
           ...authUser,
-          uid: updatedProfileData.uid, // Update UID if it changed (for admin/faculty)
+          uid: updatedProfileData.uid, 
           email: updatedProfileData.email,
           displayName: updatedProfileData.displayName || authUser.displayName,
-          // avatarDataUrl could be added to User interface if needed in navbar directly
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
-        updateUserContext(updatedAuthUser); // This updates the auth context
-        setUserProfileState(updatedProfileData); // Update local component state
+        updateUserContext(updatedAuthUser); 
+        setUserProfileState(updatedProfileData); 
       }
 
       toast({
@@ -294,7 +310,7 @@ export default function ProfileSettingsPage() {
         currentPassword: "", newPassword: "", confirmNewPassword: "",
         currentEmail: "", newEmail: "", confirmNewEmail: ""
       });
-      setSelectedFile(null); // Clear selected file after successful upload
+      setSelectedFile(null); 
 
     } catch (error: any) {
       toast({
@@ -316,7 +332,7 @@ export default function ProfileSettingsPage() {
     );
   }
 
-  if (!authUser) { // Should be caught by useEffect too, but as a fallback
+  if (!authUser) { 
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -330,6 +346,7 @@ export default function ProfileSettingsPage() {
       </div>
     );
   }
+  
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -339,7 +356,7 @@ export default function ProfileSettingsPage() {
             <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
               <AvatarImage src={avatarPreview || undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
               <AvatarFallback className="text-3xl">
-                {userProfile.displayName ? userProfile.displayName.substring(0, 2).toUpperCase() : <UserCircle className="h-12 w-12" />}
+                 {getProfileInitials(userProfile)}
               </AvatarFallback>
             </Avatar>
             <div className="flex gap-2 mt-2">
@@ -365,20 +382,17 @@ export default function ProfileSettingsPage() {
             <CardDescription className="text-base sm:text-lg text-center">
               Email: {userProfile.email}
             </CardDescription>
+            {userProfile.role === 'student' && userProfile.usn && (
+                 <CardDescription className="text-base sm:text-lg text-center mt-1">
+                    USN: {userProfile.usn}
+                </CardDescription>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {userProfile.role === 'student' && userProfile.usn && (
-                <FormItem>
-                  <FormLabel>University Seat Number (USN)</FormLabel>
-                  <FormControl>
-                    <Input value={userProfile.usn} readOnly disabled className="bg-muted/50" />
-                  </FormControl>
-                  <FormDescription>Your USN is not editable.</FormDescription>
-                </FormItem>
-              )}
+              
               <FormField
                 control={form.control}
                 name="displayName"
@@ -397,17 +411,17 @@ export default function ProfileSettingsPage() {
                 <h3 className="text-md font-medium text-foreground">Change Password</h3>
                 <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change password.</p>
               </div>
-              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
 
               <div className="space-y-1 pt-4 border-t">
                 <h3 className="text-md font-medium text-foreground">Change Email</h3>
-                <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change email.</p>
+                <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change email. This will also change your login ID if you are an admin or faculty.</p>
               </div>
-              <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} autoComplete="email" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
               
               <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={formSubmitting}>
                 {formSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : "Update Profile"}
@@ -415,7 +429,7 @@ export default function ProfileSettingsPage() {
             </form>
           </Form>
           <div className="mt-6 text-center">
-            <Link href="/dashboard">
+            <Link href={authUser.role === 'admin' ? '/admin' : authUser.role === 'faculty' ? '/faculty' : '/student'}>
               <Button variant="link" className="text-sm text-muted-foreground">Back to Dashboard</Button>
             </Link>
           </div>

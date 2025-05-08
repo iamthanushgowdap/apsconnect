@@ -7,7 +7,7 @@ import { Icons } from "@/components/icons";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/auth-provider"; 
+import { useAuth, User } from "@/components/auth-provider"; 
 import React, { useEffect, useState } from 'react';
 import type { Post, UserProfile } from "@/types";
 import {
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User as UserIcon, LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 
 export function Navbar() {
@@ -71,6 +71,8 @@ export function Navbar() {
       if (userProfileStr) {
         const userProfile = JSON.parse(userProfileStr) as UserProfile;
         setUserAvatarUrl(userProfile.avatarDataUrl);
+      } else {
+        setUserAvatarUrl(undefined);
       }
     } else {
       setUserAvatarUrl(undefined);
@@ -86,6 +88,8 @@ export function Navbar() {
         if (updatedProfileStr) {
           const updatedProfile = JSON.parse(updatedProfileStr) as UserProfile;
           setUserAvatarUrl(updatedProfile.avatarDataUrl);
+        } else {
+           setUserAvatarUrl(undefined);
         }
       }
     };
@@ -113,14 +117,27 @@ export function Navbar() {
     router.push('/'); 
   };
 
-  const getUserInitials = (name: string | null | undefined): string => {
-    if (!name) return "?"; 
-    const nameParts = name.split(" ");
+  const getUserInitials = (currentUser: User | null): string => {
+    if (!currentUser) return "??";
+    const nameSource = currentUser.displayName || currentUser.email || currentUser.usn;
+    if (!nameSource) return "??"; 
+    
+    const nameParts = nameSource.split(/[\s@]+/); // Split by space or @ for email
     if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
-      return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+      const firstInitial = nameParts[0][0];
+      let secondInitial = '';
+      // Try to get initial from last part if it's not the same as first (e.g. "user@example.com" -> "UE")
+      // If only one part (e.g. "username" from "username@domain"), take second char of that part.
+      const lastPart = nameParts[nameParts.length - 1];
+      if (lastPart && lastPart.length > 0 && nameParts.length > 1) {
+         secondInitial = lastPart[0];
+      } else if (nameParts[0].length > 1) {
+        secondInitial = nameParts[0][1];
+      }
+      return `${firstInitial}${secondInitial}`.toUpperCase();
     }
-    if (nameParts[0] && nameParts[0].length >=2) return name.substring(0, 2).toUpperCase();
-    if (nameParts[0] && nameParts[0].length === 1) return name.substring(0,1).toUpperCase();
+    if (nameSource.length >=2) return nameSource.substring(0, 2).toUpperCase();
+    if (nameSource.length === 1) return nameSource.substring(0,1).toUpperCase();
     return "??"; 
   };
 
@@ -156,7 +173,6 @@ export function Navbar() {
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
               if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
-              // Hide Activity Feed from mainNav if user is logged in, as it's in dropdown
               if (item.title === "Activity Feed" && user) return null;
             }
             
@@ -178,19 +194,15 @@ export function Navbar() {
         </nav>
         <div className="flex items-center space-x-1 sm:space-x-2">
           {isLoading ? (
-            <div className="h-10 w-10 animate-pulse rounded-full bg-muted"></div>
+             <Button variant="ghost" className="relative h-10 w-10 rounded-full animate-pulse bg-muted"></Button>
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={userAvatarUrl || `https://picsum.photos/seed/${user.uid}/40/40`} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
+                    <AvatarImage src={userAvatarUrl || undefined} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
                     <AvatarFallback>
-                      {user.displayName ? (
-                        getUserInitials(user.displayName)
-                      ) : (
-                        <UserIcon className="h-5 w-5" />
-                      )}
+                      {getUserInitials(user)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
