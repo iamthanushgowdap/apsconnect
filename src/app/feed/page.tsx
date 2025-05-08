@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -11,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Heart, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MapPin, Users, MoreHorizontal } from 'lucide-react';
+import { Heart, FileText, CalendarDays, Newspaper, BookOpen, Paperclip, Download, Edit3, Trash2, Settings, Filter, Share2, MapPin, Users, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation'; 
 import {
@@ -153,12 +152,16 @@ function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostItemProps
         )}
         
         <div className="mt-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="group text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
-            <Heart className={`h-4 w-4 mr-1.5 ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
-            {post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}
-          </Button>
-
+           <Link href={`/post/${post.id}`} className="w-auto">
+             <Button variant="ghost" size="sm" className="justify-between text-primary hover:bg-primary/10 group">
+                Read More <ArrowRight className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+             </Button>
+           </Link>
           <div className="flex items-center space-x-2">
+             <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="group text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
+                <Heart className={`h-4 w-4 mr-1.5 ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
+                {post.likes?.length || 0}
+             </Button>
             {(canEdit || canDelete) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -422,4 +425,3 @@ export default function FeedPage() {
     </div>
   );
 }
-

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -74,9 +73,9 @@ function RecentPostItem({ post }: RecentPostItemProps) {
         </p>
       </CardContent>
       <CardFooter className="pt-3 px-6 pb-5 border-t border-border/50">
-        <Link href="/feed" className="w-full">
+        <Link href={`/post/${post.id}`} className="w-full">
           <Button variant="ghost" size="sm" className="w-full justify-between text-primary hover:bg-primary/10 group">
-            Read More on Feed <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            View Full Post <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Button>
         </Link>
       </CardFooter>
@@ -212,7 +211,7 @@ const StudentDashboardPage = () => {
             actionText="Manage Profile"
             disabled={isRejected}
           />
-          {/* Campus Feed card removed from here based on previous request to hide it from student dash nav */}
+          {/* Campus Feed card removed as per previous request */}
         </div>
       </section>
       
