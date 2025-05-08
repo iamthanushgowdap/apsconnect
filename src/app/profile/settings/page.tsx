@@ -89,9 +89,9 @@ const readFileAsDataURL = (file: File): Promise<string> => {
   });
 };
 
-const getProfileInitials = (profile: UserProfile | null): string => {
+const getProfileInitials = (profile: UserProfile | User | null): string => {
   if (!profile) return "??";
-  const nameSource = profile.displayName || profile.email || profile.usn;
+  const nameSource = profile.displayName || profile.email || ('usn' in profile ? profile.usn : undefined);
   if (!nameSource) return "??";
   
   const nameParts = nameSource.split(/[\s@]+/); 
@@ -149,6 +149,9 @@ export default function ProfileSettingsPage() {
           setAvatarPreview(parsedProfile.avatarDataUrl || null);
           form.reset({ 
             displayName: parsedProfile.displayName || "",
+            currentPassword: "",
+            newPassword: "",
+            confirmNewPassword: "",
             currentEmail: "", 
             newEmail: "",
             confirmNewEmail: ""
@@ -161,12 +164,23 @@ export default function ProfileSettingsPage() {
             displayName: 'Admin User',
             registrationDate: new Date().toISOString(),
             isApproved: true,
-            password: ADMIN_PASSWORD_CONST,
+            password: ADMIN_PASSWORD_CONST, // Storing for mock purposes
           };
           setUserProfileState(defaultAdminProfile);
           setAvatarPreview(null);
-          form.reset({ displayName: defaultAdminProfile.displayName || "" });
+          form.reset({ 
+            displayName: defaultAdminProfile.displayName || "",
+            currentPassword: "",
+            newPassword: "",
+            confirmNewPassword: "",
+            currentEmail: "",
+            newEmail: "",
+            confirmNewEmail: ""
+          });
         } else {
+          // If profile not found for non-default admin, it's an issue or new user.
+          // For now, redirecting to login. A more robust solution might create a basic profile.
+          toast({ title: "Profile Error", description: "User profile not found. Please log in again.", variant: "destructive" });
           router.push('/login'); 
         }
       } else if (!authUser) {
@@ -174,7 +188,7 @@ export default function ProfileSettingsPage() {
       }
       setPageLoading(false);
     }
-  }, [authUser, authLoading, router, form]);
+  }, [authUser, authLoading, router, form, toast]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -266,12 +280,13 @@ export default function ProfileSettingsPage() {
           setFormSubmitting(false); return;
         }
 
-        oldEmailKey = `apsconnect_user_${userProfile.uid}`; 
-        updatedProfileData.email = data.newEmail.toLowerCase();
+        // For admin/faculty, UID changes with email. For students, UID (USN) is fixed.
         if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
-          updatedProfileData.uid = data.newEmail.toLowerCase(); 
-          newEmailKey = `apsconnect_user_${updatedProfileData.uid}`;
+            oldEmailKey = `apsconnect_user_${userProfile.uid}`; 
+            updatedProfileData.uid = data.newEmail.toLowerCase();
+            newEmailKey = `apsconnect_user_${updatedProfileData.uid}`;
         }
+        updatedProfileData.email = data.newEmail.toLowerCase();
         changesMade = true;
       }
 
@@ -286,14 +301,17 @@ export default function ProfileSettingsPage() {
           localStorage.removeItem(oldEmailKey);
           localStorage.setItem(newEmailKey, JSON.stringify(updatedProfileData));
         } else {
+          // For students or if email didn't change UID part for admin/faculty
           localStorage.setItem(`apsconnect_user_${updatedProfileData.uid}`, JSON.stringify(updatedProfileData));
         }
 
+        // Update AuthContext and mockUser for immediate reflection
         const updatedAuthUser: User = {
           ...authUser,
-          uid: updatedProfileData.uid, 
+          uid: updatedProfileData.uid, // UID might change if admin/faculty email changes
           email: updatedProfileData.email,
           displayName: updatedProfileData.displayName || authUser.displayName,
+          // Role and other specifics like branch/usn should persist from authUser
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
         updateUserContext(updatedAuthUser); 
@@ -306,7 +324,7 @@ export default function ProfileSettingsPage() {
         duration: 3000,
       });
       form.reset({ 
-        displayName: updatedProfileData.displayName, 
+        displayName: updatedProfileData.displayName || "", 
         currentPassword: "", newPassword: "", confirmNewPassword: "",
         currentEmail: "", newEmail: "", confirmNewEmail: ""
       });
@@ -355,7 +373,7 @@ export default function ProfileSettingsPage() {
            <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
               <AvatarImage src={avatarPreview || undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
-              <AvatarFallback className="text-3xl">
+              <AvatarFallback className="text-3xl bg-muted text-muted-foreground">
                  {getProfileInitials(userProfile)}
               </AvatarFallback>
             </Avatar>
@@ -400,7 +418,7 @@ export default function ProfileSettingsPage() {
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Name" {...field} />
+                      <Input placeholder="Your Name" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -411,17 +429,17 @@ export default function ProfileSettingsPage() {
                 <h3 className="text-md font-medium text-foreground">Change Password</h3>
                 <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change password.</p>
               </div>
-              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value ?? ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value ?? ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value ?? ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
 
               <div className="space-y-1 pt-4 border-t">
                 <h3 className="text-md font-medium text-foreground">Change Email</h3>
                 <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change email. This will also change your login ID if you are an admin or faculty.</p>
               </div>
-              <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} autoComplete="email" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} value={field.value ?? ""} autoComplete="email" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} value={field.value ?? ""} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} value={field.value ?? ""} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
               
               <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={formSubmitting}>
                 {formSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : "Update Profile"}
@@ -439,3 +457,5 @@ export default function ProfileSettingsPage() {
   );
 }
 
+
+    
