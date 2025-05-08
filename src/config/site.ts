@@ -1,7 +1,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, LogIn, UserPlus } from 'lucide-react';
-import React from 'react'; // Added for React.createElement
+import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
 export type NavItem = {
@@ -35,19 +35,14 @@ export const SiteConfigData: SiteConfig = {
   description: "A modern platform for college communication and engagement for APS.",
   url: "https://apsconnect.example.com", 
   ogImage: "https://apsconnect.example.com/og.jpg", 
-  LATEST_APP_VERSION: "1.0.2", // Used for app update notifications, incremented version
+  LATEST_APP_VERSION: "1.0.2", 
   mainNav: [
     {
       title: "Home",
       href: "/",
       icon: Home,
     },
-    {
-      title: "Activity Feed",
-      href: "/feed",
-      protected: true, 
-      icon: Newspaper,
-    },
+    // Activity Feed removed from mainNav, will be in user dropdown
     {
       title: "Admin Dashboard",
       href: "/admin",
@@ -113,11 +108,9 @@ export const SiteConfigData: SiteConfig = {
   ],
 };
 
-// Export SiteConfigData as SiteConfig for compatibility if other parts of the app expect SiteConfig
 export { SiteConfigData as SiteConfig };
 
 
-// Placeholder pages for footer links - can be expanded later
 export const PrivacyPolicyPage = (): React.ReactElement => {
   return React.createElement(
     'div',

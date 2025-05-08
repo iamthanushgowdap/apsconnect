@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -29,12 +28,12 @@ export function Navbar() {
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
 
   const calculateUnseenPosts = React.useCallback(() => {
-    if (typeof window === 'undefined' || !user || (user.role !== 'student' && user.role !== 'faculty')) {
+    if (typeof window === 'undefined' || !user ) { // Removed role check, applies to all logged in users
       setUnseenPostsCount(0);
       return;
     }
 
-    const allPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
+    const allPostsStr = localStorage.getItem('apsconnect_posts'); 
     const allPosts: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
     if (allPosts.length === 0) {
       setUnseenPostsCount(0);
@@ -50,13 +49,12 @@ export function Navbar() {
     } else if (user.role === 'faculty' && user.assignedBranches) {
       viewablePosts = allPosts.filter(post =>
         !post.targetBranches || post.targetBranches.length === 0 || 
-        user.assignedBranches?.some(assignedBranch => post.targetBranches.includes(assignedBranch))
+        user.assignedBranches?.some(assignedBranch => post.targetBranches && post.targetBranches.includes(assignedBranch))
       );
-    } else { 
-      viewablePosts = allPosts; // Admin sees all, or general public if applicable
-    }
+    } 
+    // Admin sees all, already covered by viewablePosts = allPosts if no specific role logic applies
     
-    const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; // Changed key
+    const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; 
     const seenPostIdsStr = localStorage.getItem(seenPostIdsKey);
     const seenPostIds: string[] = seenPostIdsStr ? JSON.parse(seenPostIdsStr) : [];
 
@@ -69,7 +67,7 @@ export function Navbar() {
     calculateUnseenPosts();
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'apsconnect_posts' || (user && event.key === `apsconnect_seen_post_ids_${user.uid}`)) { // Changed keys
+      if (event.key === 'apsconnect_posts' || (user && event.key === `apsconnect_seen_post_ids_${user.uid}`)) { 
         calculateUnseenPosts();
       }
     };
@@ -98,12 +96,14 @@ export function Navbar() {
   };
 
   const getUserInitials = (name: string | null | undefined): string => {
-    if (!name) return "";
+    if (!name) return "?"; // Return a default if name is null/undefined
     const nameParts = name.split(" ");
-    if (nameParts.length > 1) {
+    if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
       return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    if (nameParts[0] && nameParts[0].length >=2) return name.substring(0, 2).toUpperCase();
+    if (nameParts[0] && nameParts[0].length === 1) return name.substring(0,1).toUpperCase();
+    return "??"; // Fallback for single short names or unexpected formats
   };
 
   const getDashboardLink = () => {
@@ -138,12 +138,17 @@ export function Navbar() {
               if (item.adminOnly && user?.role !== 'admin') return null;
               if (item.facultyOnly && user?.role !== 'faculty') return null;
               if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
-              // Hide "Activity Feed" from general nav if user is not admin or faculty
-              if (item.title === "Activity Feed" && user && user.role !== 'admin' && user.role !== 'faculty') return null;
             }
             
             // Always show Home, Login, Register based on their own conditions
-            if (item.title === "Home" || (item.title === "Login" && !user) || (item.title === "Register" && !user)) {
+            // Also show role-specific dashboards if user is logged in and matches role
+            if (item.title === "Home" || (item.title === "Login" && !user) || (item.title === "Register" && !user) ||
+                (user && (
+                    (item.adminOnly && user.role === 'admin') ||
+                    (item.facultyOnly && user.role === 'faculty') ||
+                    (item.studentOnly && (user.role === 'student' || user.role === 'pending'))
+                ))
+            ) {
                  return (
                     <Link
                         key={item.href}
@@ -156,34 +161,6 @@ export function Navbar() {
                     >
                         {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                         {item.title}
-                    </Link>
-                );
-            }
-
-            // Show role-specific dashboards if user is logged in and matches role
-            if (user && (
-                (item.adminOnly && user.role === 'admin') ||
-                (item.facultyOnly && user.role === 'faculty') ||
-                (item.studentOnly && (user.role === 'student' || user.role === 'pending')) ||
-                (item.title === "Activity Feed" && (user.role === 'admin' || user.role === 'faculty')) // Show Activity Feed for admin/faculty
-            )) {
-                return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                        "transition-colors hover:text-primary relative flex items-center",
-                        pathname === item.href ? "text-primary" : "text-foreground/60",
-                        "text-xs sm:text-sm" 
-                        )}
-                    >
-                        {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
-                        {item.title}
-                        {item.title === "Activity Feed" && (user.role === 'student' || user.role === 'faculty') && unseenPostsCount > 0 && (
-                          <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
-                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
-                          </span>
-                        )}
                     </Link>
                 );
             }
@@ -231,7 +208,7 @@ export function Navbar() {
                       <Newspaper className="mr-2 h-4 w-4" />
                       <span>Activity Feed</span>
                     </div>
-                    {(user.role === 'student' || user.role === 'faculty' || user.role === 'admin') && unseenPostsCount > 0 && ( // Admin can also see badge
+                    {unseenPostsCount > 0 && (
                        <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
                          {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
                        </span>
