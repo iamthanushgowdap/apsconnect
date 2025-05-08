@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -7,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, Settings } from 'lucide-react';
+import { ShieldCheck, Settings } from 'lucide-react';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 export default function AdminSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -26,7 +26,7 @@ export default function AdminSettingsPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }

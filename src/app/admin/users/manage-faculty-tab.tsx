@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -34,8 +33,9 @@ import {
   FormMessage,
   FormDescription as ShadCnFormDescription,
 } from "@/components/ui/form";
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
-const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; 
 
 const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
@@ -107,7 +107,7 @@ export default function ManageFacultyTab() {
       const users: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('apsconnect_user_')) { // Changed key
+        if (key && key.startsWith('apsconnect_user_')) { 
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (user.role === 'faculty') {
@@ -129,7 +129,7 @@ export default function ManageFacultyTab() {
 
   const handleFormSubmit = (data: FacultyFormValues) => {
     if (typeof window !== 'undefined') {
-      const facultyUserKey = `apsconnect_user_${data.email.toLowerCase()}`; // Changed key
+      const facultyUserKey = `apsconnect_user_${data.email.toLowerCase()}`; 
       
       if (!editingFaculty && localStorage.getItem(facultyUserKey)) {
         toast({
@@ -198,7 +198,7 @@ export default function ManageFacultyTab() {
      if (typeof window !== 'undefined') {
         const confirmed = window.confirm("Are you sure you want to delete this faculty member? This action cannot be undone.");
         if (confirmed) {
-            localStorage.removeItem(`apsconnect_user_${email.toLowerCase()}`); // Changed key
+            localStorage.removeItem(`apsconnect_user_${email.toLowerCase()}`); 
             const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr);
@@ -228,7 +228,7 @@ export default function ManageFacultyTab() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">Loading faculty...</span></div>;
+    return <div className="flex justify-center items-center py-10"><SimpleRotatingSpinner className="h-8 w-8 text-primary" /> <span className="ml-2">Loading faculty...</span></div>;
   }
 
   return (

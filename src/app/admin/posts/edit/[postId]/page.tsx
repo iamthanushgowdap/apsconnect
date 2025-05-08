@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, AlertTriangle } from 'lucide-react';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 export default function AdminEditPostPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -32,7 +32,7 @@ export default function AdminEditPostPage() {
         return;
       }
       if (postId && typeof window !== 'undefined') {
-        const postsStr = localStorage.getItem('apsconnect_posts'); // Changed key
+        const postsStr = localStorage.getItem('apsconnect_posts'); 
         const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
         const postToEdit = allPosts.find(p => p.id === postId);
         if (postToEdit) {
@@ -54,7 +54,7 @@ export default function AdminEditPostPage() {
       console.log("Files to 'upload' (Admin):", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
-        const existingPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
+        const existingPostsStr = localStorage.getItem('apsconnect_posts'); 
         let existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
         const postIndex = existingPosts.findIndex(p => p.id === postData.id);
@@ -65,7 +65,7 @@ export default function AdminEditPostPage() {
           setFormSubmitting(false);
           return;
         }
-        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); // Changed key
+        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); 
       }
 
       toast({
@@ -90,7 +90,7 @@ export default function AdminEditPostPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export default function AdminEditPostPage() {
   if (!initialPostData) {
      return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" /> <span className="ml-2">Loading post data...</span>
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" /> <span className="ml-2">Loading post data...</span>
       </div>
     );
   }

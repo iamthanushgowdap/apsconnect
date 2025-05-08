@@ -4,14 +4,15 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/components/auth-provider";
-import type { User } from "@/components/auth-provider";
+import { useAuth, User } from "@/components/auth-provider";
+// import type { User } from "@/components/auth-provider"; // This line is redundant as User is imported from useAuth
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Users, Briefcase } from "lucide-react";
 import ManageStudentsTab from "./manage-students-tab";
 import ManageFacultyTab from "./manage-faculty-tab";
+import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function UserManagementPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }
@@ -64,7 +65,10 @@ export default function UserManagementPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">User Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
+          {actor.role === 'admin' ? <Users className="mr-3 h-7 w-7" /> : <Users className="mr-3 h-7 w-7" />}
+          User Management
+        </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           {actor.role === 'admin' 
             ? "View, approve, and manage student and faculty accounts."
@@ -72,18 +76,22 @@ export default function UserManagementPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="students" className="w-full">
-        <TabsList className={`grid w-full ${actor.role === 'admin' ? 'grid-cols-2 md:w-1/2 lg:w-1/3' : 'grid-cols-1 md:w-1/4 lg:w-1/6'}`}>
-          <TabsTrigger value="students">Manage Students</TabsTrigger>
+      <Tabs defaultValue={actor.role === 'admin' ? "students" : "students"} className="w-full">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 max-w-md">
+          <TabsTrigger value="students" className="flex items-center gap-2">
+            <Users className="h-4 w-4" /> Manage Students
+          </TabsTrigger>
           {actor.role === 'admin' && (
-            <TabsTrigger value="faculty">Manage Faculty</TabsTrigger>
+            <TabsTrigger value="faculty" className="flex items-center gap-2">
+             <Briefcase className="h-4 w-4" /> Manage Faculty
+            </TabsTrigger>
           )}
         </TabsList>
-        <TabsContent value="students">
+        <TabsContent value="students" className="mt-6">
           <ManageStudentsTab actor={actor} />
         </TabsContent>
         {actor.role === 'admin' && (
-          <TabsContent value="faculty">
+          <TabsContent value="faculty" className="mt-6">
             <ManageFacultyTab />
           </TabsContent>
         )}

@@ -1,10 +1,9 @@
-
 "use client";
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { Loader2 } from "lucide-react";
+import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -35,19 +34,22 @@ export default function DashboardPage() {
   // Show a loading indicator while redirecting
   if (isLoading || !user && typeof window !== 'undefined' && window.location.pathname === '/dashboard') { // Added a check to prevent flash if user is null but redirecting
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
+      
+        
+          
+        
+      
     );
   }
 
   // This content will likely not be shown due to redirects
   // but serves as a placeholder if redirect logic changes or for very brief flashes.
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold">Redirecting...</h1>
-      <p>Please wait while we redirect you to your dashboard.</p>
-    </div>
+    
+      
+        Redirecting...
+        Please wait while we redirect you to your dashboard.
+      
+    
   );
 }
-

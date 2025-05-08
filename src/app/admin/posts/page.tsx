@@ -1,13 +1,13 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react'; 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 
 export default function AdminViewPostsPage() {
@@ -28,7 +28,7 @@ export default function AdminViewPostsPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }

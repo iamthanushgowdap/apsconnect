@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -10,8 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { NewPostToast } from '@/components/notifications/new-post-toast';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 const getInitials = (name?: string | null) => {
   if (!name) return "??";
@@ -45,7 +45,7 @@ export default function AdminCreatePostPage() {
       console.log("Files to 'upload':", attachmentsToUpload.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
       if (typeof window !== 'undefined') {
-        const existingPostsStr = localStorage.getItem('apsconnect_posts'); // Changed key
+        const existingPostsStr = localStorage.getItem('apsconnect_posts'); 
         const existingPosts: Post[] = existingPostsStr ? JSON.parse(existingPostsStr) : [];
         
         const finalPostData = {...postData, likes: postData.likes || []};
@@ -56,7 +56,7 @@ export default function AdminCreatePostPage() {
         } else {
             existingPosts.push(finalPostData); 
         }
-        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); // Changed key
+        localStorage.setItem('apsconnect_posts', JSON.stringify(existingPosts)); 
       }
 
       toast({
@@ -89,7 +89,7 @@ export default function AdminCreatePostPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }

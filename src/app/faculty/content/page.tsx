@@ -1,13 +1,13 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react'; 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 
 export default function FacultyViewContentPage() {
@@ -27,47 +27,53 @@ export default function FacultyViewContentPage() {
 
   if (pageLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
+      
+        
+          
+        
+      
     );
   }
   
   if (!user || user.role !== 'faculty') {
      return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
-            <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
-            <Link href="/dashboard"><Button variant="outline" className="mt-6">Go to Dashboard</Button></Link>
-          </CardContent>
-        </Card>
-      </div>
+      
+        
+          
+            Access Denied
+          
+          
+            
+              
+            
+            You do not have permission to view this page.
+            
+              Go to Dashboard
+            
+          
+        
+      
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Faculty: Content Feed</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Relevant posts for your assigned branches are displayed on the main <Link href="/feed" className="text-primary hover:underline">Activity Feed</Link>.
-          </p>
-          <p className="text-muted-foreground">
-            You can also <Link href="/faculty/content/new" className="text-primary hover:underline">create new posts</Link> for your students.
-          </p>
-           <Link href="/feed">
-                <Button className="mt-4">View Activity Feed</Button>
-            </Link>
-        </CardContent>
-      </Card>
-    </div>
+    
+      
+        
+          Faculty: Content Feed
+        
+        
+          
+            Relevant posts for your assigned branches are displayed on the main .
+          
+          
+            You can also  for your students.
+          
+           
+                View Activity Feed
+            
+        
+      
+    
   );
 }

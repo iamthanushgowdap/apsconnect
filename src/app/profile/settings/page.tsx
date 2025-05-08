@@ -24,6 +24,7 @@ import { useAuth, User } from '@/components/auth-provider';
 import type { UserProfile } from '@/types';
 import { Loader2, ShieldCheck, UserCircle } from 'lucide-react';
 import Link from 'next/link';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 const ADMIN_EMAIL_CONST = "admin@gmail.com"; 
 const ADMIN_PASSWORD_CONST = "admin123";
@@ -103,9 +104,9 @@ export default function ProfileSettingsPage() {
     setFormSubmitting(true);
 
     try {
-      const userProfileKey = `apsconnect_user_${authUser.uid}`; // Changed key
+      const userProfileKey = `apsconnect_user_${authUser.uid}`; 
       const userProfileStr = typeof window !== 'undefined' ? localStorage.getItem(userProfileKey) : null;
-      let userProfile: UserProfile | null = userProfileStr ? JSON.parse(userProfileStr) : null;
+      let userProfile = userProfileStr ? JSON.parse(userProfileStr) : null;
 
       let currentPasswordMatches = false;
       if (data.newPassword) { 
@@ -164,7 +165,7 @@ export default function ProfileSettingsPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem(userProfileKey, JSON.stringify(userProfile));
 
-        const updatedMockUser: User = {
+        const updatedMockUser = {
           ...authUser,
           displayName: userProfile.displayName || authUser.displayName,
         };
@@ -200,7 +201,7 @@ export default function ProfileSettingsPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }
@@ -215,7 +216,9 @@ export default function ProfileSettingsPage() {
           <CardContent>
             <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You must be logged in to view this page.</p>
-            <Link href="/login"><Button variant="outline" className="mt-6">Login</Button></Link>
+            <Link href="/login">
+              <Button variant="outline" className="mt-6">Login</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -224,50 +227,52 @@ export default function ProfileSettingsPage() {
 
 
   return (
-    <div className="container flex min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)] items-center justify-center py-8 sm:py-12 px-4">
-      <Card className="w-full max-w-sm sm:max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <UserCircle className="mx-auto h-12 w-12 text-primary mb-2" />
-          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Profile Settings</CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Update your display name or password. Email: {authUser.email || authUser.usn}
-          </CardDescription>
+    <div className="container mx-auto px-4 py-8">
+      <Card className="w-full max-w-xl mx-auto shadow-xl">
+        <CardHeader className="text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            <UserCircle className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
+            <div>
+              <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-primary">Profile Settings</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Update your display name or password. Email: {authUser.email || authUser.usn}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="displayName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Display Name</FormLabel>
+                    <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Name" {...field} className="text-sm sm:text-base" />
+                      <Input placeholder="Your Name" {...field} />
                     </FormControl>
-                    <FormMessage className="text-xs sm:text-sm" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <div className="space-y-1 pt-2">
-                <h3 className="text-md font-medium">Change Password</h3>
-                 <FormDescription className="text-xs">
-                    Leave password fields blank if you do not wish to change your password.
-                </FormDescription>
+              <div className="space-y-1 pt-4 border-t">
+                <h3 className="text-md font-medium text-foreground">Change Password</h3>
+                <p className="text-xs text-muted-foreground">Leave password fields blank if you do not wish to change your password.</p>
               </div>
-
+              
               <FormField
                 control={form.control}
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Current Password</FormLabel>
+                    <FormLabel>Current Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base" />
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormDescription className="text-xs">Required if changing password.</FormDescription>
-                    <FormMessage className="text-xs sm:text-sm" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -276,11 +281,11 @@ export default function ProfileSettingsPage() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">New Password</FormLabel>
+                    <FormLabel>New Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base" />
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
-                    <FormMessage className="text-xs sm:text-sm" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -289,22 +294,22 @@ export default function ProfileSettingsPage() {
                 name="confirmNewPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Confirm New Password</FormLabel>
+                    <FormLabel>Confirm New Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} className="text-sm sm:text-base" />
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
-                    <FormMessage className="text-xs sm:text-sm" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={formSubmitting}>
+              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={formSubmitting}>
                 {formSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : "Update Profile"}
               </Button>
             </form>
           </Form>
-          <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
-            <Link href="/dashboard" className="font-medium text-primary hover:underline">
-              Back to Dashboard
+          <div className="mt-6 text-center">
+            <Link href="/dashboard">
+              <Button variant="link" className="text-sm text-muted-foreground">Back to Dashboard</Button>
             </Link>
           </div>
         </CardContent>

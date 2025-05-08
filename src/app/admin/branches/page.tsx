@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -31,11 +30,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, PlusCircle, Trash2, Users, ShieldCheck, BarChart3, Search } from 'lucide-react';
+import { PlusCircle, Trash2, Users, ShieldCheck, BarChart3, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
-const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; 
 
 export default function BranchManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -68,7 +68,7 @@ export default function BranchManagementPage() {
       const profiles: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('apsconnect_user_')) { // Changed key
+        if (key && key.startsWith('apsconnect_user_')) { 
           try {
             const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (profile.role === 'faculty') {
@@ -161,7 +161,7 @@ export default function BranchManagementPage() {
   if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }

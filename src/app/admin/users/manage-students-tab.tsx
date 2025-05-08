@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -21,6 +20,7 @@ import * as z from "zod";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 
 interface ManageStudentsTabProps {
@@ -72,7 +72,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       let users: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('apsconnect_user_')) { // Changed key
+        if (key && key.startsWith('apsconnect_user_')) { 
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (user.uid && user.usn) { 
@@ -121,7 +121,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     const usn = studentToProcess.usn;
 
     if (typeof window !== 'undefined' && actor) {
-      const userKey = `apsconnect_user_${usn}`; // Changed key
+      const userKey = `apsconnect_user_${usn}`; 
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
         try {
@@ -174,7 +174,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     const usn = studentToProcess.usn;
 
     if (typeof window !== 'undefined' && actor) {
-      const userKey = `apsconnect_user_${usn}`; // Changed key
+      const userKey = `apsconnect_user_${usn}`; 
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
         try {
@@ -229,7 +229,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     const usn = studentToChangePassword.usn;
 
     if (typeof window !== 'undefined' && actor.role === 'admin') {
-      const userKey = `apsconnect_user_${usn}`; // Changed key
+      const userKey = `apsconnect_user_${usn}`; 
       const userDataStr = localStorage.getItem(userKey);
       if (userDataStr) {
         try {
@@ -283,7 +283,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
 
 
   if (isLoading) {
-    return <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">Loading students...</span></div>;
+    return <div className="flex justify-center items-center py-10"><SimpleRotatingSpinner className="h-8 w-8 text-primary" /> <span className="ml-2">Loading students...</span></div>;
   }
 
   return (
@@ -323,7 +323,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                     <TableCell>{student.branch || 'N/A'}</TableCell>
                     <TableCell>{new Date(student.registrationDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => openApproveDialog(student)} className="bg-green-500/10 hover:bg-green-500/20 text-green-700 border-green-500">
+                      <Button size="sm" variant="outline" onClick={() => openApproveDialog(student)} className="bg-accent/10 hover:bg-accent/20 text-accent border-accent">
                         <CheckCircle className="mr-1 sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Approve</span>
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => openRejectDialog(student)}>
@@ -386,7 +386,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                     <TableCell>{student.branch || 'N/A'}</TableCell>
                     <TableCell>
                       {student.isApproved && student.role === 'student' ? (
-                        <Badge variant="default" className="bg-green-500/20 text-green-700 hover:bg-green-500/30">Approved</Badge>
+                        <Badge variant="default" className="bg-accent/20 text-accent hover:bg-accent/30">Approved</Badge>
                       ) : student.rejectionReason ? (
                         <Badge variant="destructive" className="bg-red-500/20 text-red-700 hover:bg-red-500/30">Rejected</Badge>
                       ) : (
@@ -418,11 +418,11 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                 )}
                                 {student.isApproved && (
                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
-                                        <Info className="mr-2 h-4 w-4 text-green-600" /> Approved
+                                        <Info className="mr-2 h-4 w-4 text-accent" /> Approved
                                     </DropdownMenuItem>
                                 )}
                                 {actor.role === 'admin' && (student.role === 'student' || student.role === 'pending') && (
-                                    <DropdownMenuItem onClick={() => openChangePasswordDialog(student)}>
+                                     <DropdownMenuItem onSelect={() => openChangePasswordDialog(student)}>
                                         <KeyRound className="mr-2 h-4 w-4" /> Change Password
                                     </DropdownMenuItem>
                                 )}
@@ -437,7 +437,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </CardContent>
       </Card>
 
-      <AlertDialog open={isApproveDialogVisible} onOpenChange={setIsApproveDialogVisible}>
+      <AlertDialog open={isApproveDialogVisible} onOpenChange={() => setIsApproveDialogVisible(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Approval</AlertDialogTitle>
@@ -446,28 +446,28 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setStudentToProcess(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleApproveStudent} className="bg-green-600 hover:bg-green-700">Confirm Approve</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setIsApproveDialogVisible(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApproveStudent} className="bg-accent hover:bg-accent/90">Confirm Approve</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={isRejectDialogVisible} onOpenChange={(isOpen) => {
-        setIsRejectDialogVisible(isOpen);
         if (!isOpen) {
-          setStudentToProcess(null);
-          rejectionForm.reset();
+            rejectionForm.reset();
+            setStudentToProcess(null);
         }
+        setIsRejectDialogVisible(isOpen);
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Student Registration</DialogTitle>
+            <DialogTitle>Confirm Rejection</DialogTitle>
             <DialogDescription>
               Please provide a reason for rejecting {studentToProcess?.displayName || studentToProcess?.usn}. This reason will be recorded.
             </DialogDescription>
           </DialogHeader>
           <Form {...rejectionForm}>
-            <form onSubmit={rejectionForm.handleSubmit(handleRejectStudent)} className="space-y-4 py-2 pb-4">
+            <form onSubmit={rejectionForm.handleSubmit(handleRejectStudent)} className="space-y-4 py-4">
               <FormField
                 control={rejectionForm.control}
                 name="reason"
@@ -475,19 +475,17 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                   <FormItem>
                     <FormLabel>Rejection Reason (Mandatory)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="e.g., Incomplete application details, document mismatch..." {...field} rows={4} />
+                      <Textarea placeholder="e.g., Incomplete application details, document mismatch..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <DialogFooter>
-                <DialogClose asChild>
-                   <Button type="button" variant="outline" onClick={() => setStudentToProcess(null)}>Cancel</Button>
-                </DialogClose>
+                <DialogClose asChild><Button type="button" variant="outline" onClick={() => setIsRejectDialogVisible(false)}>Cancel</Button></DialogClose>
                 <Button type="submit" variant="destructive" disabled={rejectionForm.formState.isSubmitting}>
                   {rejectionForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Confirm Reject
+                  Reject Student
                 </Button>
               </DialogFooter>
             </form>
@@ -495,61 +493,61 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isChangePasswordDialogVisible && actor.role === 'admin'} onOpenChange={(isOpen) => {
-        setIsChangePasswordDialogVisible(isOpen);
-        if (!isOpen) {
-          setStudentToChangePassword(null);
-          adminChangePasswordForm.reset();
-        }
-      }}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Change Password for {studentToChangePassword?.displayName || studentToChangePassword?.usn}</DialogTitle>
-            <DialogDescription>
-              Set a new password for this student. The student will need to be informed of their new password.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...adminChangePasswordForm}>
-            <form onSubmit={adminChangePasswordForm.handleSubmit(handleAdminChangePassword)} className="space-y-4 py-2 pb-4">
-              <FormField
-                control={adminChangePasswordForm.control}
-                name="newPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={adminChangePasswordForm.control}
-                name="confirmNewPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <DialogClose asChild>
-                   <Button type="button" variant="outline" onClick={() => setStudentToChangePassword(null)}>Cancel</Button>
-                </DialogClose>
-                <Button type="submit" disabled={adminChangePasswordForm.formState.isSubmitting}>
-                  {adminChangePasswordForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Set New Password
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      {actor.role === 'admin' && (
+        <Dialog open={isChangePasswordDialogVisible} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                adminChangePasswordForm.reset();
+                setStudentToChangePassword(null);
+            }
+            setIsChangePasswordDialogVisible(isOpen);
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Change Student Password</DialogTitle>
+              <DialogDescription>
+                Set a new password for {studentToChangePassword?.displayName || studentToChangePassword?.usn}. The student will need to be informed of their new password.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...adminChangePasswordForm}>
+              <form onSubmit={adminChangePasswordForm.handleSubmit(handleAdminChangePassword)} className="space-y-4 py-4">
+                <FormField
+                  control={adminChangePasswordForm.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={adminChangePasswordForm.control}
+                  name="confirmNewPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="outline" onClick={() => setIsChangePasswordDialogVisible(false)}>Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={adminChangePasswordForm.formState.isSubmitting}>
+                    {adminChangePasswordForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Change Password
+                    </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
     </TooltipProvider>
