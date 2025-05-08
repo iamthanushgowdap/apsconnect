@@ -42,7 +42,7 @@ export const SiteConfigData: SiteConfig = {
       href: "/",
       icon: Home,
     },
-    // Activity Feed removed from mainNav, will be in user dropdown
+    // Activity Feed is in user dropdown
     {
       title: "Admin Dashboard",
       href: "/admin",
@@ -64,19 +64,7 @@ export const SiteConfigData: SiteConfig = {
       studentOnly: true, 
       icon: LayoutDashboard, 
     },
-    {
-      title: "Login",
-      href: "/login",
-      hideWhenLoggedIn: true,
-      icon: LogIn,
-    },
-    {
-      title: "Register",
-      href: "/register",
-      hideWhenLoggedIn: true,
-      icon: UserPlus,
-    },
-
+    // Login and Register are handled by the auth block at the end of the navbar
   ],
   footerNav: [
     {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -28,7 +29,7 @@ export function Navbar() {
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
 
   const calculateUnseenPosts = React.useCallback(() => {
-    if (typeof window === 'undefined' || !user ) { // Removed role check, applies to all logged in users
+    if (typeof window === 'undefined' || !user ) { 
       setUnseenPostsCount(0);
       return;
     }
@@ -52,7 +53,6 @@ export function Navbar() {
         user.assignedBranches?.some(assignedBranch => post.targetBranches && post.targetBranches.includes(assignedBranch))
       );
     } 
-    // Admin sees all, already covered by viewablePosts = allPosts if no specific role logic applies
     
     const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; 
     const seenPostIdsStr = localStorage.getItem(seenPostIdsKey);
@@ -96,14 +96,14 @@ export function Navbar() {
   };
 
   const getUserInitials = (name: string | null | undefined): string => {
-    if (!name) return "?"; // Return a default if name is null/undefined
+    if (!name) return "?"; 
     const nameParts = name.split(" ");
     if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
       return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
     }
     if (nameParts[0] && nameParts[0].length >=2) return name.substring(0, 2).toUpperCase();
     if (nameParts[0] && nameParts[0].length === 1) return name.substring(0,1).toUpperCase();
-    return "??"; // Fallback for single short names or unexpected formats
+    return "??"; 
   };
 
   const getDashboardLink = () => {
@@ -130,41 +130,37 @@ export function Navbar() {
         </Link>
         <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-             if (isLoading) {
+            // Filter items based on auth state and role
+            if (isLoading) { // While loading, only show non-protected, non-role-specific items
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
-            } else { 
-              if (item.hideWhenLoggedIn && user) return null;
-              if (item.protected && !user) return null;
-              if (item.adminOnly && user?.role !== 'admin') return null;
-              if (item.facultyOnly && user?.role !== 'faculty') return null;
-              if (item.studentOnly && !(user?.role === 'student' || user?.role === 'pending')) return null;
+            } else { // After loading
+              if (item.hideWhenLoggedIn && user) return null; 
+              if (item.protected && !user) return null;       
+              if (item.adminOnly && (!user || user.role !== 'admin')) return null;
+              if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
+              if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            // Always show Home, Login, Register based on their own conditions
-            // Also show role-specific dashboards if user is logged in and matches role
-            if (item.title === "Home" || (item.title === "Login" && !user) || (item.title === "Register" && !user) ||
-                (user && (
-                    (item.adminOnly && user.role === 'admin') ||
-                    (item.facultyOnly && user.role === 'faculty') ||
-                    (item.studentOnly && (user.role === 'student' || user.role === 'pending'))
-                ))
-            ) {
-                 return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                        "transition-colors hover:text-primary relative flex items-center",
-                        pathname === item.href ? "text-primary" : "text-foreground/60",
-                        "text-xs sm:text-sm" 
-                        )}
-                    >
-                        {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
-                        {item.title}
-                    </Link>
-                );
-            }
-            return null; 
+            // If the item passes all filters, render it
+            return (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                    "transition-colors hover:text-primary relative flex items-center",
+                    pathname === item.href ? "text-primary" : "text-foreground/60",
+                    "text-xs sm:text-sm" 
+                    )}
+                >
+                    {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
+                    {item.title}
+                    {item.title === "Activity Feed" && user && unseenPostsCount > 0 && (
+                         <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                         </span>
+                    )}
+                </Link>
+            );
           })}
         </nav>
         <div className="flex items-center space-x-1 sm:space-x-2">
