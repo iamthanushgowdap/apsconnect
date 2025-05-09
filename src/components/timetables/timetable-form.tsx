@@ -13,9 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCard
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from '@/hooks/use-toast';
 import type { Branch, Semester, TimeTable, TimeTableDaySchedule, TimeTableEntry, DayOfWeek } from '@/types';
-import { defaultBranches, semesters, daysOfWeek, defaultTimeSlots, defaultPeriods } from '@/types';
+import { defaultBranches, semesters, daysOfWeek, defaultTimeSlots } from '@/types';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, Save, CalendarDays, AlertTriangle } from 'lucide-react';
+import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 const TIMETABLE_STORAGE_KEY_PREFIX = 'apsconnect_timetable_';
 const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches';
@@ -109,24 +110,29 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
           const storedData = localStorage.getItem(key);
           if (storedData) {
             try {
-              const timetable: TimeTable = JSON.parse(storedData);
-              // Ensure schedule has the correct structure
-              const validSchedule = daysOfWeek.map(dayString => {
-                const existingDaySchedule = timetable.schedule.find(ds => ds.day === dayString);
-                return {
-                  day: dayString,
-                  entries: defaultTimeSlots.map((_, periodIdx) => {
-                    const existingEntry = existingDaySchedule?.entries.find(e => e.period === periodIdx);
-                    return {
-                      period: periodIdx,
-                      subject: existingEntry?.subject || "",
-                    };
-                  }),
-                };
-              });
-              replace(validSchedule);
+              const timetable = JSON.parse(storedData) as Partial<TimeTable>; // Use Partial for safety
+              if (timetable && Array.isArray(timetable.schedule)) {
+                // Ensure schedule has the correct structure
+                const validSchedule = daysOfWeek.map(dayString => {
+                  const existingDaySchedule = timetable.schedule!.find(ds => ds.day === dayString); // Safe with ! due to Array.isArray check
+                  return {
+                    day: dayString,
+                    entries: defaultTimeSlots.map((_, periodIdx) => {
+                      const existingEntry = existingDaySchedule?.entries.find(e => e.period === periodIdx);
+                      return {
+                        period: periodIdx,
+                        subject: existingEntry?.subject || "",
+                      };
+                    }),
+                  };
+                });
+                replace(validSchedule);
+              } else {
+                 console.warn("Stored timetable data is malformed or schedule is missing for form. Initializing with empty schedule.");
+                 replace(createEmptySchedule());
+              }
             } catch (error) {
-              console.error("Error parsing timetable from localStorage:", error);
+              console.error("Error parsing timetable from localStorage for form:", error);
               replace(createEmptySchedule());
             }
           } else {
@@ -162,7 +168,7 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
           day: daySchedule.day as DayOfWeek,
           entries: daySchedule.entries.map(entry => ({
             period: entry.period,
-            subject: entry.subject || "",
+            subject: entry.subject || "", 
           })),
         })),
         lastUpdatedBy: user.uid,
@@ -244,7 +250,7 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
 
             {formLoading ? (
                  <div className="flex justify-center items-center py-10 text-muted-foreground">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading schedule editor...
+                    <SimpleRotatingSpinner className="mr-2 h-5 w-5 text-primary" /> Loading schedule editor...
                 </div>
             ) : !selectedBranch || !selectedSemester ? (
                 <div className="text-center text-sm text-muted-foreground p-4 border rounded-md bg-muted/30">
@@ -301,3 +307,4 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
     </Card>
   );
 }
+

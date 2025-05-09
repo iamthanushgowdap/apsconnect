@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import type { TimeTable, Branch, Semester, DayOfWeek } from '@/types';
+import type { TimeTable, Branch, Semester, DayOfWeek, TimeTableDaySchedule } from '@/types';
 import { daysOfWeek, defaultTimeSlots } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CalendarDays, AlertTriangle } from 'lucide-react';
@@ -37,7 +37,7 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
   const branchToDisplay = displayContext?.branch || studentBranch;
   const semesterToDisplay = displayContext?.semester || studentSemester;
 
-  if (!timetable || !timetable.schedule || timetable.schedule.length === 0) {
+  if (!timetable || !Array.isArray(timetable.schedule) || timetable.schedule.length === 0) {
     return (
       <Card className="w-full shadow-xl mt-4">
         <CardHeader>
@@ -60,7 +60,7 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
   // Ensure the schedule is in the correct order of daysOfWeek
   const orderedSchedule = daysOfWeek.map(dayString => {
     const daySchedule = timetable.schedule.find(ds => ds.day === dayString);
-    if (daySchedule) {
+    if (daySchedule && Array.isArray(daySchedule.entries)) {
       // Ensure entries are ordered by period index and cover all defaultTimeSlots
       const orderedEntries = defaultTimeSlots.map((_, periodIdx) => {
         const entry = daySchedule.entries.find(e => e.period === periodIdx);
@@ -68,7 +68,7 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
       });
       return { ...daySchedule, entries: orderedEntries };
     }
-    // If a day is missing entirely from the stored schedule, create a blank one
+    // If a day is missing entirely from the stored schedule, or entries are not an array, create a blank one
     return {
       day: dayString as DayOfWeek,
       entries: defaultTimeSlots.map((_, periodIdx) => ({ period: periodIdx, subject: "-" })),
@@ -118,3 +118,4 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
     </Card>
   );
 }
+
