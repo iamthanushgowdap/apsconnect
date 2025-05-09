@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import Image from 'next/image'; // Import next/image
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,16 +18,17 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Edit3, Image as ImageIcon, Eye, EyeOff, UploadCloud } from 'lucide-react';
+import { Edit3, UploadCloud, ImageIcon } from 'lucide-react';
 
-const STORAGE_KEY = 'apsconnect_admin_editable_content';
-const EDIT_PASSWORD = "9986"; // This remains the actual password, but won't be displayed
+const STORAGE_KEY = 'apsconnect_admin_editable_content_v2'; // Changed key for new structure
+const EDIT_PASSWORD = "9986"; 
 
 interface EditableContent {
-  imageSrc: string; // Will store data URI for uploaded images
-  imageVisible: boolean;
-  textLine1: string;
-  textLine2: string;
+  imageSrc: string;
+  title: string;
+  description: string;
+  imageVisible: boolean; // Keep this to allow hiding image if needed, though new layout emphasizes it
+  // Retain other text lines in case admin wants to store more info, even if not displayed in this layout
   textLine3: string;
   textLine4: string;
   textLine5: string;
@@ -34,14 +36,14 @@ interface EditableContent {
 }
 
 const defaultContent: EditableContent = {
-  imageSrc: "", 
+  imageSrc: "https://picsum.photos/seed/adminblock/192/384", // Default placeholder image
+  title: "Noteworthy Technology Acquisitions 2024",
+  description: "Here are the biggest enterprise technology acquisitions of 2024 so far, in reverse chronological order.",
   imageVisible: true,
-  textLine1: "Loading feature...",
-  textLine2: "Please wait while we prepare the content.",
-  textLine3: "This may take a few moments.",
-  textLine4: "Almost there...",
-  textLine5: "Thank you for your patience.",
-  textLine6: "Preparing your experience.",
+  textLine3: "",
+  textLine4: "",
+  textLine5: "",
+  textLine6: "",
 };
 
 const readFileAsDataURL = (file: File): Promise<string> => {
@@ -70,15 +72,17 @@ export function AdminEditableContentBlock() {
       if (storedContent) {
         try {
           const parsedContent = JSON.parse(storedContent);
-          setContent(parsedContent);
-          setEditFormState(parsedContent); // Initialize form with stored content
+          // Ensure all fields from EditableContent are present, merging with defaults if not
+          const mergedContent = { ...defaultContent, ...parsedContent };
+          setContent(mergedContent);
+          setEditFormState(mergedContent); 
         } catch (e) {
           console.error("Failed to parse stored content for admin block", e);
           setContent(defaultContent);
           setEditFormState(defaultContent);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultContent));
         }
       } else {
-        // Set default content if nothing is stored
         setContent(defaultContent);
         setEditFormState(defaultContent);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultContent));
@@ -100,7 +104,7 @@ export function AdminEditableContentBlock() {
   const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      if (file.size > 2 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Image must be less than 2MB.", variant: "destructive" });
         return;
       }
@@ -109,8 +113,10 @@ export function AdminEditableContentBlock() {
         return;
       }
       setSelectedImageFile(file);
-      // Optionally, show a preview if editFormState.imageSrc is updated here
-      // For now, we'll process it on save
+      // Preview for the dialog
+      readFileAsDataURL(file).then(dataUrl => {
+        setEditFormState(prev => ({...prev, imageSrc: dataUrl}));
+      });
     }
   };
 
@@ -122,86 +128,77 @@ export function AdminEditableContentBlock() {
         newContent.imageSrc = dataUrl;
       } catch (error) {
         toast({ title: "Image Upload Error", description: "Could not process the image file.", variant: "destructive" });
-        return; // Prevent saving if image processing fails
+        return; 
       }
-    } else if (editFormState.imageSrc === "" && content.imageSrc !== "") {
-      // If imageSrc was cleared in form and there was an old image, keep it cleared
-      newContent.imageSrc = "";
     }
-
+    // If no new file is selected, newContent.imageSrc already holds either the existing image or "" if removed.
 
     setContent(newContent);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newContent));
     }
-    toast({ title: "Content Updated", description: "The placeholder content has been saved." });
+    toast({ title: "Content Updated", description: "The content block has been saved." });
     setIsEditDialogOpen(false);
-    setIsPasswordVerified(false); // Reset password verification
-    setSelectedImageFile(null); // Clear selected file
+    setIsPasswordVerified(false); 
+    setSelectedImageFile(null); 
   };
 
   const handleOpenEditDialog = () => {
-    // Refresh editFormState from current content when opening
     setEditFormState(content);
-    setSelectedImageFile(null); // Reset file input on dialog open
-    setIsPasswordVerified(false); // Always ask for password
+    setSelectedImageFile(null); 
+    setIsPasswordVerified(false); 
     setPasswordInput("");
     setIsEditDialogOpen(true);
   };
   
-  const lineClasses = [
-    "h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4",
-    "h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[480px] mb-2.5",
-    "h-2 bg-gray-200 rounded-full dark:bg-gray-700 mb-2.5",
-    "h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[440px] mb-2.5",
-    "h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[460px] mb-2.5",
-    "h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[360px]",
-  ];
-
   return (
-    <div className="my-8 p-4 border border-border rounded-lg bg-card shadow-sm">
-      <div role="status" className="space-y-8 animate-pulse md:space-y-0 md:space-x-8 rtl:space-x-reverse md:flex md:items-center">
-        {content.imageVisible && (
-          <div className="flex items-center justify-center w-full h-48 bg-gray-300 rounded-sm sm:w-96 dark:bg-gray-700">
-            {content.imageSrc ? (
-              <img src={content.imageSrc} alt="Placeholder" className="w-full h-full object-cover rounded-sm" data-ai-hint="abstract banner" />
-            ) : (
-              <ImageIcon className="w-10 h-10 text-gray-200 dark:text-gray-600" aria-hidden="true" />
-            )}
+    <div className="my-8 p-4">
+      <div className="flex flex-col items-center bg-card border border-border rounded-lg shadow-sm md:flex-row md:max-w-2xl mx-auto hover:bg-muted/30 dark:border-border/50 dark:bg-card/80 dark:hover:bg-card/70">
+        {content.imageVisible && content.imageSrc && (
+          <div className="relative w-full md:w-48 h-96 md:h-auto md:min-h-[180px] rounded-t-lg md:rounded-none md:rounded-s-lg overflow-hidden">
+            <Image 
+              src={content.imageSrc} 
+              alt={content.title || "Content image"} 
+              layout="fill"
+              objectFit="cover"
+              data-ai-hint="article image"
+            />
           </div>
         )}
-        <div className="w-full">
-          {[content.textLine1, content.textLine2, content.textLine3, content.textLine4, content.textLine5, content.textLine6].map((text, index) => (
-            <div key={index} className={`${lineClasses[index]}`}>
-              <span className="text-transparent">{text || "Loading..."}</span>
-            </div>
-          ))}
+        {!content.imageVisible && (
+             <div className="flex items-center justify-center w-full md:w-48 h-48 md:h-auto bg-muted rounded-t-lg md:rounded-none md:rounded-s-lg">
+                <ImageIcon className="w-16 h-16 text-muted-foreground" />
+             </div>
+        )}
+        <div className="flex flex-col justify-between p-4 leading-normal flex-1">
+            <h5 className="mb-2 text-2xl font-bold tracking-tight text-foreground dark:text-white">{content.title}</h5>
+            <p className="mb-3 font-normal text-muted-foreground dark:text-gray-400">{content.description}</p>
         </div>
-        <span className="sr-only">Loading...</span>
       </div>
 
+
       {user?.role === 'admin' && (
-        <div className="mt-4 text-right">
+        <div className="mt-4 text-center md:text-right md:max-w-2xl mx-auto">
           <Button variant="outline" size="sm" onClick={handleOpenEditDialog}>
-            <Edit3 className="mr-2 h-4 w-4" /> Edit Placeholder
+            <Edit3 className="mr-2 h-4 w-4" /> Edit Content Block
           </Button>
         </div>
       )}
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Placeholder Content</DialogTitle>
+            <DialogTitle>Edit Content Block</DialogTitle>
             <DialogDescription>
-              {isPasswordVerified ? "Modify the content of the placeholder block." : "Enter admin password to edit."}
+              {isPasswordVerified ? "Modify the content of the block." : "Enter admin password to edit."}
             </DialogDescription>
           </DialogHeader>
           {!isPasswordVerified ? (
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="admin-password">Password</Label>
+                <Label htmlFor="admin-content-password">Password</Label>
                 <Input
-                  id="admin-password"
+                  id="admin-content-password"
                   type="password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
@@ -211,18 +208,18 @@ export function AdminEditableContentBlock() {
               <Button type="submit" className="w-full">Verify Password</Button>
             </form>
           ) : (
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
               <div className="space-y-2">
-                <Label htmlFor="edit-imageFile">Upload Image (Optional)</Label>
+                <Label htmlFor="edit-content-imageFile">Upload Image</Label>
                 <div className="flex items-center justify-center w-full">
-                  <label htmlFor="admin-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors">
+                  <label htmlFor="admin-content-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                          <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag & drop</p>
+                          <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag &amp; drop</p>
                           <p className="text-xs text-muted-foreground">PNG, JPG, GIF, WebP (MAX. 2MB)</p>
                       </div>
                       <Input 
-                          id="admin-image-upload" 
+                          id="admin-content-image-upload" 
                           type="file" 
                           className="sr-only" 
                           accept="image/png, image/jpeg, image/gif, image/webp"
@@ -230,34 +227,57 @@ export function AdminEditableContentBlock() {
                       />
                   </label>
                 </div>
-                {selectedImageFile && <p className="text-xs text-muted-foreground mt-1">Selected: {selectedImageFile.name}</p>}
-                {!selectedImageFile && editFormState.imageSrc && <p className="text-xs text-muted-foreground mt-1">Current image will be kept. Upload a new one to replace.</p>}
-                {selectedImageFile && <Button variant="link" size="sm" className="text-destructive h-auto p-0" onClick={() => {setSelectedImageFile(null); if (document.getElementById('admin-image-upload') as HTMLInputElement) (document.getElementById('admin-image-upload') as HTMLInputElement).value = "";}}>Clear selection</Button>}
-                 {!selectedImageFile && editFormState.imageSrc && (
-                  <Button variant="link" size="sm" className="text-destructive h-auto p-0" onClick={() => setEditFormState(prev => ({...prev, imageSrc: ""}))}>Remove current image</Button>
+                {selectedImageFile && <p className="text-xs text-muted-foreground mt-1">New: {selectedImageFile.name}</p>}
+                {!selectedImageFile && editFormState.imageSrc && (
+                    <div className="mt-2">
+                        <p className="text-xs text-muted-foreground">Current Image:</p>
+                        <Image src={editFormState.imageSrc} alt="Current content image" width={80} height={80} className="rounded border" data-ai-hint="article image" />
+                        <Button variant="link" size="sm" className="text-destructive h-auto p-0 text-xs" onClick={() => {
+                           setEditFormState(prev => ({...prev, imageSrc: ""}));
+                           setSelectedImageFile(null);
+                           const fileInput = document.getElementById('admin-content-image-upload') as HTMLInputElement;
+                           if (fileInput) fileInput.value = "";
+                        }}>Remove current image</Button>
+                    </div>
                 )}
               </div>
 
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="edit-imageVisible"
+                  id="edit-content-imageVisible"
                   checked={editFormState.imageVisible}
                   onCheckedChange={(checked) => setEditFormState({ ...editFormState, imageVisible: !!checked })}
                 />
-                <Label htmlFor="edit-imageVisible">Show Image</Label>
+                <Label htmlFor="edit-content-imageVisible">Show Image</Label>
               </div>
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="space-y-2">
-                  <Label htmlFor={`edit-textLine${i}`}>Text Line ${i}`</Label>
-                  <Textarea
-                    id={`edit-textLine${i}`}
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-content-title">Title</Label>
+                <Input
+                  id="edit-content-title"
+                  value={editFormState.title}
+                  onChange={(e) => setEditFormState({ ...editFormState, title: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-content-description">Description</Label>
+                <Textarea
+                  id="edit-content-description"
+                  value={editFormState.description}
+                  onChange={(e) => setEditFormState({ ...editFormState, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              {/* Hidden fields for other text lines if needed for other layouts in future */}
+              {[3, 4, 5, 6].map(i => (
+                <input
+                    type="hidden"
+                    key={`textLine${i}`}
                     value={editFormState[`textLine${i}` as keyof EditableContent] as string}
-                    onChange={(e) => setEditFormState({ ...editFormState, [`textLine${i}`]: e.target.value })}
-                    rows={2}
-                  />
-                </div>
+                 />
               ))}
-              <DialogFooter className="sm:justify-end sticky bottom-0 bg-background py-3">
+
+              <DialogFooter className="sm:justify-end sticky bottom-0 bg-background py-3 -mx-2 px-2">
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancel</Button>
                 </DialogClose>
