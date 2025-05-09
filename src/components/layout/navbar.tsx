@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -31,7 +30,20 @@ export function Navbar() {
   const { user, isLoading, signOut } = useAuth(); 
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
-  // Removed searchQuery and handleSearchSubmit as search is moved to feed page
+  const [searchQuery, setSearchQuery] = useState('');
+
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      router.push(`/search`);
+    }
+    setSearchQuery(''); 
+  };
+
 
   const calculateUnseenPosts = React.useCallback(() => {
     if (typeof window === 'undefined' || !user ) { 
@@ -58,7 +70,6 @@ export function Navbar() {
         user.assignedBranches?.some(assignedBranch => post.targetBranches && post.targetBranches.includes(assignedBranch))
       );
     } 
-    // For admin, all posts are viewable by default (no specific filter here, handled by initial `allPosts`)
     
     const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; 
     const seenPostIdsStr = localStorage.getItem(seenPostIdsKey);
@@ -137,7 +148,6 @@ export function Navbar() {
     }
   };
 
-  // Search form and handler removed from Navbar
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -149,7 +159,7 @@ export function Navbar() {
         <nav className="hidden md:flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
             if (isLoading) { 
-              if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
+              if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly || item.hideWhenLoggedIn) return null;
             } else { 
               if (item.hideWhenLoggedIn && user) return null; 
               if (item.protected && !user) return null;       
@@ -158,8 +168,7 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            // Hide "Activity Feed" from navbar if user is logged in, as it's in the dropdown
-            if (user && item.title === 'Activity Feed') {
+            if (user && item.title === 'Activity Feed') { // Hide activity feed from main nav if user logged in
                 return null;
             }
             
@@ -180,8 +189,8 @@ export function Navbar() {
             );
           })}
         </nav>
-         {/* Search form removed from here */}
-        <div className="flex items-center space-x-1 sm:space-x-2 ml-auto"> {/* Added ml-auto to push avatar to the right */}
+         
+        <div className="flex items-center space-x-1 sm:space-x-2 ml-auto">
           {isLoading ? (
              <SimpleRotatingSpinner className="h-8 w-8 text-primary" />
           ) : user ? (
@@ -245,19 +254,8 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-                {SiteConfig.mainNav.filter(item => item.hideWhenLoggedIn && !item.protected).map(item => (
-                   <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                            buttonVariants({ variant: "ghost", size: "sm" }),
-                            "text-xs sm:text-sm px-2 sm:px-3"
-                        )}
-                        suppressHydrationWarning
-                    >
-                    {item.title}
-                  </Link>
-                ))}
+                {/* Removed the mapping for SiteConfig.mainNav.filter(item => item.hideWhenLoggedIn && !item.protected) */}
+                {/* This ensures Login and Register text links are not rendered, assuming buttons are primary */}
             </>
           )}
         </div>
