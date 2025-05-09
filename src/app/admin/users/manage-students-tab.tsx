@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, AlertCircle, Users, Loader2, Search, XCircle, MessageSquareWarning, Info, KeyRound, ShieldAlert } from 'lucide-react';
+import { CheckCircle, AlertCircle, Users, Loader2, Search, XCircle, MessageSquareWarning, Info, KeyRound, ShieldAlert, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -17,8 +17,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-// TooltipProvider removed as it's not used and causing parsing issues.
-// import { TooltipProvider } from '@/components/ui/tooltip'; 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -42,6 +40,15 @@ const changePasswordSchema = z.object({
 });
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
+const changeEmailSchema = z.object({
+  newEmail: z.string().email({ message: "Invalid new email address." }),
+  confirmNewEmail: z.string().email({ message: "Invalid confirmation email address." }),
+}).refine(data => data.newEmail === data.confirmNewEmail, {
+  message: "New emails do not match.",
+  path: ["confirmNewEmail"],
+});
+type ChangeEmailFormValues = z.infer<typeof changeEmailSchema>;
+
 
 export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
@@ -56,6 +63,9 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   const [studentToChangePassword, setStudentToChangePassword] = useState<UserProfile | null>(null);
   const [isChangePasswordDialogVisible, setIsChangePasswordDialogVisible] = useState(false);
 
+  const [studentToChangeEmail, setStudentToChangeEmail] = useState<UserProfile | null>(null);
+  const [isChangeEmailDialogVisible, setIsChangeEmailDialogVisible] = useState(false);
+
   const rejectionForm = useForm<RejectionFormValues>({
     resolver: zodResolver(rejectionFormSchema),
     defaultValues: { reason: "" },
@@ -64,6 +74,11 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   const changePasswordForm = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: { newPassword: "", confirmNewPassword: "" },
+  });
+
+  const changeEmailForm = useForm<ChangeEmailFormValues>({
+    resolver: zodResolver(changeEmailSchema),
+    defaultValues: { newEmail: "", confirmNewEmail: "" },
   });
 
 
@@ -126,6 +141,13 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     changePasswordForm.reset();
     setIsChangePasswordDialogVisible(true);
   };
+
+  const openChangeEmailDialog = (student: UserProfile) => {
+    setStudentToChangeEmail(student);
+    changeEmailForm.reset({ newEmail: student.email, confirmNewEmail: student.email });
+    setIsChangeEmailDialogVisible(true);
+  };
+
 
   const handleApproveStudent = () => {
     if (!studentToProcess || !studentToProcess.usn) return;
@@ -297,6 +319,66 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     setIsChangePasswordDialogVisible(false);
     setStudentToChangePassword(null);
     changePasswordForm.reset();
+  };
+
+  const handleChangeStudentEmailByStaff = (data: ChangeEmailFormValues) => {
+    if (!studentToChangeEmail || !studentToChangeEmail.usn) return;
+    const usn = studentToChangeEmail.usn;
+
+    if (typeof window !== 'undefined') {
+      let authorizedToChange = false;
+      if (actor.role === 'admin') {
+        authorizedToChange = true;
+      } else if (actor.role === 'faculty') {
+        if (
+          studentToChangeEmail.semester && actor.assignedSemesters?.includes(studentToChangeEmail.semester) &&
+          studentToChangeEmail.branch && actor.assignedBranches?.includes(studentToChangeEmail.branch)
+        ) {
+          authorizedToChange = true;
+        } else {
+          toast({ title: 'Unauthorized', description: 'You can only change emails for students in your scope.', variant: 'destructive' });
+        }
+      }
+
+      if (authorizedToChange) {
+        // Check if new email already exists
+        const newEmailLower = data.newEmail.toLowerCase();
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('apsconnect_user_')) {
+            const profileStr = localStorage.getItem(key);
+            if (profileStr) {
+              try {
+                const existingProfile = JSON.parse(profileStr) as UserProfile;
+                if (existingProfile.email && existingProfile.email.toLowerCase() === newEmailLower && existingProfile.usn !== usn) {
+                  toast({ title: "Email Exists", description: "This email is already used by another account.", variant: "destructive" });
+                  changeEmailForm.setError("newEmail", { message: "Email already in use." });
+                  return;
+                }
+              } catch (e) {/* ignore */}
+            }
+          }
+        }
+
+
+        const userKey = `apsconnect_user_${usn}`;
+        const userDataStr = localStorage.getItem(userKey);
+        if (userDataStr) {
+          try {
+            const userProfile = JSON.parse(userDataStr) as UserProfile;
+            userProfile.email = data.newEmail;
+            localStorage.setItem(userKey, JSON.stringify(userProfile));
+            toast({ title: "Email Changed", description: `Email for ${userProfile.displayName || usn} updated to ${data.newEmail}.` });
+            fetchUsers(); // Refresh list to show new email
+          } catch (error) {
+            toast({ title: 'Error Changing Email', variant: 'destructive' });
+          }
+        }
+      }
+    }
+    setIsChangeEmailDialogVisible(false);
+    setStudentToChangeEmail(null);
+    changeEmailForm.reset();
   };
   
   const filteredUsers = allUsers.filter(user => {
@@ -475,9 +557,15 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                      </>
                                 )}
                                 {/* Change Password option */}
-                                {(actor.role === 'admin' || (actor.role === 'faculty' && student.semester && actor.assignedSemesters?.includes(student.semester) && student.branch && actor.assignedBranches?.includes(student.branch))) && (student.role === 'student' || student.role === 'pending') && ( // Allow password change for pending too, if needed for login tests
+                                {(actor.role === 'admin' || (actor.role === 'faculty' && student.semester && actor.assignedSemesters?.includes(student.semester) && student.branch && actor.assignedBranches?.includes(student.branch))) && (student.role === 'student' || student.role === 'pending') && ( 
                                      <DropdownMenuItem onSelect={() => openChangePasswordDialog(student)}>
                                         <KeyRound className="mr-2 h-4 w-4" /> Change Password
+                                    </DropdownMenuItem>
+                                )}
+                                {/* Edit Email option */}
+                                {(actor.role === 'admin' || (actor.role === 'faculty' && student.semester && actor.assignedSemesters?.includes(student.semester) && student.branch && actor.assignedBranches?.includes(student.branch))) && (student.role === 'student' || student.role === 'pending') && (
+                                     <DropdownMenuItem onSelect={() => openChangeEmailDialog(student)}>
+                                        <Mail className="mr-2 h-4 w-4" /> Edit Email
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>
@@ -608,6 +696,65 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </Dialog>
       )}
 
+      {/* Change Email Dialog */}
+      {(actor.role === 'admin' || (actor.role === 'faculty' && studentToChangeEmail?.semester && actor.assignedSemesters?.includes(studentToChangeEmail.semester) && studentToChangeEmail?.branch && actor.assignedBranches?.includes(studentToChangeEmail.branch))) && (
+        <Dialog open={isChangeEmailDialogVisible} onOpenChange={(isOpen) => {
+            if(!isOpen) {
+                changeEmailForm.reset();
+                setStudentToChangeEmail(null);
+            }
+            setIsChangeEmailDialogVisible(isOpen);
+        }}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit Student Email</DialogTitle>
+                    <DialogDescription>
+                        Update the email address for {studentToChangeEmail?.displayName || studentToChangeEmail?.usn}.
+                        Current email: {studentToChangeEmail?.email}
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...changeEmailForm}>
+                    <form onSubmit={changeEmailForm.handleSubmit(handleChangeStudentEmailByStaff)} className="space-y-4 py-4">
+                        <FormField
+                            control={changeEmailForm.control}
+                            name="newEmail"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>New Email Address</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="new.email@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={changeEmailForm.control}
+                            name="confirmNewEmail"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Confirm New Email Address</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="Confirm new email" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                            <Button type="submit" disabled={changeEmailForm.formState.isSubmitting}>
+                                {changeEmailForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Update Email
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+      )}
+
     </div>
   );
 }
+
