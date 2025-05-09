@@ -15,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
+  FormDescription as ShadCnFormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -99,7 +99,7 @@ export default function RegisterPage() {
     setIsLoading(true);
     const fullUsn = `1AP${data.usnSuffix}`;
 
-    // Check if email already exists
+    // Check if email already exists or USN already exists
     if (typeof window !== 'undefined') {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -124,18 +124,18 @@ export default function RegisterPage() {
           }
         }
       }
-        // Check if USN already exists
-        const userProfileKey = `apsconnect_user_${fullUsn}`;
-        if (localStorage.getItem(userProfileKey)) {
-            toast({
-                title: "Registration Failed",
-                description: "This USN is already registered.",
-                variant: "destructive",
-                duration: 3000,
-            });
-            setIsLoading(false);
-            return;
-        }
+      
+      const userProfileKeyForUsnCheck = `apsconnect_user_${fullUsn}`;
+      if (localStorage.getItem(userProfileKeyForUsnCheck)) {
+        toast({
+          title: "Registration Failed",
+          description: "This USN is already registered. Please contact your faculty.",
+          variant: "destructive",
+          duration: 5000, // Longer duration for important message
+        });
+        setIsLoading(false);
+        return;
+      }
     }
 
 
@@ -145,7 +145,7 @@ export default function RegisterPage() {
 
       if (typeof window !== 'undefined') {
         const userProfileData: UserProfile = {
-            uid: fullUsn,
+            uid: fullUsn, // UID for students is their USN
             displayName: data.displayName,
             email: data.email.toLowerCase(),
             role: 'pending',
@@ -154,15 +154,16 @@ export default function RegisterPage() {
             semester: data.semester,
             registrationDate: new Date().toISOString(),
             isApproved: false,
-            password: data.password, 
+            password: data.password, // Store password (mock only)
         };
         localStorage.setItem(`apsconnect_user_${fullUsn}`, JSON.stringify(userProfileData));
 
+        // Also update mockUser if it exists or create it for immediate login effect
         localStorage.setItem('mockUser', JSON.stringify({
             uid: fullUsn,
             displayName: data.displayName,
             email: data.email.toLowerCase(),
-            role: 'pending',
+            role: 'pending', // Set role to pending initially
             usn: fullUsn,
             branch: data.branch,
             semester: data.semester,
@@ -171,10 +172,10 @@ export default function RegisterPage() {
 
       toast({
         title: "Registration Submitted",
-        description: "Your registration is pending admin approval. You will be notified once approved.",
+        description: "Your registration is pending admin/faculty approval. You will be notified once approved.",
         duration: 3000,
       });
-      router.push("/dashboard");
+      router.push("/dashboard"); // Redirect to dashboard, which will handle routing based on role
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -239,26 +240,27 @@ export default function RegisterPage() {
                           maxLength={7}
                           onInput={(e) => {
                             const inputVal = e.currentTarget.value;
-                            if (inputVal.length >= 2 && inputVal.length <=4) {
+                            // Automatically convert branch part to uppercase dynamically
+                            if (inputVal.length >= 2 && inputVal.length <=4) { // YYBB
                                 const yearPart = inputVal.substring(0,2);
                                 const branchPart = inputVal.substring(2,4);
                                 const rollPart = inputVal.substring(4);
                                 e.currentTarget.value = yearPart + branchPart.toUpperCase() + rollPart;
-                            } else if (inputVal.length > 4) {
+                            } else if (inputVal.length > 4) { // YYBBBNNN
                                 const yearPart = inputVal.substring(0,2);
-                                const branchPart = inputVal.substring(2,4).toUpperCase();
+                                const branchPart = inputVal.substring(2,4).toUpperCase(); // Ensure branch is uppercase
                                 const rollPart = inputVal.substring(4);
                                 e.currentTarget.value = yearPart + branchPart + rollPart;
                             }
-                            field.onChange(e);
+                            field.onChange(e); // Propagate change to RHF
                           }}
                           suppressHydrationWarning
                         />
                       </FormControl>
                     </div>
-                    <FormDescription className="text-xs sm:text-sm">
+                    <ShadCnFormDescription className="text-xs sm:text-sm">
                       e.g., 23CS001
-                    </FormDescription>
+                    </ShadCnFormDescription>
                     <FormMessage className="text-xs sm:text-sm"/>
                   </FormItem>
                 )}
