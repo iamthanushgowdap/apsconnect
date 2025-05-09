@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,46 +11,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import type { Branch, Semester, DayOfWeek, TimeTable, TimeTableEntry, TimeTableDaySchedule } from '@/types';
-import { defaultBranches, semesters, daysOfWeek } from '@/types';
+import type { Branch, Semester, TimeTable } from '@/types';
+import { defaultBranches, semesters } from '@/types';
 import { useAuth } from '@/components/auth-provider';
-import { Loader2, PlusCircle, Trash2, Save, CalendarDays } from 'lucide-react';
+import { Loader2, Save, CalendarDays, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 
 const TIMETABLE_STORAGE_KEY_PREFIX = 'apsconnect_timetable_';
 const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches';
-
-const timeTableEntrySchema = z.object({
-  id: z.string().uuid(),
-  time: z.string().min(1, "Time slot is required."), // e.g., "09:00-10:00"
-  subject: z.string().min(1, "Subject is required."),
-  faculty: z.string().optional(),
-  roomLab: z.string().optional(),
-});
-
-const timeTableDayScheduleSchema = z.object({
-  day: z.custom<DayOfWeek>(val => daysOfWeek.includes(val as DayOfWeek)),
-  entries: z.array(timeTableEntrySchema),
-});
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 const timetableFormSchema = z.object({
   branch: z.string({ required_error: "Branch is required." }),
   semester: z.custom<Semester>(val => semesters.includes(val as Semester), { required_error: "Semester is required." }),
-  schedule: z.array(timeTableDayScheduleSchema).length(daysOfWeek.length, "Schedule for all days must be provided."),
+  timetableImage: z.custom<FileList>((val) => val instanceof FileList && val.length > 0, "Timetable image is required.")
+    .refine(files => files?.[0]?.size <= MAX_IMAGE_SIZE, `Image size should not exceed ${MAX_IMAGE_SIZE / (1024 * 1024)}MB.`)
+    .refine(files => ALLOWED_IMAGE_TYPES.includes(files?.[0]?.type), "Invalid image type. Allowed types: JPG, PNG, GIF, WEBP."),
 });
 
 export type TimetableFormValues = z.infer<typeof timetableFormSchema>;
 
 interface TimetableFormProps {
   role: 'admin' | 'faculty';
-  facultyAssignedBranches?: Branch[]; // Only for faculty role
+  facultyAssignedBranches?: Branch[];
 }
+
+const readFileAsDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
 
 export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [managedBranches, setManagedBranches] = useState<Branch[]>(defaultBranches);
-  const [currentDayIndex, setCurrentDayIndex] = useState(0); // To manage active day tab
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -70,23 +72,13 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
   
   const availableBranchesForForm = role === 'admin' ? managedBranches : (facultyAssignedBranches || []);
 
-
   const form = useForm<TimetableFormValues>({
     resolver: zodResolver(timetableFormSchema),
     defaultValues: {
       branch: availableBranchesForForm.length > 0 ? availableBranchesForForm[0] : undefined,
       semester: semesters[0],
-      schedule: daysOfWeek.map(day => ({
-        day: day,
-        entries: []
-      })),
+      timetableImage: undefined,
     },
-  });
-
-  const { fields, append, remove, update } = useFieldArray({
-    control: form.control,
-    name: `schedule.${currentDayIndex}.entries`,
-    keyName: "fieldId", // to avoid potential conflicts with 'id' in TimeTableEntry
   });
   
   const selectedBranch = form.watch("branch");
@@ -94,60 +86,76 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
 
   useEffect(() => {
     if (selectedBranch && selectedSemester) {
-      loadTimetable(selectedBranch, selectedSemester);
+      loadTimetableImage(selectedBranch, selectedSemester);
+    } else {
+      setImagePreview(null); // Clear preview if branch/sem not selected
+      form.resetField("timetableImage");
     }
-     // Reset current day index when branch or semester changes to show Monday by default.
-    setCurrentDayIndex(0); 
   }, [selectedBranch, selectedSemester]);
 
-  useEffect(() => {
-    // This effect updates the 'fields' from useFieldArray when currentDayIndex changes.
-    // It re-initializes the field array for the new current day.
-    // It's important that this runs *after* the schedule for the new day is potentially loaded/set in form.setValue.
-    // RHF's useFieldArray listens to changes in the form state for `schedule.${currentDayIndex}.entries`.
-  }, [currentDayIndex, form.getValues]);
 
-
-  const loadTimetable = (branch: Branch, semester: Semester) => {
+  const loadTimetableImage = (branch: Branch, semester: Semester) => {
     if (typeof window !== 'undefined') {
       const key = `${TIMETABLE_STORAGE_KEY_PREFIX}${branch}_${semester}`;
       const storedData = localStorage.getItem(key);
       if (storedData) {
         try {
           const timetable: TimeTable = JSON.parse(storedData);
-          form.setValue("schedule", timetable.schedule, { shouldValidate: true, shouldDirty: true });
+          setImagePreview(timetable.imageDataUrl);
+          // No need to set form.setValue for timetableImage here, as it's for upload
+          // User must re-upload if they want to change it.
         } catch (error) {
           console.error("Error parsing timetable from localStorage:", error);
-          // Reset to default if parsing fails
-           form.setValue("schedule", daysOfWeek.map(day => ({ day, entries: [] })), { shouldValidate: true, shouldDirty: true });
+          setImagePreview(null);
         }
       } else {
-        // No existing timetable, ensure form is reset to default for this combo
-        form.setValue("schedule", daysOfWeek.map(day => ({ day, entries: [] })), { shouldValidate: true, shouldDirty: true });
+        setImagePreview(null);
       }
     }
   };
   
-  const addNewEntry = () => {
-    append({ id: crypto.randomUUID(), time: "", subject: "", faculty: "", roomLab: "" });
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue("timetableImage", event.target.files as FileList, { shouldValidate: true });
+      const validationResult = timetableFormSchema.shape.timetableImage.safeParse(event.target.files);
+      if (validationResult.success) {
+        const dataUrl = await readFileAsDataURL(file);
+        setImagePreview(dataUrl);
+      } else {
+        setImagePreview(null);
+        // Errors will be shown by FormMessage
+      }
+    } else {
+        form.setValue("timetableImage", undefined, {shouldValidate: true});
+        setImagePreview(null);
+    }
+  };
+  
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    form.resetField("timetableImage");
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
   };
 
-  const removeEntry = (index: number) => {
-    remove(index);
-  };
 
   const onSubmit = async (data: TimetableFormValues) => {
-    if (!user) {
-      toast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
+    if (!user || !data.timetableImage || data.timetableImage.length === 0) {
+      toast({ title: "Error", description: "User not authenticated or image not selected.", variant: "destructive" });
       return;
     }
     setIsLoading(true);
     try {
+      const imageFile = data.timetableImage[0];
+      const imageDataUrl = await readFileAsDataURL(imageFile);
+
       const timetableData: TimeTable = {
         id: `${data.branch}_${data.semester}`,
         branch: data.branch,
         semester: data.semester,
-        schedule: data.schedule,
+        imageDataUrl: imageDataUrl,
         lastUpdatedBy: user.uid,
         lastUpdatedAt: new Date().toISOString(),
       };
@@ -178,7 +186,7 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
         <CardTitle className="text-2xl font-bold tracking-tight text-primary flex items-center">
             <CalendarDays className="mr-3 h-7 w-7"/> Manage Timetables
         </CardTitle>
-        <ShadCnCardDescription>Create, view, and update class schedules for different branches and semesters.</ShadCnCardDescription>
+        <ShadCnCardDescription>Upload an image of the class schedule for a specific branch and semester.</ShadCnCardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -191,7 +199,11 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
                   <FormItem>
                     <FormLabel>Branch</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setImagePreview(null); // Clear preview on branch change
+                        form.resetField("timetableImage");
+                      }} 
                       defaultValue={field.value}
                       disabled={role === 'faculty' && facultyAssignedBranches?.length === 1}
                     >
@@ -212,7 +224,14 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Semester</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setImagePreview(null); // Clear preview on semester change
+                        form.resetField("timetableImage");
+                      }}
+                      defaultValue={field.value}
+                    >
                       <FormControl><SelectTrigger><SelectValue placeholder="Select semester" /></SelectTrigger></FormControl>
                       <SelectContent>
                         {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -224,95 +243,72 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
               />
             </div>
 
-            {selectedBranch && selectedSemester && (
-              <>
-                <div className="border-b border-border">
-                  <div className="flex space-x-1 overflow-x-auto pb-px">
-                    {daysOfWeek.map((day, index) => (
-                      <Button
-                        key={day}
-                        type="button"
-                        variant={currentDayIndex === index ? "default" : "ghost"}
-                        onClick={() => setCurrentDayIndex(index)}
-                        className={`px-3 py-2 text-sm font-medium rounded-t-md ${currentDayIndex === index ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                      >
-                        {day}
-                      </Button>
-                    ))}
-                  </div>
+            <FormField
+              control={form.control}
+              name="timetableImage"
+              render={({ fieldState }) => ( // field is not directly used for input value due to FileList
+                <FormItem>
+                  <FormLabel>Timetable Image</FormLabel>
+                  <FormControl>
+                    <div className="relative flex items-center justify-center w-full">
+                        <label htmlFor="timetable-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                                <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p className="text-xs text-muted-foreground">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                            </div>
+                            <Input 
+                                id="timetable-image-upload"
+                                type="file"
+                                accept="image/*"
+                                className="sr-only" 
+                                onChange={handleFileChange}
+                                ref={fileInputRef} // Use ref for clearing
+                            />
+                        </label>
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Upload a clear image of the timetable.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {imagePreview && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Image Preview:</h4>
+                <div className="relative border rounded-md overflow-hidden aspect-video max-w-md mx-auto bg-muted/20">
+                   <Image src={imagePreview} alt="Timetable preview" layout="fill" objectFit="contain" />
+                   <Button
+                     type="button"
+                     variant="destructive"
+                     size="icon"
+                     onClick={handleRemoveImage}
+                     className="absolute top-2 right-2 h-7 w-7"
+                     aria-label="Remove image"
+                   >
+                     <Trash2 className="h-4 w-4" />
+                   </Button>
                 </div>
-                
-                <div className="space-y-4 pt-4">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Schedule for {daysOfWeek[currentDayIndex]}
-                  </h3>
-                  {fields.map((entry, index) => (
-                    <Card key={entry.fieldId} className="p-4 bg-muted/30">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
-                        <FormField
-                          control={form.control}
-                          name={`schedule.${currentDayIndex}.entries.${index}.time`}
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-1">
-                              <FormLabel className="text-xs">Time Slot</FormLabel>
-                              <FormControl><Input placeholder="e.g., 09:00-10:00" {...field} /></FormControl>
-                              <FormMessage className="text-xs"/>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`schedule.${currentDayIndex}.entries.${index}.subject`}
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-1">
-                              <FormLabel className="text-xs">Subject</FormLabel>
-                              <FormControl><Input placeholder="Subject Name" {...field} /></FormControl>
-                               <FormMessage className="text-xs"/>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`schedule.${currentDayIndex}.entries.${index}.faculty`}
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-1">
-                              <FormLabel className="text-xs">Faculty (Optional)</FormLabel>
-                              <FormControl><Input placeholder="Faculty Name" {...field} /></FormControl>
-                               <FormMessage className="text-xs"/>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`schedule.${currentDayIndex}.entries.${index}.roomLab`}
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-1">
-                              <FormLabel className="text-xs">Room/Lab (Optional)</FormLabel>
-                              <FormControl><Input placeholder="Room/Lab No." {...field} /></FormControl>
-                               <FormMessage className="text-xs"/>
-                            </FormItem>
-                          )}
-                        />
-                        <Button type="button" variant="destructive" size="sm" onClick={() => removeEntry(index)} className="self-end mb-1 h-9">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                  <Button type="button" variant="outline" onClick={addNewEntry}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Period to {daysOfWeek[currentDayIndex]}
-                  </Button>
-                </div>
-              </>
+              </div>
             )}
+             {!imagePreview && selectedBranch && selectedSemester && (
+                 <div className="text-center text-sm text-muted-foreground p-4 border rounded-md bg-muted/30">
+                    <ImageIcon className="mx-auto h-10 w-10 mb-2" />
+                    No timetable image currently uploaded for {selectedBranch} - {selectedSemester}.
+                </div>
+             )}
+
 
             <div className="pt-6 border-t mt-6">
-              <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || !selectedBranch || !selectedSemester}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || !selectedBranch || !selectedSemester || !form.formState.isValid}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Timetable
+                Save Timetable Image
               </Button>
               <FormDescription className="mt-2 text-xs">
-                Ensure all details are correct. This will overwrite any existing timetable for the selected branch and semester.
+                This will overwrite any existing timetable image for the selected branch and semester.
               </FormDescription>
             </div>
           </form>

@@ -40,8 +40,6 @@ export interface UserProfile {
   facultyTitle?: string; // e.g., "Professor", "HOD of CSE"
   phoneNumber?: string; // Primarily for faculty, set by admin
   
-  // !!! MOCK ONLY: In a real application, NEVER store plaintext passwords.
-  // This is included here to simulate admin setting/updating a password for faculty.
   password?: string; 
 }
 
@@ -52,50 +50,37 @@ export interface PostAttachment {
   name: string;
   type: string;
   size: number;
-  // In a real app, this would be a URL to the stored file
-  // For mock, we might store a data URI if small, or just name/type
 }
 
 export interface Post {
   id: string;
   title: string;
   content: string;
-  authorId: string; // UID of admin/faculty
-  authorName: string; // Display name for convenience
-  authorRole: UserRole; // Role of the author ('admin' or 'faculty')
-  authorAvatarUrl?: string; // Optional avatar of the post author
-  createdAt: string; // ISO string format
-  updatedAt?: string; // ISO string format
+  authorId: string; 
+  authorName: string; 
+  authorRole: UserRole; 
+  authorAvatarUrl?: string; 
+  createdAt: string; 
+  updatedAt?: string; 
   category: PostCategory;
-  // If targetBranches is empty, it's considered a general post for all branches.
-  // Otherwise, it's targeted to the specified branches.
   targetBranches: Branch[]; 
   attachments: PostAttachment[];
-  likes?: string[]; // Array of user UIDs who liked the post
+  likes?: string[]; 
 }
 
 // Timetable related types
 export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
 export const daysOfWeek: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export interface TimeTableEntry {
-  id: string; // Unique ID for each entry, e.g., crypto.randomUUID()
-  time: string; // e.g., "09:00 AM - 10:00 AM"
-  subject: string;
-  faculty?: string; // Optional faculty name
-  roomLab?: string; // Optional room or lab number
-}
-
-export interface TimeTableDaySchedule {
-  day: DayOfWeek;
-  entries: TimeTableEntry[];
-}
+// TimeTableEntry and TimeTableDaySchedule are no longer needed for image-based timetable
+// export interface TimeTableEntry { ... }
+// export interface TimeTableDaySchedule { ... }
 
 export interface TimeTable {
   id: string; // Unique ID for the timetable, e.g., `${branch}_${semester}`
   branch: Branch;
   semester: Semester;
-  schedule: TimeTableDaySchedule[]; // Array of schedules, one for each day
+  imageDataUrl: string; // Stores the timetable image as a base64 data URI
   lastUpdatedBy: string; // UID of user who last updated
   lastUpdatedAt: string; // ISO string
 }
