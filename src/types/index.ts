@@ -1,4 +1,3 @@
-
 export type UserRole = "student" | "admin" | "pending" | "faculty";
 
 // Branch type is now string to allow admins to define custom branch names.
@@ -66,6 +65,11 @@ export interface Post {
   targetBranches: Branch[]; 
   attachments: PostAttachment[];
   likes?: string[]; 
+  // Fields for calendar events
+  eventDate?: string; // ISO string for the date of the event
+  eventStartTime?: string; // e.g., "10:00"
+  eventEndTime?: string; // e.g., "12:00"
+  eventLocation?: string;
 }
 
 // Timetable related types
@@ -90,16 +94,15 @@ export const timeSlotDescriptors: TimeSlotDescriptor[] = [
   { time: "3:00 PM - 3:50 PM",   label: "Period 7",    isBreak: false }
 ];
 
-export const defaultTimeSlots = timeSlotDescriptors.map(d => d.time); // For compatibility if needed
-export const defaultPeriods = timeSlotDescriptors.length; // Number of rows in the table
+export const defaultTimeSlots = timeSlotDescriptors.map(d => d.time); 
+export const defaultPeriods = timeSlotDescriptors.length; 
 
-// Saturday ends after Period 4. Index of "Period 4" in timeSlotDescriptors is 4.
 export const saturdayLastSlotIndex = timeSlotDescriptors.findIndex(d => d.label === "Period 4");
 
 
 export interface TimeTableEntry {
-  period: number; // Index corresponding to timeSlotDescriptors
-  subject: string; // Subject name, or pre-filled break label, or empty
+  period: number; 
+  subject: string; 
 }
 
 export interface TimeTableDaySchedule {
@@ -108,10 +111,20 @@ export interface TimeTableDaySchedule {
 }
 
 export interface TimeTable {
-  id: string; // Unique ID for the timetable, e.g., `${branch}_${semester}`
+  id: string; 
   branch: Branch;
   semester: Semester;
   schedule: TimeTableDaySchedule[]; 
-  lastUpdatedBy: string; // UID of user who last updated
-  lastUpdatedAt: string; // ISO string
+  lastUpdatedBy: string; 
+  lastUpdatedAt: string; 
+}
+
+// Search related types
+export type SearchResultItem = 
+  | ({ type: 'post' } & Post)
+  | ({ type: 'user' } & UserProfile);
+
+export interface SearchResults {
+  posts: Post[];
+  users: UserProfile[];
 }

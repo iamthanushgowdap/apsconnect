@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -16,7 +15,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Branch, defaultBranches, PostCategory, postCategories, Post, PostAttachment } from '@/types'; 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { Loader2, Paperclip, Trash2, UploadCloud } from 'lucide-react';
+import { Loader2, Paperclip, Trash2, UploadCloud, Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
 const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20MB total
@@ -51,6 +55,10 @@ const postFormSchema = z.object({
         if (!files) return true;
         return Array.from(files).every(file => ALLOWED_FILE_TYPES.includes(file.type));
     }, "Invalid file type. Allowed types: images, PDF, Office documents, text files, common video formats."),
+  eventDate: z.date().optional(),
+  eventStartTime: z.string().optional().refine(val => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val), { message: "Invalid time format (HH:MM)" }),
+  eventEndTime: z.string().optional().refine(val => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val), { message: "Invalid time format (HH:MM)" }),
+  eventLocation: z.string().max(100, "Location too long").optional(),
 }).refine(data => {
   if (!data.targetAllBranches && (!data.targetBranches || data.targetBranches.length === 0)) {
     return false;
@@ -59,6 +67,14 @@ const postFormSchema = z.object({
 }, {
   message: "If not targeting all branches, at least one specific branch must be selected.",
   path: ["targetBranches"],
+}).refine(data => {
+  if ((data.category === 'event' || data.category === 'schedule') && (!data.eventDate || !data.eventStartTime)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Event date and start time are required for Event/Schedule category.",
+  path: ["eventDate"], 
 });
 
 export type PostFormValues = z.infer<typeof postFormSchema>;
@@ -94,6 +110,10 @@ export function CreatePostForm({
       targetAllBranches: initialData ? (!initialData.targetBranches || initialData.targetBranches.length === 0) : true,
       targetBranches: initialData?.targetBranches || [],
       attachments: undefined,
+      eventDate: initialData?.eventDate ? new Date(initialData.eventDate) : undefined,
+      eventStartTime: initialData?.eventStartTime || "",
+      eventEndTime: initialData?.eventEndTime || "",
+      eventLocation: initialData?.eventLocation || "",
     },
   });
   
@@ -119,6 +139,7 @@ export function CreatePostForm({
   }, []);
 
   const targetAllBranches = form.watch("targetAllBranches");
+  const currentCategory = form.watch("category");
 
   useEffect(() => {
     if (targetAllBranches) {
@@ -220,6 +241,10 @@ export function CreatePostForm({
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       likes: initialData?.likes || [],
+      eventDate: data.eventDate ? data.eventDate.toISOString().split('T')[0] : undefined, // Store as YYYY-MM-DD
+      eventStartTime: data.eventStartTime,
+      eventEndTime: data.eventEndTime,
+      eventLocation: data.eventLocation,
     };
     await onFormSubmit(postData, filesToUpload);
   };
@@ -271,6 +296,58 @@ export function CreatePostForm({
                 </FormItem>
               )}
             />
+
+            {(currentCategory === 'event' || currentCategory === 'schedule') && (
+              <div className="space-y-4 p-4 border rounded-md bg-muted/30">
+                 <h4 className="text-md font-semibold">Event/Schedule Details</h4>
+                <FormField
+                  control={form.control}
+                  name="eventDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Event Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} // Disable past dates
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="eventStartTime" render={({ field }) => ( <FormItem> <FormLabel>Start Time (HH:MM)</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={form.control} name="eventEndTime" render={({ field }) => ( <FormItem> <FormLabel>End Time (HH:MM, Optional)</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                 </div>
+                <FormField control={form.control} name="eventLocation" render={({ field }) => ( <FormItem> <FormLabel>Location (Optional)</FormLabel> <FormControl><Input placeholder="e.g., Auditorium, Online" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              </div>
+            )}
+
+
             <FormField
               control={form.control}
               name="targetAllBranches"
@@ -394,4 +471,3 @@ export function CreatePostForm({
     </Card>
   );
 }
-

@@ -24,7 +24,8 @@ import {
   MapPin,
   Users,
   AlertTriangle,
-  MoreHorizontal
+  MoreHorizontal,
+  CalendarPlus // Icon for Add to Calendar
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -46,6 +47,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { generatePostEventICS, downloadICSFile } from '@/lib/calendar-utils';
 
 const getInitials = (name?: string | null) => {
   if (!name) return "??";
@@ -210,6 +212,25 @@ export default function IndividualPostPage() {
     URL.revokeObjectURL(link.href);
   };
 
+  const handleAddToCalendar = () => {
+    if (!post) return;
+    if (post.category === 'event' || post.category === 'schedule') {
+      if (!post.eventDate || !post.eventStartTime || !post.eventEndTime) {
+        toast({ title: "Cannot Add to Calendar", description: "This event is missing necessary date/time details.", variant: "destructive", duration: 4000});
+        return;
+      }
+      const icsContent = generatePostEventICS(post);
+      downloadICSFile(`${post.title.replace(/\s+/g, '_')}.ics`, icsContent);
+      toast({ title: "Event Added to Calendar", description: "Check your downloads for the .ics file.", duration: 3000 });
+    } else {
+      // For non-event posts, create a generic calendar entry using createdAt
+      const icsContent = generatePostEventICS(post); // generatePostEventICS handles missing event-specific dates
+      downloadICSFile(`${post.title.replace(/\s+/g, '_')}_reminder.ics`, icsContent);
+      toast({ title: "Reminder Added to Calendar", description: "A reminder for this post has been generated. Check your downloads.", duration: 3000 });
+    }
+  };
+
+
   if (isLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
@@ -249,6 +270,8 @@ export default function IndividualPostPage() {
   const IconComponent = categoryIcons[post.category] || FileText;
   const canEdit = user && (user.role === 'admin' || (user.role === 'faculty' && post.authorId === user.uid));
   const canDelete = user && (user.role === 'admin' || (user.role === 'faculty' && post.authorId === user.uid));
+  const isCalendarRelevant = post.category === 'event' || post.category === 'schedule' || (post.eventDate && post.eventStartTime && post.eventEndTime);
+
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -281,7 +304,19 @@ export default function IndividualPostPage() {
                     ) : (
                         <span className="flex items-center gap-1"><Users className="h-4 w-4" /> For: All Branches</span>
                     )}
+                    {isCalendarRelevant && (post.eventDate || post.category === 'event' || post.category === 'schedule') && (
+                      <Button variant="outline" size="sm" onClick={handleAddToCalendar} className="ml-auto">
+                        <CalendarPlus className="mr-2 h-4 w-4" /> Add to Calendar
+                      </Button>
+                    )}
                 </div>
+                 {isCalendarRelevant && post.eventDate && (
+                   <div className="mt-2 text-sm text-muted-foreground">
+                     <p><strong>Date:</strong> {new Date(post.eventDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                     {post.eventStartTime && <p><strong>Time:</strong> {post.eventStartTime} {post.eventEndTime ? ` - ${post.eventEndTime}` : ''}</p>}
+                     {post.eventLocation && <p><strong>Location:</strong> {post.eventLocation}</p>}
+                   </div>
+                 )}
             </CardHeader>
             <CardContent className="p-6">
                 <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">

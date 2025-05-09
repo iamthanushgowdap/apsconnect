@@ -4,9 +4,12 @@ import React from 'react';
 import type { TimeTable, Branch, Semester, DayOfWeek, TimeTableDaySchedule, TimeSlotDescriptor } from '@/types';
 import { daysOfWeek, timeSlotDescriptors, saturdayLastSlotIndex } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CalendarDays, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, AlertTriangle, CalendarPlus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
+import { generateTimetableICS, downloadICSFile } from '@/lib/calendar-utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface TimetableViewProps {
   timetable: TimeTable | null;
@@ -20,6 +23,31 @@ interface TimetableViewProps {
 }
 
 export function TimetableView({ timetable, isLoading, studentBranch, studentSemester, displayContext }: TimetableViewProps) {
+  const { toast } = useToast();
+  
+  const handleExportToCalendar = () => {
+    if (timetable) {
+      try {
+        const icsContent = generateTimetableICS(timetable, timeSlotDescriptors);
+        downloadICSFile(`${timetable.branch}_${timetable.semester}_Timetable.ics`, icsContent);
+        toast({
+          title: "Timetable Exported",
+          description: "The .ics file has been downloaded. You can import it into your calendar app.",
+          duration: 5000,
+        });
+      } catch (error) {
+        console.error("Error generating timetable ICS:", error);
+        toast({
+          title: "Export Failed",
+          description: "Could not generate the calendar file. Please try again.",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
+    }
+  };
+
+
   if (isLoading) {
     return (
       <Card className="w-full shadow-xl">
@@ -78,13 +106,20 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
   return (
     <Card className="w-full shadow-xl mt-4">
       <CardHeader>
-        <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-primary flex items-center">
-            <CalendarDays className="mr-3 h-6 w-6 sm:h-7 sm:w-7"/> Timetable Details
-        </CardTitle>
-        <CardDescription>
-          Viewing timetable for Branch: <strong>{timetable.branch}</strong>, Semester: <strong>{timetable.semester}</strong>.
-        </CardDescription>
-        <CardDescription className="text-xs text-muted-foreground pt-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+                <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight text-primary flex items-center">
+                    <CalendarDays className="mr-3 h-6 w-6 sm:h-7 sm:w-7"/> Timetable Details
+                </CardTitle>
+                <CardDescription>
+                Viewing timetable for Branch: <strong>{timetable.branch}</strong>, Semester: <strong>{timetable.semester}</strong>.
+                </CardDescription>
+            </div>
+            <Button onClick={handleExportToCalendar} variant="outline" size="sm" className="mt-2 sm:mt-0">
+                <CalendarPlus className="mr-2 h-4 w-4" /> Export to Calendar
+            </Button>
+        </div>
+        <CardDescription className="text-xs text-muted-foreground pt-1 mt-1 sm:mt-0">
             Last Updated: {new Date(timetable.lastUpdatedAt).toLocaleString()} by User ID: {timetable.lastUpdatedBy}
         </CardDescription>
       </CardHeader>
@@ -126,4 +161,3 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
     </Card>
   );
 }
-

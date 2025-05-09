@@ -1,10 +1,10 @@
-
 "use client";
 
 import Link from "next/link";
 import { SiteConfig } from "@/config/site";
 import { Icons } from "@/components/icons";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth, User } from "@/components/auth-provider"; 
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
@@ -30,6 +30,7 @@ export function Navbar() {
   const { user, isLoading, signOut } = useAuth(); 
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const calculateUnseenPosts = React.useCallback(() => {
     if (typeof window === 'undefined' || !user ) { 
@@ -134,6 +135,13 @@ export function Navbar() {
     }
   };
 
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
@@ -141,7 +149,7 @@ export function Navbar() {
           <Icons.AppLogo className="h-6 w-6 text-primary" />
           <span className="font-bold sm:inline-block">{SiteConfig.name}</span>
         </Link>
-        <nav className="flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
+        <nav className="hidden md:flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
             if (isLoading) { 
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly) return null;
@@ -169,6 +177,19 @@ export function Navbar() {
             );
           })}
         </nav>
+         <form onSubmit={handleSearchSubmit} className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-xs w-full">
+            <div className="relative">
+                <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search posts, users..."
+                    className="pl-8 h-9 text-sm w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    suppressHydrationWarning
+                />
+            </div>
+        </form>
         <div className="flex items-center space-x-1 sm:space-x-2">
           {isLoading ? (
              <SimpleRotatingSpinner className="h-8 w-8 text-primary" />
@@ -177,7 +198,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full" suppressHydrationWarning>
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={userAvatarUrl || undefined} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
+                    <AvatarImage src={userAvatarUrl || undefined} alt={user.displayName || "User Avatar"} data-ai-hint="person avatar" />
                     <AvatarFallback className="bg-muted text-muted-foreground">
                       {getInitials(user.displayName || user.email || user.usn)}
                     </AvatarFallback>
@@ -233,8 +254,7 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-                <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "sm" }))} suppressHydrationWarning>Login</Link>
-                <Link href="/register" className={cn(buttonVariants({ size: "sm" }))} suppressHydrationWarning>Register</Link>
+                {/* Login and Register buttons already conditionally rendered via mainNav loop */}
             </>
           )}
         </div>
@@ -242,4 +262,3 @@ export function Navbar() {
     </header>
   );
 }
-
