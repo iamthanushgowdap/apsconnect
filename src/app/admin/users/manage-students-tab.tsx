@@ -17,7 +17,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { TooltipProvider } from '@/components/ui/tooltip'; // Tooltip components were not used, but provider is fine.
+// TooltipProvider removed as it's not used and causing parsing issues.
+// import { TooltipProvider } from '@/components/ui/tooltip'; 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -75,6 +76,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         if (key && key.startsWith('apsconnect_user_')) { 
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
+            // Ensure it's a student profile by checking for USN (or other student-specific required field)
             if (user.uid && user.usn) { 
               users.push(user);
             }
@@ -84,12 +86,21 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         }
       }
 
-      if (actor.role === 'faculty' && actor.assignedBranches) {
-        users = users.filter(user => {
-          const studentBranch = user.branch; 
-          return studentBranch && actor.assignedBranches!.includes(studentBranch);
-        });
+      // Filter for faculty's assigned branches AND semesters
+      if (actor.role === 'faculty') {
+        if (actor.assignedSemesters && actor.assignedSemesters.length > 0 && actor.assignedBranches && actor.assignedBranches.length > 0) {
+          users = users.filter(userProfile => {
+            const studentSemester = userProfile.semester;
+            const studentBranch = userProfile.branch;
+            return studentSemester && actor.assignedSemesters!.includes(studentSemester) &&
+                   studentBranch && actor.assignedBranches!.includes(studentBranch);
+          });
+        } else {
+          // If faculty has no assigned semesters OR no assigned branches, they can't manage any students.
+          users = [];
+        }
       }
+      // Sort by registration date, newest first
       setAllUsers(users.sort((a, b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()));
     }
     setIsLoading(false);
@@ -131,13 +142,14 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           user.approvedByUid = actor.uid;
           user.approvedByDisplayName = actor.displayName || actor.email || 'System';
           user.approvalDate = new Date().toISOString();
-          user.rejectionReason = undefined; 
+          user.rejectionReason = undefined; // Clear any previous rejection
           user.rejectedByUid = undefined;
           user.rejectedByDisplayName = undefined;
           user.rejectedDate = undefined;
           
           localStorage.setItem(userKey, JSON.stringify(user));
           
+          // Update mockUser if it matches
           const mockUserStr = localStorage.getItem('mockUser');
           if (mockUserStr) {
             const mockUser = JSON.parse(mockUserStr);
@@ -153,7 +165,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             description: `${user.displayName || user.usn} has been approved by ${user.approvedByDisplayName}.`,
             duration: 3000,
           });
-          fetchUsers(); 
+          fetchUsers(); // Refresh the list
         } catch (error) {
           toast({
             title: 'Error Approving Student',
@@ -179,23 +191,24 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       if (userDataStr) {
         try {
           const user = JSON.parse(userDataStr) as UserProfile;
-          user.role = 'pending'; 
+          user.role = 'pending'; // Keep role as pending even if rejected, or change as per policy
           user.isApproved = false;
           user.rejectionReason = data.reason;
           user.rejectedByUid = actor.uid;
           user.rejectedByDisplayName = actor.displayName || actor.email || 'System';
           user.rejectedDate = new Date().toISOString();
-          user.approvedByUid = undefined; 
+          user.approvedByUid = undefined; // Clear approval info if previously approved
           user.approvedByDisplayName = undefined;
           user.approvalDate = undefined;
 
           localStorage.setItem(userKey, JSON.stringify(user));
 
-           const mockUserStr = localStorage.getItem('mockUser');
+           // Update mockUser if it matches, especially if they were previously approved and now rejected
+            const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr);
                 if (mockUser.usn === usn) { 
-                    mockUser.role = 'pending';
+                    mockUser.role = 'pending'; // Reflect current status
                     mockUser.isApproved = false; 
                     localStorage.setItem('mockUser', JSON.stringify(mockUser));
                 }
@@ -233,14 +246,18 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       if (actor.role === 'admin') {
         authorizedToChange = true;
       } else if (actor.role === 'faculty') {
-        if (studentToChangePassword.branch && actor.assignedBranches && actor.assignedBranches.includes(studentToChangePassword.branch)) {
+        // Faculty can change password if student is in their assigned branch AND semester
+        if (
+          studentToChangePassword.semester && actor.assignedSemesters && actor.assignedSemesters.includes(studentToChangePassword.semester) &&
+          studentToChangePassword.branch && actor.assignedBranches && actor.assignedBranches.includes(studentToChangePassword.branch)
+        ) {
           authorizedToChange = true;
         } else {
           toast({
             title: 'Unauthorized',
-            description: 'You can only change passwords for students in your assigned branches.',
+            description: 'You can only change passwords for students in your assigned semesters AND branches.',
             variant: 'destructive',
-            duration: 3000,
+            duration: 4000,
           });
         }
       }
@@ -268,7 +285,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             console.error("Error changing student password:", error);
           }
         }
-      } else if (actor.role !== 'admin' && actor.role !== 'faculty') { // Fallback if actor role is neither
+      } else if (actor.role !== 'admin' && actor.role !== 'faculty') { // Should not happen if UI hides button
          toast({
               title: 'Unauthorized',
               description: 'You do not have permission to perform this action.',
@@ -284,12 +301,12 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   
   const filteredUsers = allUsers.filter(user => {
     const searchLower = searchTerm.toLowerCase();
-    const branch = user.branch; 
+    const branch = user.branch; // Safely access branch
     return (
       user.displayName?.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
       user.usn?.toLowerCase().includes(searchLower) ||
-      branch?.toLowerCase().includes(searchLower) ||
+      branch?.toLowerCase().includes(searchLower) || // check if branch exists
       user.semester?.toLowerCase().includes(searchLower) || 
       user.approvedByDisplayName?.toLowerCase().includes(searchLower) ||
       user.rejectedByDisplayName?.toLowerCase().includes(searchLower) ||
@@ -306,7 +323,6 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   }
 
   return (
-    <TooltipProvider>
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -315,7 +331,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             Pending Student Actions
           </CardTitle>
           <CardDescription>Review and approve or reject new student registrations.
-             {actor.role === 'faculty' && ' Students listed are from your assigned branches.'}
+             {actor.role === 'faculty' && ' Students listed are from your assigned semesters and branches.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -366,7 +382,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             Student Records
           </CardTitle>
            <CardDescription>View all processed (approved or rejected) student accounts. Search by name, USN, email, branch, semester, or processor.
-            {actor.role === 'faculty' && ' Students listed are from your assigned branches.'}
+            {actor.role === 'faculty' && ' Students listed are from your assigned semesters and branches.'}
            </CardDescription>
            <div className="relative mt-2">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -414,6 +430,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                       ) : student.rejectionReason ? (
                         <Badge variant="destructive" className="bg-red-500/20 text-red-700 hover:bg-red-500/30">Rejected</Badge>
                       ) : (
+                        // This case should ideally not happen for "processed" students if logic is correct, but as a fallback
                         <Badge variant="secondary">Pending</Badge> 
                       )}
                     </TableCell>
@@ -443,7 +460,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                             <span>Reason: {student.rejectionReason.substring(0,20)}{student.rejectionReason.length > 20 ? '...' : ''}</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => openApproveDialog(student)} className="text-green-600 focus:text-green-700 focus:bg-green-100 dark:text-green-400 dark:focus:text-green-300 dark:focus:bg-green-700/30">
-                                            <CheckCircle className="mr-2 h-4 w-4" /> Approve Student
+                                            <CheckCircle className="mr-2 h-4 w-4" /> Revoke Rejection & Approve
                                         </DropdownMenuItem>
                                     </>
                                 )}
@@ -453,11 +470,12 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                             <Info className="mr-2 h-4 w-4 text-accent" /> Approved
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => openRejectDialog(student)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <ShieldAlert className="mr-2 h-4 w-4" /> Revoke Approval & Reject
+                                            <ShieldAlert className="mr-2 h-4 w-4" /> Revoke Approval &amp; Reject
                                         </DropdownMenuItem>
                                      </>
                                 )}
-                                {(actor.role === 'admin' || (actor.role === 'faculty' && student.branch && actor.assignedBranches?.includes(student.branch))) && (student.role === 'student' || student.role === 'pending') && (
+                                {/* Change Password option */}
+                                {(actor.role === 'admin' || (actor.role === 'faculty' && student.semester && actor.assignedSemesters?.includes(student.semester) && student.branch && actor.assignedBranches?.includes(student.branch))) && (student.role === 'student' || student.role === 'pending') && ( // Allow password change for pending too, if needed for login tests
                                      <DropdownMenuItem onSelect={() => openChangePasswordDialog(student)}>
                                         <KeyRound className="mr-2 h-4 w-4" /> Change Password
                                     </DropdownMenuItem>
@@ -473,6 +491,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </CardContent>
       </Card>
 
+      {/* Approve Confirmation Dialog */}
       <AlertDialog open={isApproveDialogVisible} onOpenChange={() => setIsApproveDialogVisible(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -489,6 +508,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Reject Confirmation Dialog */}
       <Dialog open={isRejectDialogVisible} onOpenChange={(isOpen) => {
         if (!isOpen) {
             rejectionForm.reset();
@@ -531,7 +551,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </DialogContent>
       </Dialog>
 
-      {(actor.role === 'admin' || (actor.role === 'faculty' && studentToChangePassword?.branch && actor.assignedBranches?.includes(studentToChangePassword.branch))) && (
+      {/* Change Password Dialog */}
+      {(actor.role === 'admin' || (actor.role === 'faculty' && studentToChangePassword?.semester && actor.assignedSemesters?.includes(studentToChangePassword.semester) && studentToChangePassword?.branch && actor.assignedBranches?.includes(studentToChangePassword.branch))) && (
         <Dialog open={isChangePasswordDialogVisible} onOpenChange={(isOpen) => {
             if (!isOpen) {
                 changePasswordForm.reset();
@@ -588,6 +609,5 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       )}
 
     </div>
-    </TooltipProvider>
   );
 }
