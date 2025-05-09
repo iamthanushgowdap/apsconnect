@@ -152,10 +152,7 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            if (item.title === "Activity Feed" && user) {
-              return null;
-            }
-             if (item.title === "Chatbot") { // Explicitly hide Chatbot if it's ever added back to mainNav
+             if (item.title === "Activity Feed") { 
               return null;
             }
             
@@ -181,7 +178,7 @@ export function Navbar() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full" suppressHydrationWarning>
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={userAvatarUrl || undefined} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
                     <AvatarFallback className="bg-muted text-muted-foreground">
@@ -219,7 +216,6 @@ export function Navbar() {
                     )}
                   </Link>
                 </DropdownMenuItem>
-                {/* Chatbot link removed */}
                 <DropdownMenuItem asChild>
                   <Link href="/profile/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
@@ -240,7 +236,8 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-               {/* Removed redundant login/register buttons as they are already in mainNav or handled by auth state */}
+                <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>Login</Link>
+                <Link href="/register" className={cn(buttonVariants({ size: "sm" }))}>Register</Link>
             </>
           )}
         </div>
@@ -248,3 +245,4 @@ export function Navbar() {
     </header>
   );
 }
+
