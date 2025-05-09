@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -17,9 +18,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle, Sun, Moon } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle, Sun, Moon, BookOpen } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
@@ -31,18 +33,6 @@ export function Navbar() {
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
-
-
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery) {
-      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-    } else {
-      router.push(`/search`);
-    }
-    setSearchQuery(''); 
-  };
 
 
   const calculateUnseenPosts = React.useCallback(() => {
@@ -167,11 +157,8 @@ export function Navbar() {
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
               if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
-            }
-            
-            // Specifically hide Activity Feed from main nav if user is logged in, as it's in dropdown
-            if (user && item.title === 'Activity Feed') { 
-                return null;
+               // Hide Login/Register links if user is not logged in, as buttons are already present
+              if (!user && (item.title === "Login" || item.title === "Register")) return null;
             }
             
             return (
@@ -196,8 +183,6 @@ export function Navbar() {
           {isLoading ? (
              <SimpleRotatingSpinner className="h-8 w-8 text-primary" />
           ) : user ? (
-            <>
-            <ThemeToggleButton />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full" suppressHydrationWarning>
@@ -219,40 +204,45 @@ export function Navbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href={getDashboardLink()} className="flex items-center">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </DropdownMenuItem>
-                 <DropdownMenuItem asChild>
-                  <Link href="/feed" className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Newspaper className="mr-2 h-4 w-4" />
-                      <span>Activity Feed</span>
-                    </div>
-                    {unseenPostsCount > 0 && (
-                       <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
-                         {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
-                       </span>
-                    )}
-                  </Link>
-                </DropdownMenuItem>
-                 <DropdownMenuItem asChild>
-                   <Link href="/profile/settings" className="flex items-center">
-                     <UserCircle className="mr-2 h-4 w-4" />
-                     <span>Profile Settings</span>
-                   </Link>
-                 </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                    <Link href={getDashboardLink()} className="flex items-center">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                    </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                    <Link href="/feed" className="flex items-center justify-between">
+                        <div className="flex items-center">
+                        <Newspaper className="mr-2 h-4 w-4" />
+                        <span>Activity Feed</span>
+                        </div>
+                        {unseenPostsCount > 0 && (
+                        <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                        </span>
+                        )}
+                    </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                    <Link href="/profile/settings" className="flex items-center">
+                        <UserCircle className="mr-2 h-4 w-4" />
+                        <span>Profile Settings</span>
+                    </Link>
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {/* Theme toggle is now outside the dropdown for logged-in users */}
+                <DropdownMenuItem>
+                    <ThemeToggleButton /> 
+                    <span className="ml-2">{typeof window !== 'undefined' && localStorage.getItem('color-theme') === 'dark' ? 'Dark' : 'Light'} Mode</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            </>
           ) : (
             <>
               <Button asChild variant="outline" size="sm">
@@ -261,8 +251,10 @@ export function Navbar() {
               <Button asChild size="sm">
                 <Link href="/register">Register</Link>
               </Button>
-              {/* Theme toggle button is shown here if no user is logged in */}
-              <ThemeToggleButton /> 
+              {/* Theme toggle button is shown here if no user is logged in and also in dropdown for logged in users */}
+               <div className="hidden md:block"> {/* Hide on mobile if buttons are already taking space */}
+                 <ThemeToggleButton />
+               </div>
             </>
           )}
         </div>
@@ -270,3 +262,4 @@ export function Navbar() {
     </header>
   );
 }
+
