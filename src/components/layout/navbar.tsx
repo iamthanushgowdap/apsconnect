@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -137,6 +136,17 @@ export function Navbar() {
         return "/dashboard"; 
     }
   };
+  
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      router.push(`/search`); // Go to search page even if query is empty to allow using filters
+    }
+    setSearchQuery(''); // Clear input after search
+  };
 
 
   return (
@@ -157,7 +167,6 @@ export function Navbar() {
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
               if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
-               // Hide Login/Register links if user is not logged in, as buttons are already present
               if (!user && (item.title === "Login" || item.title === "Register")) return null;
             }
             
@@ -232,9 +241,9 @@ export function Navbar() {
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent">
                     <ThemeToggleButton /> 
-                    <span className="ml-2">{typeof window !== 'undefined' && localStorage.getItem('color-theme') === 'dark' ? 'Dark' : 'Light'} Mode</span>
+                    <span className="ml-2">{typeof window !== 'undefined' && localStorage.getItem('color-theme') === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
@@ -245,21 +254,25 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" suppressHydrationWarning>
                 <Link href="/login">Login</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" suppressHydrationWarning>
                 <Link href="/register">Register</Link>
               </Button>
-              {/* Theme toggle button is shown here if no user is logged in and also in dropdown for logged in users */}
-               <div className="hidden md:block"> {/* Hide on mobile if buttons are already taking space */}
+               <div className="hidden md:block"> 
                  <ThemeToggleButton />
                </div>
             </>
           )}
+           {/* Theme toggle for mobile when logged out, if needed and space allows */}
+           {!user && (
+             <div className="md:hidden ml-2">
+                <ThemeToggleButton />
+             </div>
+           )}
         </div>
       </div>
     </header>
   );
 }
-

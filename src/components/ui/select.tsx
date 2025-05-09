@@ -23,6 +23,7 @@ const SelectTrigger = React.forwardRef<
       className
     )}
     {...props}
+    suppressHydrationWarning // Added to handle potential browser extension interference
   >
     {children}
     <SelectPrimitive.Icon asChild>
@@ -158,3 +159,4 @@ export {
   SelectScrollUpButton,
   SelectScrollDownButton,
 }
+
