@@ -3,12 +3,14 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, User } from '@/components/auth-provider';
-import type { Post, PostCategory } from '@/types'; 
+import type { Post, PostCategory, UserProfile } from '@/types'; 
 import { postCategories } from '@/types'; 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // Import Input
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Filter, ArrowRight } from 'lucide-react';
+import { FileText, Filter, ArrowRight, Search as SearchIcon } from 'lucide-react'; // Added SearchIcon
 import { parseISO } from 'date-fns';
+import { useRouter } from 'next/navigation'; // Import useRouter for search navigation
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
-import { PostItem } from '@/components/content/post-item'; // Import reusable PostItem
+import { PostItem } from '@/components/content/post-item'; 
 
 export default function FeedPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -39,6 +41,8 @@ export default function FeedPage() {
   const [deleteTargetPostId, setDeleteTargetPostId] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeFilters, setActiveFilters] = useState<PostCategory[]>(postCategories); 
+  const [searchQuery, setSearchQuery] = useState(''); // State for search input
+  const router = useRouter(); // For navigating to search page
 
   const markPostsAsSeen = useCallback(() => {
     if (!user || posts.length === 0) return;
@@ -184,6 +188,16 @@ export default function FeedPage() {
     setActiveFilters([]);
   };
 
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      router.push(`/search`);
+    }
+  };
+
 
   if (authLoading || isLoadingPosts) {
     return (
@@ -197,29 +211,42 @@ export default function FeedPage() {
     <div className="mx-auto my-10 max-w-2xl rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-8 shadow-lg bg-card text-card-foreground">
       <div className="mb-4 flex flex-col sm:flex-row justify-between sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
         <p className="text-xl font-bold text-gray-700 dark:text-white">Activity Feed</p>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="mt-2 sm:mt-0">
-              <Filter className="mr-2 h-4 w-4" /> Filter Categories
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {postCategories.map(category => (
-              <DropdownMenuCheckboxItem
-                key={category}
-                checked={activeFilters.includes(category)}
-                onCheckedChange={() => handleFilterChange(category)}
-              >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </DropdownMenuCheckboxItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSelectAllFilters}>Select All</DropdownMenuItem>
-            <DropdownMenuItem onClick={handleClearAllFilters}>Clear All (Show All)</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            <form onSubmit={handleSearchSubmit} className="relative flex-grow sm:flex-grow-0">
+                <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search posts..."
+                    className="pl-8 h-9 text-sm w-full sm:w-auto"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    suppressHydrationWarning
+                />
+            </form>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <Filter className="mr-2 h-4 w-4" /> Filter
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {postCategories.map(category => (
+                    <DropdownMenuCheckboxItem
+                    key={category}
+                    checked={activeFilters.includes(category)}
+                    onCheckedChange={() => handleFilterChange(category)}
+                    >
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSelectAllFilters}>Select All</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleClearAllFilters}>Clear All (Show All)</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </div>
       <div>
         {posts.length === 0 ? (

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -30,7 +31,7 @@ export function Navbar() {
   const { user, isLoading, signOut } = useAuth(); 
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState('');
+  // Removed searchQuery and handleSearchSubmit as search is moved to feed page
 
   const calculateUnseenPosts = React.useCallback(() => {
     if (typeof window === 'undefined' || !user ) { 
@@ -136,15 +137,7 @@ export function Navbar() {
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery) {
-      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-    } else {
-      router.push(`/search`); 
-    }
-  };
+  // Search form and handler removed from Navbar
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -165,7 +158,7 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            // Hide "Campus Feed" from navbar if user is logged in, as it's in the dropdown
+            // Hide "Activity Feed" from navbar if user is logged in, as it's in the dropdown
             if (user && item.title === 'Activity Feed') {
                 return null;
             }
@@ -179,6 +172,7 @@ export function Navbar() {
                     pathname === item.href ? "text-primary" : "text-foreground/60",
                     "text-xs sm:text-sm" 
                     )}
+                    suppressHydrationWarning
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
@@ -186,24 +180,8 @@ export function Navbar() {
             );
           })}
         </nav>
-         <form 
-           onSubmit={handleSearchSubmit} 
-           className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-md w-full"
-           suppressHydrationWarning // Add suppressHydrationWarning to the form
-         >
-            <div className="relative">
-                <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search APSConnect..."
-                    className="pl-8 h-9 text-sm w-full"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    suppressHydrationWarning
-                />
-            </div>
-        </form>
-        <div className="flex items-center space-x-1 sm:space-x-2">
+         {/* Search form removed from here */}
+        <div className="flex items-center space-x-1 sm:space-x-2 ml-auto"> {/* Added ml-auto to push avatar to the right */}
           {isLoading ? (
              <SimpleRotatingSpinner className="h-8 w-8 text-primary" />
           ) : user ? (
