@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch, defaultBranches } from '@/types'; 
+import { UserProfile, Branch, defaultBranches } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,14 +15,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox'; 
+import { Label } from '@/components/ui/label'; // Note: Label might not be used if using Form components
+import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import {
   Form,
@@ -35,18 +34,18 @@ import {
 } from "@/components/ui/form";
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
-const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; 
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches';
 
 const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
   phoneNumber: z.string().min(10, "Phone number must be at least 10 digits.").optional().or(z.literal('')),
-  password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')), 
+  password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')),
   confirmPassword: z.string().optional().or(z.literal('')),
-  assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."), 
+  assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."),
   facultyTitle: z.string().optional().or(z.literal('')),
 }).refine(data => {
-  if (data.password || data.confirmPassword) { 
+  if (data.password || data.confirmPassword) {
     return data.password === data.confirmPassword;
   }
   return true;
@@ -78,7 +77,7 @@ export default function ManageFacultyTab() {
       facultyTitle: "",
     },
   });
-  
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
@@ -88,14 +87,14 @@ export default function ManageFacultyTab() {
           if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
             setAvailableBranches(parsedBranches);
           } else {
-            setAvailableBranches(defaultBranches); // Fallback if stored is empty or invalid
+            setAvailableBranches(defaultBranches);
           }
         } catch (e) {
           console.error("Failed to parse branches from localStorage, using default:", e);
-          setAvailableBranches(defaultBranches); // Fallback on error
+          setAvailableBranches(defaultBranches);
         }
       } else {
-        setAvailableBranches(defaultBranches); // Fallback if not in localStorage
+        setAvailableBranches(defaultBranches);
       }
     }
   }, []);
@@ -107,7 +106,7 @@ export default function ManageFacultyTab() {
       const users: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('apsconnect_user_')) { 
+        if (key && key.startsWith('apsconnect_user_')) {
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (user.role === 'faculty') {
@@ -129,9 +128,36 @@ export default function ManageFacultyTab() {
 
   const handleFormSubmit = (data: FacultyFormValues) => {
     if (typeof window !== 'undefined') {
-      const facultyUserKey = `apsconnect_user_${data.email.toLowerCase()}`; 
-      
+      // Check if email already exists for any user type when creating new faculty
+      if (!editingFaculty) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('apsconnect_user_')) {
+            const profileStr = localStorage.getItem(key);
+            if (profileStr) {
+              try {
+                const existingProfile = JSON.parse(profileStr) as UserProfile;
+                if (existingProfile.email && existingProfile.email.toLowerCase() === data.email.toLowerCase()) {
+                  toast({
+                    title: "Error Creating Faculty",
+                    description: "This email address is already in use by another account.",
+                    variant: "destructive",
+                    duration: 3000,
+                  });
+                  return; 
+                }
+              } catch (e) { /* Ignore parse errors */ }
+            }
+          }
+        }
+      }
+
+
+      const facultyUserKey = `apsconnect_user_${data.email.toLowerCase()}`;
+      // This specific check is now less critical due to the global email check above for new faculty
+      // but it's harmless for existing logic during edit.
       if (!editingFaculty && localStorage.getItem(facultyUserKey)) {
+        // This case should ideally be caught by the loop above, but kept as a fallback.
         toast({
           title: "Error",
           description: "A faculty member with this email already exists.",
@@ -146,19 +172,19 @@ export default function ManageFacultyTab() {
         return;
       }
 
-      const existingProfile = editingFaculty ? facultyMembers.find(f => f.uid === editingFaculty.uid) : null;
+      const existingProfileData = editingFaculty ? facultyMembers.find(f => f.uid === editingFaculty.uid) : null;
 
       const facultyProfile: UserProfile = {
         uid: data.email.toLowerCase(),
         displayName: data.displayName,
         email: data.email.toLowerCase(),
         phoneNumber: data.phoneNumber || undefined,
-        password: data.password ? data.password : (editingFaculty && existingProfile?.password ? existingProfile.password : data.password!),
+        password: data.password ? data.password : (existingProfileData?.password || data.password!),
         assignedBranches: data.assignedBranches,
         facultyTitle: data.facultyTitle || undefined,
         role: 'faculty',
         registrationDate: editingFaculty?.registrationDate || new Date().toISOString(),
-        isApproved: true, 
+        isApproved: true,
       };
 
       localStorage.setItem(facultyUserKey, JSON.stringify(facultyProfile));
@@ -182,15 +208,15 @@ export default function ManageFacultyTab() {
       phoneNumber: faculty.phoneNumber || "",
       assignedBranches: faculty.assignedBranches || [],
       facultyTitle: faculty.facultyTitle || "",
-      password: "", 
+      password: "",
       confirmPassword: "",
     });
     setIsFormOpen(true);
   };
-  
+
   const openCreateDialog = () => {
     setEditingFaculty(null);
-    form.reset(); 
+    form.reset();
     setIsFormOpen(true);
   }
 
@@ -198,7 +224,7 @@ export default function ManageFacultyTab() {
      if (typeof window !== 'undefined') {
         const confirmed = window.confirm("Are you sure you want to delete this faculty member? This action cannot be undone.");
         if (confirmed) {
-            localStorage.removeItem(`apsconnect_user_${email.toLowerCase()}`); 
+            localStorage.removeItem(`apsconnect_user_${email.toLowerCase()}`);
             const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr);
@@ -215,7 +241,7 @@ export default function ManageFacultyTab() {
         }
     }
   };
-  
+
   const filteredFaculty = facultyMembers.filter(faculty => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -308,7 +334,7 @@ export default function ManageFacultyTab() {
                       {availableBranches.length === 0 ? "No branches defined by admin yet. Please add branches in Branch Management first." : "Select branches."}
                     </ShadCnFormDescription>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md">
-                      {availableBranches.map((branch) => ( 
+                      {availableBranches.map((branch) => (
                         <FormField
                           key={branch}
                           control={form.control}
@@ -425,8 +451,8 @@ export default function ManageFacultyTab() {
                     <TableCell>{faculty.email}</TableCell>
                     <TableCell>{faculty.facultyTitle || 'N/A'}</TableCell>
                     <TableCell>
-                        {faculty.assignedBranches && faculty.assignedBranches.length > 0 
-                          ? faculty.assignedBranches.join(', ') 
+                        {faculty.assignedBranches && faculty.assignedBranches.length > 0
+                          ? faculty.assignedBranches.join(', ')
                           : 'N/A'}
                     </TableCell>
                     <TableCell>{faculty.phoneNumber || 'N/A'}</TableCell>

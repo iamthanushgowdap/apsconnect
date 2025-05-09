@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, 
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,14 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
+import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import type { UserProfile, Branch, Semester } from "@/types"; // Added Semester
-import { defaultBranches, semesters } from "@/types"; // Added semesters
+import type { UserProfile, Branch, Semester } from "@/types";
+import { defaultBranches, semesters } from "@/types";
 
 
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
-const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; 
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches';
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -46,8 +45,8 @@ const registerSchema = z.object({
     .transform(val => {
       return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
     }),
-  branch: z.string({ required_error: "Please select your branch." }), 
-  semester: z.string({ required_error: "Please select your semester." }) as z.ZodSchema<Semester>, // Added semester
+  branch: z.string({ required_error: "Please select your branch." }),
+  semester: z.string({ required_error: "Please select your semester." }) as z.ZodSchema<Semester>,
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -70,14 +69,14 @@ export default function RegisterPage() {
           if (Array.isArray(parsedBranches) && parsedBranches.length > 0) {
             setAvailableBranches(parsedBranches);
           } else {
-            setAvailableBranches(defaultBranches); // Fallback if stored is empty or invalid
+            setAvailableBranches(defaultBranches);
           }
         } catch (e) {
           console.error("Failed to parse branches from localStorage, using default:", e);
-          setAvailableBranches(defaultBranches); // Fallback on error
+          setAvailableBranches(defaultBranches);
         }
       } else {
-        setAvailableBranches(defaultBranches); // Fallback if not in localStorage
+        setAvailableBranches(defaultBranches);
       }
     }
   }, []);
@@ -91,42 +90,82 @@ export default function RegisterPage() {
       password: "",
       confirmPassword: "",
       usnSuffix: "",
-      branch: undefined, 
-      semester: undefined, // Added semester
+      branch: undefined,
+      semester: undefined,
     },
   });
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
-    const fullUsn = `1AP${data.usnSuffix}`; 
-    
+    const fullUsn = `1AP${data.usnSuffix}`;
+
+    // Check if email already exists
+    if (typeof window !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('apsconnect_user_')) {
+          const profileStr = localStorage.getItem(key);
+          if (profileStr) {
+            try {
+              const existingProfile = JSON.parse(profileStr) as UserProfile;
+              if (existingProfile.email && existingProfile.email.toLowerCase() === data.email.toLowerCase()) {
+                toast({
+                  title: "Registration Failed",
+                  description: "This email address is already registered.",
+                  variant: "destructive",
+                  duration: 3000,
+                });
+                setIsLoading(false);
+                return;
+              }
+            } catch (e) {
+              // Ignore parse errors for potentially non-user profile items
+            }
+          }
+        }
+      }
+        // Check if USN already exists
+        const userProfileKey = `apsconnect_user_${fullUsn}`;
+        if (localStorage.getItem(userProfileKey)) {
+            toast({
+                title: "Registration Failed",
+                description: "This USN is already registered.",
+                variant: "destructive",
+                duration: 3000,
+            });
+            setIsLoading(false);
+            return;
+        }
+    }
+
+
     try {
       console.log("Simulating registration with:", { ...data, usn: fullUsn });
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
-      
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       if (typeof window !== 'undefined') {
-        const userProfileData: UserProfile = { 
-            uid: fullUsn,
-            displayName: data.displayName, 
-            email: data.email, 
-            role: 'pending', 
-            usn: fullUsn,
-            branch: data.branch, 
-            semester: data.semester, // Added semester
-            registrationDate: new Date().toISOString(),
-            isApproved: false,
-            password: data.password, // Storing password in profile
-        };
-        localStorage.setItem(`apsconnect_user_${fullUsn}`, JSON.stringify(userProfileData)); 
-        
-        localStorage.setItem('mockUser', JSON.stringify({ 
+        const userProfileData: UserProfile = {
             uid: fullUsn,
             displayName: data.displayName,
-            email: data.email,
+            email: data.email.toLowerCase(),
             role: 'pending',
             usn: fullUsn,
             branch: data.branch,
-            semester: data.semester, // Added semester
+            semester: data.semester,
+            registrationDate: new Date().toISOString(),
+            isApproved: false,
+            password: data.password, 
+        };
+        localStorage.setItem(`apsconnect_user_${fullUsn}`, JSON.stringify(userProfileData));
+
+        localStorage.setItem('mockUser', JSON.stringify({
+            uid: fullUsn,
+            displayName: data.displayName,
+            email: data.email.toLowerCase(),
+            role: 'pending',
+            usn: fullUsn,
+            branch: data.branch,
+            semester: data.semester,
         }));
       }
 
@@ -135,7 +174,7 @@ export default function RegisterPage() {
         description: "Your registration is pending admin approval. You will be notified once approved.",
         duration: 3000,
       });
-      router.push("/dashboard"); 
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -193,12 +232,12 @@ export default function RegisterPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm sm:text-base font-medium p-2.5 border border-input rounded-md bg-muted">1AP</span>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., 23CS001" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., 23CS001"
+                          {...field}
                           className="text-sm sm:text-base"
                           maxLength={7}
-                          onInput={(e) => { 
+                          onInput={(e) => {
                             const inputVal = e.currentTarget.value;
                             if (inputVal.length >= 2 && inputVal.length <=4) {
                                 const yearPart = inputVal.substring(0,2);
@@ -211,7 +250,7 @@ export default function RegisterPage() {
                                 const rollPart = inputVal.substring(4);
                                 e.currentTarget.value = yearPart + branchPart + rollPart;
                             }
-                            field.onChange(e); 
+                            field.onChange(e);
                           }}
                           suppressHydrationWarning
                         />

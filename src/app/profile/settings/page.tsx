@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -15,19 +14,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
 import type { UserProfile } from '@/types';
-import { Loader2, ShieldCheck, Edit3, Trash2, Camera } from 'lucide-react';
+import { Loader2, ShieldCheck, Camera, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const ADMIN_EMAIL_CONST = "admin@gmail.com"; 
+const ADMIN_EMAIL_CONST = "admin@gmail.com";
 const ADMIN_PASSWORD_CONST = "admin123";
 
 
@@ -41,7 +39,6 @@ const profileSchema = z.object({
   confirmNewEmail: z.string().optional().or(z.literal('')),
 })
 .superRefine((data, ctx) => {
-  // Password change validation
   if (data.newPassword) {
     if (!data.currentPassword) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Current password is required to change password.", path: ["currentPassword"] });
@@ -52,20 +49,16 @@ const profileSchema = z.object({
     if (data.newPassword !== data.confirmNewPassword) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "New passwords do not match.", path: ["confirmNewPassword"] });
     }
-  } else if (data.currentPassword && !data.newPassword && !data.confirmNewPassword) { 
+  } else if (data.currentPassword && !data.newPassword && !data.confirmNewPassword) {
      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please enter a new password.", path: ["newPassword"] });
   } else if (data.currentPassword && data.confirmNewPassword && !data.newPassword) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please enter a new password.", path: ["newPassword"] });
   }
 
 
-  // Email change validation
   if (data.newEmail) {
     if (!data.currentEmail) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Current email is required to change email.", path: ["currentEmail"] });
-    }
-    if (data.newEmail === data.currentEmail) { // This will be checked against actual current email in submit
-      // This specific check can be complex here if currentEmail field might not match authUser.email
     }
     if (data.newEmail !== data.confirmNewEmail) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "New emails do not match.", path: ["confirmNewEmail"] });
@@ -93,8 +86,8 @@ const getProfileInitials = (profile: UserProfile | User | null): string => {
   if (!profile) return "??";
   const nameSource = profile.displayName || profile.email || ('usn' in profile && profile.usn ? profile.usn : undefined);
   if (!nameSource) return "??";
-  
-  const nameParts = nameSource.split(/[\s@]+/); 
+
+  const nameParts = nameSource.split(/[\s@]+/);
   if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
     const firstInitial = nameParts[0][0];
     let secondInitial = '';
@@ -116,7 +109,7 @@ export default function ProfileSettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user: authUser, isLoading: authLoading, updateUserContext } = useAuth();
-  
+
   const [pageLoading, setPageLoading] = useState(true);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
@@ -147,12 +140,12 @@ export default function ProfileSettingsPage() {
           const parsedProfile = JSON.parse(profileStr) as UserProfile;
           setUserProfileState(parsedProfile);
           setAvatarPreview(parsedProfile.avatarDataUrl || null);
-          form.reset({ 
+          form.reset({
             displayName: parsedProfile.displayName || "",
             currentPassword: "",
             newPassword: "",
             confirmNewPassword: "",
-            currentEmail: "", 
+            currentEmail: "",
             newEmail: "",
             confirmNewEmail: ""
           });
@@ -164,11 +157,11 @@ export default function ProfileSettingsPage() {
             displayName: 'Admin User',
             registrationDate: new Date().toISOString(),
             isApproved: true,
-            password: ADMIN_PASSWORD_CONST, // Storing for mock purposes
+            password: ADMIN_PASSWORD_CONST,
           };
           setUserProfileState(defaultAdminProfile);
           setAvatarPreview(null);
-          form.reset({ 
+          form.reset({
             displayName: defaultAdminProfile.displayName || "",
             currentPassword: "",
             newPassword: "",
@@ -178,10 +171,8 @@ export default function ProfileSettingsPage() {
             confirmNewEmail: ""
           });
         } else {
-          // If profile not found for non-default admin, it's an issue or new user.
-          // For now, redirecting to login. A more robust solution might create a basic profile.
           toast({ title: "Profile Error", description: "User profile not found. Please log in again.", variant: "destructive", duration: 3000 });
-          router.push('/login'); 
+          router.push('/login');
         }
       } else if (!authUser) {
         router.push('/login');
@@ -193,8 +184,8 @@ export default function ProfileSettingsPage() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { 
-        toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant: "destructive" });
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant = "destructive" });
         return;
       }
       setSelectedFile(file);
@@ -206,52 +197,55 @@ export default function ProfileSettingsPage() {
   const handleRemoveAvatar = () => {
     setSelectedFile(null);
     setAvatarPreview(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = ""; // Clear the file input
+    }
   };
 
   async function onSubmit(data: ProfileFormValues) {
     if (!authUser || !userProfile) {
-        toast({ title: "Error", description: "User session or profile not found.", variant: "destructive", duration: 3000 });
+        toast({ title: "Error", description: "User session or profile not found.", variant = "destructive", duration: 3000 });
         return;
     }
 
     let changesMade = false;
     const updatedProfileData = { ...userProfile };
 
-    const isDisplayNameChanged = data.displayName && data.displayName !== userProfile.displayName;
+    const isDisplayNameChanged = data.displayName !== undefined && data.displayName !== userProfile.displayName;
     const isPasswordChanged = !!data.newPassword;
     const isEmailChanged = !!data.newEmail;
-    const isAvatarChanged = selectedFile || (avatarPreview === null && userProfile.avatarDataUrl);
+    const isAvatarChanged = selectedFile || (avatarPreview = null && userProfile.avatarDataUrl);
 
 
     if (!isDisplayNameChanged && !isPasswordChanged && !isEmailChanged && !isAvatarChanged) {
-        toast({ title: "No Changes", description: "Please provide new information to update.", variant: "default", duration: 3000});
+        toast({ title: "No Changes", description: "Please provide new information to update.", variant = "default", duration: 3000});
         return;
     }
-    
+
     setFormSubmitting(true);
 
     try {
       if (selectedFile) {
         updatedProfileData.avatarDataUrl = await readFileAsDataURL(selectedFile);
         changesMade = true;
-      } else if (avatarPreview === null && userProfile.avatarDataUrl) { 
+      } else if (avatarPreview = null && userProfile.avatarDataUrl) {
         updatedProfileData.avatarDataUrl = undefined;
         changesMade = true;
       }
 
-      if (data.displayName && data.displayName !== userProfile.displayName) {
+      if (data.displayName !== undefined && data.displayName !== userProfile.displayName) {
         updatedProfileData.displayName = data.displayName;
         changesMade = true;
       }
 
       if (data.newPassword) {
-        if (!data.currentPassword) { 
+        if (!data.currentPassword) {
              form.setError("currentPassword", { message: "Current password is required."});
              setFormSubmitting(false); return;
         }
-        const actualCurrentPassword = userProfile.password || (userProfile.uid === ADMIN_EMAIL_CONST ? ADMIN_PASSWORD_CONST : "");
+        const actualCurrentPassword = userProfile.password || (userProfile.uid = ADMIN_EMAIL_CONST ? ADMIN_PASSWORD_CONST : "");
         if (data.currentPassword !== actualCurrentPassword) {
-          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant: "destructive", duration: 3000 });
+          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant = "destructive", duration: 3000 });
           form.setError("currentPassword", { message: "Incorrect current password." });
           setFormSubmitting(false);
           return;
@@ -260,30 +254,58 @@ export default function ProfileSettingsPage() {
         changesMade = true;
       }
 
-      let oldEmailKey: string | null = null;
-      let newEmailKey: string | null = null;
+      let oldEmailKey: string = null;
+      let newEmailKey: string = null;
 
       if (data.newEmail) {
-        if (!data.currentEmail) { 
+        if (!data.currentEmail) {
             form.setError("currentEmail", { message: "Current email is required."});
             setFormSubmitting(false); return;
         }
         if (data.currentEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
-          toast({ title: "Incorrect Email", description: "The current email you entered is incorrect.", variant: "destructive", duration: 3000 });
+          toast({ title: "Incorrect Email", description: "The current email you entered is incorrect.", variant = "destructive", duration: 3000 });
           form.setError("currentEmail", { message: "Incorrect current email." });
           setFormSubmitting(false);
           return;
         }
          if (data.newEmail.toLowerCase() === userProfile.email.toLowerCase()) {
-          toast({ title: "Same Email", description: "New email cannot be the same as the current email.", variant: "destructive", duration: 3000});
+          toast({ title: "Same Email", description: "New email cannot be the same as the current email.", variant = "destructive", duration: 3000});
           form.setError("newEmail", { message: "New email cannot be the same as the current email." });
           setFormSubmitting(false); return;
         }
 
-        // For admin/faculty, UID changes with email. For students, UID (USN) is fixed.
+        // Check if the new email already exists for another user
+        if (data.newEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
+            let emailExistsForOtherUser = false;
+            if (typeof window !== 'undefined') {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('apsconnect_user_')) {
+                        const profileStr = localStorage.getItem(key);
+                        if (profileStr) {
+                            try {
+                                const existingUserProfile = JSON.parse(profileStr) as UserProfile;
+                                if (existingUserProfile.email && existingUserProfile.email.toLowerCase() === data.newEmail.toLowerCase() && existingUserProfile.uid !== userProfile.uid) {
+                                    emailExistsForOtherUser = true;
+                                    break;
+                                }
+                            } catch (e) {  Ignore parse errors  }
+                        }
+                    }
+                }
+            }
+            if (emailExistsForOtherUser) {
+                toast({ title: "Update Failed", description: "This email address is already in use by another account.", variant = "destructive", duration: 3000 });
+                form.setError("newEmail", { message: "Email already in use." });
+                setFormSubmitting(false);
+                return;
+            }
+        }
+
+
         if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
-            oldEmailKey = `apsconnect_user_${userProfile.uid}`; 
-            updatedProfileData.uid = data.newEmail.toLowerCase();
+            oldEmailKey = `apsconnect_user_${userProfile.uid}`;
+            updatedProfileData.uid = data.newEmail.toLowerCase(); // UID changes with email for admin/faculty
             newEmailKey = `apsconnect_user_${updatedProfileData.uid}`;
         }
         updatedProfileData.email = data.newEmail.toLowerCase();
@@ -295,27 +317,24 @@ export default function ProfileSettingsPage() {
         setFormSubmitting(false);
         return;
       }
-      
+
       if (typeof window !== 'undefined') {
         if (newEmailKey && oldEmailKey && oldEmailKey !== newEmailKey && (userProfile.role === 'admin' || userProfile.role === 'faculty')) {
-          localStorage.removeItem(oldEmailKey);
+          localStorage.removeItem(oldEmailKey); // Remove old profile if UID changed
           localStorage.setItem(newEmailKey, JSON.stringify(updatedProfileData));
         } else {
-          // For students or if email didn't change UID part for admin/faculty
           localStorage.setItem(`apsconnect_user_${updatedProfileData.uid}`, JSON.stringify(updatedProfileData));
         }
 
-        // Update AuthContext and mockUser for immediate reflection
         const updatedAuthUser: User = {
           ...authUser,
-          uid: updatedProfileData.uid, // UID might change if admin/faculty email changes
+          uid: updatedProfileData.uid,
           email: updatedProfileData.email,
           displayName: updatedProfileData.displayName || authUser.displayName,
-          // Role and other specifics like branch/usn should persist from authUser
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
-        updateUserContext(updatedAuthUser); 
-        setUserProfileState(updatedProfileData); 
+        updateUserContext(updatedAuthUser);
+        setUserProfileState(updatedProfileData);
       }
 
       toast({
@@ -323,18 +342,18 @@ export default function ProfileSettingsPage() {
         description: "Your profile details have been successfully updated.",
         duration: 3000,
       });
-      form.reset({ 
-        displayName: updatedProfileData.displayName || "", 
+      form.reset({
+        displayName: updatedProfileData.displayName || "",
         currentPassword: "", newPassword: "", confirmNewPassword: "",
         currentEmail: "", newEmail: "", confirmNewEmail: ""
       });
-      setSelectedFile(null); 
+      setSelectedFile(null);
 
     } catch (error: any) {
       toast({
         title: "Update Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        variant = "destructive",
         duration: 3000,
       });
     } finally {
@@ -342,7 +361,7 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  if (pageLoading || authLoading || !userProfile) {
+  if (pageLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
@@ -350,7 +369,7 @@ export default function ProfileSettingsPage() {
     );
   }
 
-  if (!authUser) { 
+  if (!authUser || !userProfile) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -358,13 +377,13 @@ export default function ProfileSettingsPage() {
           <CardContent>
             <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You must be logged in to view this page.</p>
-            <Link href="/login"><Button variant="outline" className="mt-6">Login</Button></Link>
+            <Link href="/login"><Button variant = "outline" className="mt-6">Login</Button></Link>
           </CardContent>
         </Card>
       </div>
     );
   }
-  
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -372,24 +391,25 @@ export default function ProfileSettingsPage() {
         <CardHeader className="items-center text-center sm:text-left">
            <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-              <AvatarImage src={avatarPreview || undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
+              <AvatarImage src={avatarPreview = undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
               <AvatarFallback className="text-3xl bg-muted text-muted-foreground">
                  {getProfileInitials(userProfile)}
               </AvatarFallback>
             </Avatar>
             <div className="flex gap-2 mt-2">
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Button size="sm" variant = "outline" onClick={() => fileInputRef.current = click()}>
                 <Camera className="mr-2 h-4 w-4" /> Change Photo
               </Button>
-              <Input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/png, image/jpeg, image/gif, image/webp" 
-                onChange={handleFileChange} 
+              <Input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/png, image/jpeg, image/gif, image/webp"
+                onChange={handleFileChange}
+                id="avatar-upload-input"
               />
               {avatarPreview && (
-                <Button size="sm" variant="destructive" onClick={handleRemoveAvatar}>
+                <Button size="sm" variant = "destructive" onClick={handleRemoveAvatar}>
                   <Trash2 className="mr-2 h-4 w-4" /> Remove
                 </Button>
               )}
@@ -397,16 +417,16 @@ export default function ProfileSettingsPage() {
           </div>
           <div className="mt-4">
             <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-primary text-center">{userProfile.displayName || "User Profile"}</CardTitle>
-            <CardDescription className="text-base sm:text-lg text-center">
+            <CardDescription className="text-base sm:text-lg text-center text-muted-foreground">
               Email: {userProfile.email}
             </CardDescription>
             {userProfile.role === 'student' && userProfile.usn && (
-                 <CardDescription className="text-base sm:text-lg text-center mt-1">
+                 <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
                     USN: {userProfile.usn}
                 </CardDescription>
             )}
              {userProfile.role === 'student' && userProfile.semester && (
-                 <CardDescription className="text-base sm:text-lg text-center mt-1">
+                 <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
                     Semester: {userProfile.semester}
                 </CardDescription>
             )}
@@ -415,7 +435,7 @@ export default function ProfileSettingsPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              
+
               <FormField
                 control={form.control}
                 name="displayName"
@@ -423,41 +443,79 @@ export default function ProfileSettingsPage() {
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Name" {...field} value={field.value ?? ""} />
+                      <Input placeholder="Your Name" {...field} value={field.value = ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="space-y-1 pt-4 border-t">
                 <h3 className="text-md font-medium text-foreground">Change Password</h3>
                 <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change password.</p>
               </div>
-              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value ?? ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value ?? ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value ?? ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value = ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value = ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value = ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
 
-              <div className="space-y-1 pt-4 border-t">
-                <h3 className="text-md font-medium text-foreground">Change Email</h3>
-                <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change email. This will also change your login ID if you are an admin or faculty.</p>
-              </div>
-              <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} value={field.value ?? ""} autoComplete="email" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} value={field.value ?? ""} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} value={field.value ?? ""} autoComplete="new-email" /></FormControl><FormMessage /></FormItem>)} />
+             {(userProfile.role === 'admin' || userProfile.role === 'faculty') && (
+                
+                    
+                        
+                            
+                        
+                        
+                            
+                        
+                    
+                    
+                        
+                            Current Email ({userProfile.email})
+                        
+                        
+                            
+                                
+                            
+                            
+                        
+                    
+                    
+                        
+                            New Email
+                        
+                        
+                            
+                                
+                            
+                            
+                        
+                    
+                    
+                        
+                            Confirm New Email
+                        
+                        
+                            
+                                
+                            
+                            
+                        
+                    
+                
+             )}
+
               
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={formSubmitting}>
-                {formSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : "Update Profile"}
-              </Button>
-            </form>
-          </Form>
-          <div className="mt-6 text-center">
-            <Link href={authUser.role === 'admin' ? '/admin' : authUser.role === 'faculty' ? '/faculty' : '/student'}>
-              <Button variant="link" className="text-sm text-muted-foreground">Back to Dashboard</Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                {formSubmitting ?  Updating... : "Update Profile"}
+              
+            
+          
+          
+            
+              Back to Dashboard
+            
+          
+        
+      
+    
   );
 }
