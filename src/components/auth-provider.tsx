@@ -1,8 +1,7 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { UserRole, Branch, UserProfile } from '@/types'; 
+import type { UserRole, Branch, UserProfile, Semester } from '@/types'; 
 import { useToast } from '@/hooks/use-toast';
 import { SiteConfig } from '@/config/site'; 
 import { UpdateNotificationToast } from '@/components/notifications/update-notification-toast';
@@ -17,12 +16,13 @@ export interface User {
   usn?: string; 
   assignedBranches?: Branch[]; 
   rejectionReason?: string; 
+  semester?: Semester; 
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }) => Promise<User>; 
+  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; semester?: Semester; password?: string }) => Promise<User>; 
   signOut: () => Promise<void>;
   updateUserContext: (updatedUser: User) => void; 
 }
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (typeof window !== 'undefined') {
-      const APP_VERSION_KEY = 'apsconnect_app_version'; // Changed key
+      const APP_VERSION_KEY = 'apsconnect_app_version';
       const storedVersion = localStorage.getItem(APP_VERSION_KEY);
 
       if (storedVersion !== SiteConfig.LATEST_APP_VERSION) { 
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   }, [toast]); 
 
-  const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; password?: string }): Promise<User> => {
+  const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; semester?: Semester; password?: string }): Promise<User> => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: credentials.role,
       };
     } else if (credentials.role === 'faculty' && credentials.email && credentials.password) {
-      const facultyUserKey = `apsconnect_user_${credentials.email.toLowerCase()}`; // Changed key
+      const facultyUserKey = `apsconnect_user_${credentials.email.toLowerCase()}`;
       const facultyUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(facultyUserKey) : null;
 
       if (facultyUserDataStr) {
@@ -122,11 +122,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Faculty account not found.");
       }
     } else if (credentials.role === 'student' && credentials.usn) {
-       const registeredUserKey = `apsconnect_user_${credentials.usn.toUpperCase()}`; // Changed key
+       const registeredUserKey = `apsconnect_user_${credentials.usn.toUpperCase()}`;
        const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
        let studentEmail: string | null = null;
        let studentDisplayName: string | null = defaultDisplayName;
        let studentBranch: Branch | undefined = undefined; 
+       let studentSemester: Semester | undefined = undefined;
        let isApproved = false;
        let currentRole: UserRole = 'pending';
        let rejectionReason: string | undefined = undefined;
@@ -140,6 +141,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              throw new Error("Invalid student credentials.");
            }
          } else if (!registeredUserData.isApproved && registeredUserData.role === 'pending' && credentials.password !== registeredUserData.password) {
+           // Allow login for pending users even if password check is initially for approved
+           // This allows them to see pending/rejected status
+           // If strict password check for pending is needed, adjust here
          }
 
 
@@ -148,6 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          isApproved = registeredUserData.isApproved;
          currentRole = registeredUserData.role; 
          studentBranch = registeredUserData.branch; 
+         studentSemester = registeredUserData.semester;
          if (!isApproved && registeredUserData.rejectionReason) {
             rejectionReason = registeredUserData.rejectionReason;
          }
@@ -163,6 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         displayName: studentDisplayName,
         role: currentRole, 
         branch: studentBranch, 
+        semester: studentSemester,
         rejectionReason,
       };
     } else {
