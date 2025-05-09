@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PostItem } from '@/components/content/post-item';
-import { UserProfileCard } from '@/components/users/user-profile-card'; // Assuming a new component for displaying user search results
+import { UserProfileCard } from '@/components/users/user-profile-card'; 
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Filter, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import {
@@ -20,23 +20,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DateRangePicker } from '@/components/ui/date-range-picker'; // Assuming this component exists or will be created
+import { DateRangePicker } from '@/components/ui/date-range-picker'; 
 import type { DateRange } from 'react-day-picker';
 import { parseISO, isWithinInterval } from 'date-fns';
-
-// Placeholder for DateRangePicker if not implemented
-const DateRangePickerPlaceholder = ({ date, onDateChange }: { date?: DateRange, onDateChange: (date?: DateRange) => void }) => (
-  <Button variant="outline" onClick={() => alert("Date range picker not yet implemented.")}>
-    Filter by Date Range
-  </Button>
-);
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { toast } = useToast(); // Assuming useToast is available
+  const { toast } = useToast(); 
 
   const [query, setQuery] = useState(searchParams?.get('q') || '');
   const [currentSearchTerm, setCurrentSearchTerm] = useState(searchParams?.get('q') || '');
@@ -87,7 +81,6 @@ export default function SearchPage() {
       if (dateRange?.from && dateRange?.to && !isWithinInterval(parseISO(post.createdAt), { start: dateRange.from, end: dateRange.to })) matchesQuery = false;
       if (selectedBranches.length > 0 && (post.targetBranches.length === 0 || !post.targetBranches.some(b => selectedBranches.includes(b)))) matchesQuery = false;
       
-      // Permission check (similar to feed)
       let canView = false;
       if (!post.targetBranches || post.targetBranches.length === 0) canView = true;
       else if (user) {
@@ -101,7 +94,6 @@ export default function SearchPage() {
     });
     searchedItems.push(...filteredPosts.map(p => ({ ...p, type: 'post' as const })));
 
-    // Search Users (if admin or faculty with search permissions)
     if (user && (user.role === 'admin' || user.role === 'faculty')) {
       const users: UserProfile[] = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -123,7 +115,7 @@ export default function SearchPage() {
         );
         
         if (user.role === 'faculty' && user.assignedBranches && profile.role === 'student' && profile.branch && !user.assignedBranches.includes(profile.branch)) {
-            matchesQuery = false; // Faculty can only search students in their branches
+            matchesQuery = false; 
         }
         if (selectedUserRoles.length > 0 && !selectedUserRoles.includes(profile.role)) matchesQuery = false;
         if (selectedBranches.length > 0 && profile.role === 'student' && profile.branch && !selectedBranches.includes(profile.branch)) matchesQuery = false;
@@ -134,11 +126,10 @@ export default function SearchPage() {
       searchedItems.push(...filteredUsers.map(u => ({ ...u, type: 'user' as const })));
     }
     
-    // Sort results, e.g., posts first, then users, or by relevance/date
     searchedItems.sort((a, b) => {
         if (a.type === 'post' && b.type === 'post') return parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime();
         if (a.type === 'user' && b.type === 'user') return (a.displayName || "").localeCompare(b.displayName || "");
-        return a.type === 'post' ? -1 : 1; // Posts before users
+        return a.type === 'post' ? -1 : 1; 
     });
 
     setResults(searchedItems);
@@ -157,10 +148,59 @@ export default function SearchPage() {
     router.push(`/search?q=${encodeURIComponent(query)}`);
   };
   
-  const handleLikePost = (postId: string) => { /* Placeholder */ };
-  const handleDeletePost = (postId: string) => { /* Placeholder */ };
+  const handleLikePost = (postId: string) => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive", duration: 3000 });
+      return;
+    }
+     setResults(prevResults =>
+      prevResults.map(item => {
+        if (item.type === 'post' && item.id === postId) {
+          const currentLikes = item.likes || [];
+          const userLiked = currentLikes.includes(user.uid);
+          const newLikes = userLiked
+            ? currentLikes.filter(uid => uid !== user.uid)
+            : [...currentLikes, user.uid];
+          const updatedPost = { ...item, likes: newLikes };
 
-  if (authLoading) return <div className="container mx-auto p-4 flex justify-center items-center min-h-screen"><SimpleRotatingSpinner size={16} /></div>;
+          if (typeof window !== 'undefined') {
+            const allPostsStr = localStorage.getItem('apsconnect_posts');
+            let allPostsStored: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+            const postIndex = allPostsStored.findIndex(storedPost => storedPost.id === postId);
+            if (postIndex > -1) {
+              allPostsStored[postIndex] = updatedPost;
+              localStorage.setItem('apsconnect_posts', JSON.stringify(allPostsStored));
+            }
+          }
+          return updatedPost;
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleDeletePost = (postId: string) => {
+    if (!user) return;
+    const postToDelete = results.find(r => r.type === 'post' && r.id === postId) as Post | undefined;
+    if (!postToDelete) return;
+
+    if (!(user.role === 'admin' || (user.role === 'faculty' && postToDelete.authorId === user.uid))) {
+        toast({title: "Unauthorized", description: "You cannot delete this post.", variant: "destructive", duration: 3000});
+        return;
+    }
+
+    if (typeof window !== 'undefined') {
+        let allPostsStr = localStorage.getItem('apsconnect_posts');
+        let allPostsStored: Post[] = allPostsStr ? JSON.parse(allPostsStr) : [];
+        allPostsStored = allPostsStored.filter(p => p.id !== postId);
+        localStorage.setItem('apsconnect_posts', JSON.stringify(allPostsStored));
+        
+        setResults(prevResults => prevResults.filter(r => !(r.type === 'post' && r.id === postId)));
+        toast({title: "Post Deleted", description: `"${postToDelete.title}" has been deleted.`, duration: 3000});
+    }
+  };
+
+  if (authLoading) return <div className="container mx-auto p-4 flex justify-center items-center min-h-screen"><SimpleRotatingSpinner className="h-16 w-16 text-primary" /></div>;
 
   const postResults = results.filter(r => r.type === 'post') as Post[];
   const userResults = results.filter(r => r.type === 'user') as UserProfile[];
@@ -180,12 +220,10 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-grow"
-              suppressHydrationWarning
             />
             <Button type="submit">Search</Button>
           </form>
           
-          {/* Advanced Filters Section */}
           <div className="mb-6 p-4 border rounded-lg bg-muted/30">
             <h3 className="text-lg font-semibold mb-3 flex items-center"><SlidersHorizontal className="mr-2 h-5 w-5"/>Advanced Filters</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -200,7 +238,7 @@ export default function SearchPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DateRangePickerPlaceholder date={dateRange} onDateChange={setDateRange} />
+              <DateRangePicker date={dateRange} onDateChange={setDateRange} />
              
               {(user?.role === 'admin' || user?.role === 'faculty') && (
                 <DropdownMenu>
@@ -228,14 +266,14 @@ export default function SearchPage() {
               )}
             </div>
              <Button onClick={performSearch} className="mt-4 w-full sm:w-auto" disabled={isLoading}>
-                {isLoading && <SimpleRotatingSpinner className="mr-2"/>} Apply Filters
+                {isLoading && <SimpleRotatingSpinner className="mr-2 h-4 w-4"/>} Apply Filters
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-10"><SimpleRotatingSpinner size={12}/></div>
+        <div className="flex justify-center items-center py-10"><SimpleRotatingSpinner className="h-12 w-12 text-primary" /></div>
       ) : results.length === 0 ? (
         <p className="text-center text-muted-foreground py-10">No results found for "{currentSearchTerm}" with the selected filters.</p>
       ) : (
@@ -265,11 +303,3 @@ export default function SearchPage() {
     </div>
   );
 }
-
-// Basic toast hook stub
-const useToast = () => ({
-  toast: (options: { title: string, description: string, variant?: string, duration?: number }) => {
-    console.log("Toast:", options.title, options.description);
-  }
-});
-
