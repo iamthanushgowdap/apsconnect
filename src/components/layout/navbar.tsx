@@ -142,7 +142,7 @@ export function Navbar() {
     if (trimmedQuery) {
       router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
-      router.push(`/search`); // Navigate to search page even if query is empty to show filters
+      router.push(`/search`); 
     }
   };
 
@@ -165,8 +165,7 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            // Skip "Activity Feed" if user is student or faculty, as it's in their dropdown
-            if (user && (user.role === 'student' || user.role === 'faculty') && item.href === '/feed') {
+            if (user && item.href === '/feed') { // Always hide direct feed link for logged-in users as it's in dropdown
                 return null;
             }
             
@@ -182,16 +181,11 @@ export function Navbar() {
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
-                     {item.href === '/feed' && user && user.role === 'admin' && unseenPostsCount > 0 && (
-                         <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
-                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
-                        </span>
-                     )}
                 </Link>
             );
           })}
         </nav>
-         <form onSubmit={handleSearchSubmit} className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-md w-full"> {/* Changed max-w-xs to max-w-md */}
+         <form onSubmit={handleSearchSubmit} className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-md w-full">
             <div className="relative">
                 <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -268,7 +262,7 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-                {SiteConfig.mainNav.filter(item => item.hideWhenLoggedIn).map(item => (
+                {SiteConfig.mainNav.filter(item => item.hideWhenLoggedIn && !item.protected).map(item => (
                    <Link
                         key={item.href}
                         href={item.href}
