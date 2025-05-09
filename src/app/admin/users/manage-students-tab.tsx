@@ -32,14 +32,14 @@ const rejectionFormSchema = z.object({
 });
 type RejectionFormValues = z.infer<typeof rejectionFormSchema>;
 
-const adminChangePasswordSchema = z.object({
+const changePasswordSchema = z.object({
   newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
   confirmNewPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmNewPassword, {
   message: "New passwords do not match.",
   path: ["confirmNewPassword"],
 });
-type AdminChangePasswordFormValues = z.infer<typeof adminChangePasswordSchema>;
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
 
 export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
@@ -60,8 +60,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     defaultValues: { reason: "" },
   });
 
-  const adminChangePasswordForm = useForm<AdminChangePasswordFormValues>({
-    resolver: zodResolver(adminChangePasswordSchema),
+  const changePasswordForm = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema),
     defaultValues: { newPassword: "", confirmNewPassword: "" },
   });
 
@@ -112,7 +112,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   
   const openChangePasswordDialog = (student: UserProfile) => {
     setStudentToChangePassword(student);
-    adminChangePasswordForm.reset();
+    changePasswordForm.reset();
     setIsChangePasswordDialogVisible(true);
   };
 
@@ -224,44 +224,62 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     rejectionForm.reset();
   };
 
-  const handleAdminChangePassword = (data: AdminChangePasswordFormValues) => {
+  const handleChangeStudentPasswordByStaff = (data: ChangePasswordFormValues) => {
     if (!studentToChangePassword || !studentToChangePassword.usn) return;
     const usn = studentToChangePassword.usn;
 
-    if (typeof window !== 'undefined' && actor.role === 'admin') {
-      const userKey = `apsconnect_user_${usn}`; 
-      const userDataStr = localStorage.getItem(userKey);
-      if (userDataStr) {
-        try {
-          const userProfile = JSON.parse(userDataStr) as UserProfile;
-          userProfile.password = data.newPassword;
-          localStorage.setItem(userKey, JSON.stringify(userProfile));
+    if (typeof window !== 'undefined') {
+      let authorizedToChange = false;
+      if (actor.role === 'admin') {
+        authorizedToChange = true;
+      } else if (actor.role === 'faculty') {
+        if (studentToChangePassword.branch && actor.assignedBranches && actor.assignedBranches.includes(studentToChangePassword.branch)) {
+          authorizedToChange = true;
+        } else {
           toast({
-            title: "Password Changed",
-            description: `Password for ${userProfile.displayName || usn} has been updated by admin.`,
-            duration: 3000,
-          });
-        } catch (error) {
-          toast({
-            title: 'Error Changing Password',
-            description: 'Could not update student password.',
+            title: 'Unauthorized',
+            description: 'You can only change passwords for students in your assigned branches.',
             variant: 'destructive',
             duration: 3000,
           });
-          console.error("Error changing student password by admin:", error);
         }
       }
-    } else {
-       toast({
-            title: 'Unauthorized',
-            description: 'Only administrators can perform this action.',
-            variant: 'destructive',
-            duration: 3000,
-        });
+
+      if (authorizedToChange) {
+        const userKey = `apsconnect_user_${usn}`; 
+        const userDataStr = localStorage.getItem(userKey);
+        if (userDataStr) {
+          try {
+            const userProfile = JSON.parse(userDataStr) as UserProfile;
+            userProfile.password = data.newPassword; // Storing password directly (mock only)
+            localStorage.setItem(userKey, JSON.stringify(userProfile));
+            toast({
+              title: "Password Changed",
+              description: `Password for ${userProfile.displayName || usn} has been updated.`,
+              duration: 3000,
+            });
+          } catch (error) {
+            toast({
+              title: 'Error Changing Password',
+              description: 'Could not update student password.',
+              variant: 'destructive',
+              duration: 3000,
+            });
+            console.error("Error changing student password:", error);
+          }
+        }
+      } else if (actor.role !== 'admin' && actor.role !== 'faculty') { // Fallback if actor role is neither
+         toast({
+              title: 'Unauthorized',
+              description: 'You do not have permission to perform this action.',
+              variant: 'destructive',
+              duration: 3000,
+          });
+      }
     }
     setIsChangePasswordDialogVisible(false);
     setStudentToChangePassword(null);
-    adminChangePasswordForm.reset();
+    changePasswordForm.reset();
   };
   
   const filteredUsers = allUsers.filter(user => {
@@ -432,7 +450,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                         </DropdownMenuItem>
                                      </>
                                 )}
-                                {actor.role === 'admin' && (student.role === 'student' || student.role === 'pending') && (
+                                {(actor.role === 'admin' || actor.role === 'faculty') && (student.role === 'student' || student.role === 'pending') && (
                                      <DropdownMenuItem onSelect={() => openChangePasswordDialog(student)}>
                                         <KeyRound className="mr-2 h-4 w-4" /> Change Password
                                     </DropdownMenuItem>
@@ -504,10 +522,10 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </DialogContent>
       </Dialog>
 
-      {actor.role === 'admin' && (
+      {(actor.role === 'admin' || actor.role === 'faculty') && (
         <Dialog open={isChangePasswordDialogVisible} onOpenChange={(isOpen) => {
             if (!isOpen) {
-                adminChangePasswordForm.reset();
+                changePasswordForm.reset();
                 setStudentToChangePassword(null);
             }
             setIsChangePasswordDialogVisible(isOpen);
@@ -519,10 +537,10 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                 Set a new password for {studentToChangePassword?.displayName || studentToChangePassword?.usn}. The student will need to be informed of their new password.
               </DialogDescription>
             </DialogHeader>
-            <Form {...adminChangePasswordForm}>
-              <form onSubmit={adminChangePasswordForm.handleSubmit(handleAdminChangePassword)} className="space-y-4 py-4">
+            <Form {...changePasswordForm}>
+              <form onSubmit={changePasswordForm.handleSubmit(handleChangeStudentPasswordByStaff)} className="space-y-4 py-4">
                 <FormField
-                  control={adminChangePasswordForm.control}
+                  control={changePasswordForm.control}
                   name="newPassword"
                   render={({ field }) => (
                     <FormItem>
@@ -535,7 +553,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                   )}
                 />
                 <FormField
-                  control={adminChangePasswordForm.control}
+                  control={changePasswordForm.control}
                   name="confirmNewPassword"
                   render={({ field }) => (
                     <FormItem>
@@ -549,8 +567,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                 />
                 <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="outline" onClick={() => setIsChangePasswordDialogVisible(false)}>Cancel</Button></DialogClose>
-                    <Button type="submit" disabled={adminChangePasswordForm.formState.isSubmitting}>
-                    {adminChangePasswordForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" disabled={changePasswordForm.formState.isSubmitting}>
+                    {changePasswordForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Change Password
                     </Button>
                 </DialogFooter>
