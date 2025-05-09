@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -58,6 +57,7 @@ export function Navbar() {
         user.assignedBranches?.some(assignedBranch => post.targetBranches && post.targetBranches.includes(assignedBranch))
       );
     } 
+    // For admin, all posts are viewable by default (no specific filter here, handled by initial `allPosts`)
     
     const seenPostIdsKey = `apsconnect_seen_post_ids_${user.uid}`; 
     const seenPostIdsStr = localStorage.getItem(seenPostIdsKey);
@@ -165,7 +165,8 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            if (user && item.href === '/feed') { // Always hide direct feed link for logged-in users as it's in dropdown
+            // Hide "Campus Feed" from navbar if user is logged in, as it's in the dropdown
+            if (user && item.title === 'Activity Feed') {
                 return null;
             }
             
@@ -185,7 +186,11 @@ export function Navbar() {
             );
           })}
         </nav>
-         <form onSubmit={handleSearchSubmit} className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-md w-full">
+         <form 
+           onSubmit={handleSearchSubmit} 
+           className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-md w-full"
+           suppressHydrationWarning // Add suppressHydrationWarning to the form
+         >
             <div className="relative">
                 <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
