@@ -15,6 +15,7 @@ export interface User {
   branch?: Branch; 
   usn?: string; 
   assignedBranches?: Branch[]; 
+  assignedSemesters?: Semester[]; // Added assignedSemesters
   rejectionReason?: string; 
   semester?: Semester; 
 }
@@ -112,6 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             role: 'faculty',
             branch: facultyProfile.assignedBranches && facultyProfile.assignedBranches.length > 0 ? facultyProfile.assignedBranches[0] : undefined,
             assignedBranches: facultyProfile.assignedBranches,
+            assignedSemesters: facultyProfile.assignedSemesters, // Populate assignedSemesters
           };
         } else {
           setIsLoading(false);

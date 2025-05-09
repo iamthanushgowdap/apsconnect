@@ -20,6 +20,7 @@ import * as z from "zod";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 
 interface ManageStudentsTabProps {
@@ -91,8 +92,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         if (key && key.startsWith('apsconnect_user_')) { 
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
-            // Ensure it's a student profile by checking for USN (or other student-specific required field)
-            if (user.uid && user.usn) { 
+            // Consider all profiles first, then filter by role and scope
+            if (user.uid) { // Basic check for valid profile
               users.push(user);
             }
           } catch (error) {
@@ -101,20 +102,39 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         }
       }
 
-      // Filter for faculty's assigned branches AND semesters
       if (actor.role === 'faculty') {
-        if (actor.assignedSemesters && actor.assignedSemesters.length > 0 && actor.assignedBranches && actor.assignedBranches.length > 0) {
-          users = users.filter(userProfile => {
-            const studentSemester = userProfile.semester;
-            const studentBranch = userProfile.branch;
-            return studentSemester && actor.assignedSemesters!.includes(studentSemester) &&
-                   studentBranch && actor.assignedBranches!.includes(studentBranch);
-          });
-        } else {
-          // If faculty has no assigned semesters OR no assigned branches, they can't manage any students.
-          users = [];
-        }
+        users = users.filter(userProfile => {
+          // Only consider student or pending profiles for faculty management
+          if (userProfile.role !== 'student' && userProfile.role !== 'pending') return false;
+      
+          const studentBranch = userProfile.branch;
+          const studentSemester = userProfile.semester;
+      
+          let branchMatch = false;
+          if (actor.assignedBranches && actor.assignedBranches.length > 0) {
+            branchMatch = studentBranch ? actor.assignedBranches.includes(studentBranch) : false;
+          } else {
+            // If faculty has NO assigned branches, they shouldn't see any students by default.
+            // Depending on policy, this could be true if they are meant to see all students (unlikely).
+            return false; 
+          }
+      
+          let semesterMatch = true; // Assume match if faculty has no specific semesters assigned (manages all sems for their branches)
+          if (actor.assignedSemesters && actor.assignedSemesters.length > 0) {
+            semesterMatch = studentSemester ? actor.assignedSemesters.includes(studentSemester) : false;
+          }
+          // If actor.assignedSemesters is empty or undefined, it implies they manage all semesters
+          // for their assigned branches, so semesterMatch remains true.
+      
+          return branchMatch && semesterMatch;
+        });
+      } else if (actor.role === 'admin') {
+        // Admin sees all student/pending profiles
+        users = users.filter(userProfile => userProfile.role === 'student' || userProfile.role === 'pending');
+      } else {
+        users = []; // Should not happen if actor prop is correct
       }
+      
       // Sort by registration date, newest first
       setAllUsers(users.sort((a, b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()));
     }
@@ -270,8 +290,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       } else if (actor.role === 'faculty') {
         // Faculty can change password if student is in their assigned branch AND semester
         if (
-          studentToChangePassword.semester && actor.assignedSemesters && actor.assignedSemesters.includes(studentToChangePassword.semester) &&
-          studentToChangePassword.branch && actor.assignedBranches && actor.assignedBranches.includes(studentToChangePassword.branch)
+          studentToChangePassword.semester && actor.assignedSemesters?.includes(studentToChangePassword.semester) &&
+          studentToChangePassword.branch && actor.assignedBranches?.includes(studentToChangePassword.branch)
         ) {
           authorizedToChange = true;
         } else {
@@ -405,6 +425,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   }
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -755,6 +776,6 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       )}
 
     </div>
+    </TooltipProvider>
   );
 }
-
