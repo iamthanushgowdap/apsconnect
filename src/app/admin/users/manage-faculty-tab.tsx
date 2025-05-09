@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,9 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
+  DialogTrigger, // Added DialogTrigger
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label'; // Note: Label might not be used if using Form components
+import { Label } from '@/components/ui/label'; 
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -184,7 +186,7 @@ export default function ManageFacultyTab() {
         facultyTitle: data.facultyTitle || undefined,
         role: 'faculty',
         registrationDate: editingFaculty?.registrationDate || new Date().toISOString(),
-        isApproved: true,
+        isApproved: true, // Faculty members are auto-approved on creation by admin
       };
 
       localStorage.setItem(facultyUserKey, JSON.stringify(facultyProfile));
