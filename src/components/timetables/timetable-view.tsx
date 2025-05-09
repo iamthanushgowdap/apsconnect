@@ -10,7 +10,7 @@ import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 interface TimetableViewProps {
   timetable: TimeTable | null;
   isLoading: boolean;
-  displayContext?: { // Made optional, and more generic
+  displayContext?: { 
     branch?: Branch; 
     semester?: Semester;
   };
@@ -33,7 +33,7 @@ export function TimetableView({ timetable, isLoading, displayContext }: Timetabl
   const contextBranch = displayContext?.branch;
   const contextSemester = displayContext?.semester;
 
-  if (!timetable || !timetable.imageDataUrl) {
+  if (!timetable || !timetable.imageDataUrl) { // Explicitly check for imageDataUrl
     return (
       <Card className="w-full shadow-xl mt-4">
         <CardHeader>
@@ -44,8 +44,8 @@ export function TimetableView({ timetable, isLoading, displayContext }: Timetabl
         <CardContent>
           <p className="text-muted-foreground">
             {contextBranch && contextSemester 
-              ? `The timetable for ${contextBranch} - ${contextSemester} has not been uploaded yet.`
-              : "The requested timetable has not been uploaded yet."}
+              ? `The timetable image for ${contextBranch} - ${contextSemester} has not been uploaded or is missing.`
+              : "The requested timetable image has not been uploaded or is missing."}
             {' '}Please check back later or contact the relevant department/administration.
           </p>
         </CardContent>

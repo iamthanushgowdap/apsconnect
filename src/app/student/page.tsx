@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -99,7 +98,7 @@ const StudentDashboardPage = () => {
         setStudentUser(authUser);
         
         if (typeof window !== 'undefined') {
-          const postsStr = localStorage.getItem('apsconnect_posts'); 
+          const postsStr = localStorage.getItem('apsconnect_posts'); // Corrected key
           const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           
           let relevantPosts = allPosts;
