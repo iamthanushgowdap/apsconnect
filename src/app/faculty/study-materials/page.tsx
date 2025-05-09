@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { StudyMaterialForm } from '@/components/study-materials/study-material-form';
@@ -43,8 +43,9 @@ export default function FacultyStudyMaterialsPage() {
   const [editingMaterial, setEditingMaterial] = useState<StudyMaterial | null>(null);
   const [materialToDelete, setMaterialToDelete] = useState<StudyMaterial | null>(null);
   
-  const facultyAssignedBranches = user?.assignedBranches || [];
-  const [filterBranch, setFilterBranch] = useState<string>(facultyAssignedBranches.length > 0 ? facultyAssignedBranches[0] : 'all');
+  const memoizedFacultyAssignedBranches = useMemo(() => user?.assignedBranches || [], [user?.assignedBranches]);
+  
+  const [filterBranch, setFilterBranch] = useState<string>(memoizedFacultyAssignedBranches.length > 0 ? memoizedFacultyAssignedBranches[0] : 'all');
   const [filterSemester, setFilterSemester] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -54,18 +55,34 @@ export default function FacultyStudyMaterialsPage() {
       const storedMaterials = localStorage.getItem(STUDY_MATERIAL_STORAGE_KEY);
       let materials: StudyMaterial[] = storedMaterials ? JSON.parse(storedMaterials) : [];
       // Faculty can only see materials for their assigned branches
-      if (facultyAssignedBranches.length > 0) {
-        materials = materials.filter(m => facultyAssignedBranches.includes(m.branch));
+      if (memoizedFacultyAssignedBranches.length > 0) {
+        materials = materials.filter(m => memoizedFacultyAssignedBranches.includes(m.branch));
       } else {
         materials = []; // If no assigned branches, faculty sees nothing
       }
       setAllMaterials(materials.sort((a,b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()));
     }
-  }, [facultyAssignedBranches]);
+  }, [memoizedFacultyAssignedBranches]);
 
   useEffect(() => {
-    fetchMaterials();
-  }, [fetchMaterials]);
+    if (!authLoading) {
+      if (!user || user.role !== 'faculty') {
+        router.push(user ? '/dashboard' : '/login');
+      } else {
+         if (memoizedFacultyAssignedBranches.length > 0 && filterBranch === 'all') {
+            setFilterBranch(memoizedFacultyAssignedBranches[0]);
+        }
+        setPageLoading(false);
+      }
+    }
+  }, [user, authLoading, router, memoizedFacultyAssignedBranches, filterBranch]);
+
+  useEffect(() => {
+    // Fetch materials only when user context is settled and they are authorized
+    if (!pageLoading && user && user.role === 'faculty') {
+        fetchMaterials();
+    }
+  }, [fetchMaterials, pageLoading, user]);
   
   useEffect(() => {
     let currentMaterials = [...allMaterials];
@@ -86,20 +103,6 @@ export default function FacultyStudyMaterialsPage() {
     }
     setFilteredMaterials(currentMaterials);
   }, [allMaterials, filterBranch, filterSemester, searchTerm]);
-
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.role !== 'faculty') {
-        router.push(user ? '/dashboard' : '/login');
-      } else {
-         if (facultyAssignedBranches.length > 0 && filterBranch === 'all') {
-            setFilterBranch(facultyAssignedBranches[0]);
-        }
-        setPageLoading(false);
-      }
-    }
-  }, [user, authLoading, router, facultyAssignedBranches, filterBranch]);
 
 
   const handleFormSubmitSuccess = (material: StudyMaterial) => {
@@ -131,7 +134,7 @@ export default function FacultyStudyMaterialsPage() {
 
   const openEditDialog = (material: StudyMaterial) => {
     // Faculty can only edit materials they uploaded OR if it's for their assigned branch
-    if (material.uploadedByUid === user?.uid || facultyAssignedBranches.includes(material.branch)) {
+    if (material.uploadedByUid === user?.uid || memoizedFacultyAssignedBranches.includes(material.branch)) {
         setEditingMaterial(material);
         setIsFormDialogOpen(true);
     } else {
@@ -146,7 +149,7 @@ export default function FacultyStudyMaterialsPage() {
 
   const confirmDeleteMaterial = (material: StudyMaterial) => {
     // Faculty can only delete materials they uploaded OR if it's for their assigned branch
-     if (material.uploadedByUid === user?.uid || facultyAssignedBranches.includes(material.branch)) {
+     if (material.uploadedByUid === user?.uid || memoizedFacultyAssignedBranches.includes(material.branch)) {
         setMaterialToDelete(material);
     } else {
         toast({ title: "Unauthorized", description: "You can only delete materials for your assigned branches or those you uploaded.", variant: "destructive"});
@@ -206,7 +209,7 @@ export default function FacultyStudyMaterialsPage() {
     );
   }
   
-  if (facultyAssignedBranches.length === 0) {
+  if (memoizedFacultyAssignedBranches.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-lg mx-auto shadow-lg">
@@ -226,7 +229,6 @@ export default function FacultyStudyMaterialsPage() {
     );
   }
 
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -243,13 +245,13 @@ export default function FacultyStudyMaterialsPage() {
 
       <Card className="shadow-lg mb-8">
         <CardHeader>
-          <CardTitle>Filter & Search Materials</CardTitle>
+          <CardTitle>Filter &amp; Search Materials</CardTitle>
            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
             <Select value={filterBranch} onValueChange={setFilterBranch}>
               <SelectTrigger><SelectValue placeholder="Filter by Branch" /></SelectTrigger>
               <SelectContent>
                 {/* <SelectItem value="all">All My Assigned Branches</SelectItem> */}
-                {facultyAssignedBranches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                {memoizedFacultyAssignedBranches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterSemester} onValueChange={setFilterSemester}>
@@ -283,7 +285,7 @@ export default function FacultyStudyMaterialsPage() {
         <CardContent>
           {filteredMaterials.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">
-                {searchTerm || filterBranch !== facultyAssignedBranches[0] || filterSemester !== 'all' 
+                {searchTerm || filterBranch !== memoizedFacultyAssignedBranches[0] || filterSemester !== 'all' 
                 ? "No materials match your current filters." 
                 : "No study materials uploaded for your assigned branches yet. Click 'Upload New Material' to start."}
             </p>
@@ -320,10 +322,10 @@ export default function FacultyStudyMaterialsPage() {
                       <TableCell>{material.uploadedByDisplayName}</TableCell>
                       <TableCell>{format(new Date(material.uploadedAt), "PPp")}</TableCell>
                       <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(material)} disabled={material.uploadedByUid !== user?.uid && !facultyAssignedBranches.includes(material.branch)}>
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(material)} disabled={material.uploadedByUid !== user?.uid && !memoizedFacultyAssignedBranches.includes(material.branch)}>
                               <Edit3 className="h-3 w-3 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span>
                           </Button>
-                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteMaterial(material)} disabled={material.uploadedByUid !== user?.uid && !facultyAssignedBranches.includes(material.branch)}>
+                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteMaterial(material)} disabled={material.uploadedByUid !== user?.uid && !memoizedFacultyAssignedBranches.includes(material.branch)}>
                               <Trash2 className="h-3 w-3 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span>
                           </Button>
                       </TableCell>
@@ -348,7 +350,7 @@ export default function FacultyStudyMaterialsPage() {
                     <StudyMaterialForm
                         onSubmitSuccess={handleFormSubmitSuccess}
                         initialData={editingMaterial || undefined}
-                        availableBranches={facultyAssignedBranches} // Faculty can only select from their assigned branches
+                        availableBranches={memoizedFacultyAssignedBranches} // Faculty can only select from their assigned branches
                         isLoading={formSubmitting}
                         setIsLoading={setFormSubmitting}
                     />
