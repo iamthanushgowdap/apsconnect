@@ -273,7 +273,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       user.email.toLowerCase().includes(searchLower) ||
       user.usn?.toLowerCase().includes(searchLower) ||
       branch?.toLowerCase().includes(searchLower) ||
-      user.semester?.toLowerCase().includes(searchLower) || // Added semester to search
+      user.semester?.toLowerCase().includes(searchLower) || 
       user.approvedByDisplayName?.toLowerCase().includes(searchLower) ||
       user.rejectedByDisplayName?.toLowerCase().includes(searchLower) ||
       user.rejectionReason?.toLowerCase().includes(searchLower)
@@ -359,6 +359,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
               className="pl-8 w-full sm:w-1/2 lg:w-1/3"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              suppressHydrationWarning
             />
           </div>
         </CardHeader>
@@ -559,3 +560,4 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     </TooltipProvider>
   );
 }
+
