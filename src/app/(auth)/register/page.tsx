@@ -28,12 +28,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast";
-import type { UserProfile, Branch } from "@/types";
-import { defaultBranches } from "@/types"; 
+import type { UserProfile, Branch, Semester } from "@/types"; // Added Semester
+import { defaultBranches, semesters } from "@/types"; // Added semesters
 
 
 const usnSuffixRegex = /^[0-9]{2}[A-Za-z]{2}[0-9]{3}$/;
-const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; // Changed key
+const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches'; 
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -47,6 +47,7 @@ const registerSchema = z.object({
       return val.substring(0, 2) + val.substring(2, 4).toUpperCase() + val.substring(4, 7);
     }),
   branch: z.string({ required_error: "Please select your branch." }), 
+  semester: z.string({ required_error: "Please select your semester." }) as z.ZodSchema<Semester>, // Added semester
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -91,6 +92,7 @@ export default function RegisterPage() {
       confirmPassword: "",
       usnSuffix: "",
       branch: undefined, 
+      semester: undefined, // Added semester
     },
   });
 
@@ -110,19 +112,21 @@ export default function RegisterPage() {
             role: 'pending', 
             usn: fullUsn,
             branch: data.branch, 
+            semester: data.semester, // Added semester
             registrationDate: new Date().toISOString(),
             isApproved: false,
             password: data.password, // Storing password in profile
         };
-        localStorage.setItem(`apsconnect_user_${fullUsn}`, JSON.stringify(userProfileData)); // Changed key
+        localStorage.setItem(`apsconnect_user_${fullUsn}`, JSON.stringify(userProfileData)); 
         
-        localStorage.setItem('mockUser', JSON.stringify({ // This mockUser might need to be apsconnect_mockUser
+        localStorage.setItem('mockUser', JSON.stringify({ 
             uid: fullUsn,
             displayName: data.displayName,
             email: data.email,
             role: 'pending',
             usn: fullUsn,
             branch: data.branch,
+            semester: data.semester, // Added semester
         }));
       }
 
@@ -220,36 +224,62 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="branch"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Branch</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} >
-                      <FormControl>
-                        <SelectTrigger className="text-sm sm:text-base" suppressHydrationWarning>
-                          <SelectValue placeholder="Select your branch" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableBranches.length > 0 ? (
-                          availableBranches.map((branchName) => (
-                            <SelectItem key={branchName} value={branchName} className="text-sm sm:text-base">
-                              {branchName}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="branch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Branch</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} >
+                        <FormControl>
+                          <SelectTrigger className="text-sm sm:text-base" suppressHydrationWarning>
+                            <SelectValue placeholder="Select your branch" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availableBranches.length > 0 ? (
+                            availableBranches.map((branchName) => (
+                              <SelectItem key={branchName} value={branchName} className="text-sm sm:text-base">
+                                {branchName}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="disabled" disabled className="text-sm sm:text-base">
+                              No branches configured by admin.
                             </SelectItem>
-                          ))
-                        ) : (
-                           <SelectItem value="disabled" disabled className="text-sm sm:text-base">
-                            No branches configured by admin.
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs sm:text-sm"/>
-                  </FormItem>
-                )}
-              />
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-xs sm:text-sm"/>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="semester"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Semester</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="text-sm sm:text-base" suppressHydrationWarning>
+                            <SelectValue placeholder="Select semester" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {semesters.map((sem) => (
+                            <SelectItem key={sem} value={sem} className="text-sm sm:text-base">
+                              {sem}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-xs sm:text-sm"/>
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="password"

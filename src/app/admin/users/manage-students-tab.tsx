@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch, defaultBranches } from '@/types';
+import { UserProfile, Branch, defaultBranches, Semester } from '@/types'; // Added Semester
 import type { User } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -272,6 +273,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       user.email.toLowerCase().includes(searchLower) ||
       user.usn?.toLowerCase().includes(searchLower) ||
       branch?.toLowerCase().includes(searchLower) ||
+      user.semester?.toLowerCase().includes(searchLower) || // Added semester to search
       user.approvedByDisplayName?.toLowerCase().includes(searchLower) ||
       user.rejectedByDisplayName?.toLowerCase().includes(searchLower) ||
       user.rejectionReason?.toLowerCase().includes(searchLower)
@@ -310,6 +312,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                   <TableHead>USN</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Branch</TableHead>
+                  <TableHead>Semester</TableHead>
                   <TableHead>Registered On</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -321,6 +324,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                     <TableCell>{student.usn}</TableCell>
                     <TableCell>{student.email}</TableCell>
                     <TableCell>{student.branch || 'N/A'}</TableCell>
+                    <TableCell>{student.semester || 'N/A'}</TableCell>
                     <TableCell>{new Date(student.registrationDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button size="sm" variant="outline" onClick={() => openApproveDialog(student)} className="bg-accent/10 hover:bg-accent/20 text-accent border-accent">
@@ -344,7 +348,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             <Users className="text-primary h-6 w-6" />
             Student Records
           </CardTitle>
-           <CardDescription>View all processed (approved or rejected) student accounts. Search by name, USN, email, branch, or processor.
+           <CardDescription>View all processed (approved or rejected) student accounts. Search by name, USN, email, branch, semester, or processor.
             {actor.role === 'faculty' && ' Students listed are from your assigned branches.'}
            </CardDescription>
            <div className="relative mt-2">
@@ -371,6 +375,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                   <TableHead>USN</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Branch</TableHead>
+                  <TableHead>Semester</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Processed By</TableHead>
                   <TableHead>Processed Date</TableHead>
@@ -384,6 +389,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                     <TableCell>{student.usn}</TableCell>
                     <TableCell>{student.email}</TableCell>
                     <TableCell>{student.branch || 'N/A'}</TableCell>
+                    <TableCell>{student.semester || 'N/A'}</TableCell>
                     <TableCell>
                       {student.isApproved && student.role === 'student' ? (
                         <Badge variant="default" className="bg-accent/20 text-accent hover:bg-accent/30">Approved</Badge>

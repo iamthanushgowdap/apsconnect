@@ -91,7 +91,7 @@ const readFileAsDataURL = (file: File): Promise<string> => {
 
 const getProfileInitials = (profile: UserProfile | User | null): string => {
   if (!profile) return "??";
-  const nameSource = profile.displayName || profile.email || ('usn' in profile ? profile.usn : undefined);
+  const nameSource = profile.displayName || profile.email || ('usn' in profile && profile.usn ? profile.usn : undefined);
   if (!nameSource) return "??";
   
   const nameParts = nameSource.split(/[\s@]+/); 
@@ -180,7 +180,7 @@ export default function ProfileSettingsPage() {
         } else {
           // If profile not found for non-default admin, it's an issue or new user.
           // For now, redirecting to login. A more robust solution might create a basic profile.
-          toast({ title: "Profile Error", description: "User profile not found. Please log in again.", variant: "destructive" });
+          toast({ title: "Profile Error", description: "User profile not found. Please log in again.", variant: "destructive", duration: 3000 });
           router.push('/login'); 
         }
       } else if (!authUser) {
@@ -405,6 +405,11 @@ export default function ProfileSettingsPage() {
                     USN: {userProfile.usn}
                 </CardDescription>
             )}
+             {userProfile.role === 'student' && userProfile.semester && (
+                 <CardDescription className="text-base sm:text-lg text-center mt-1">
+                    Semester: {userProfile.semester}
+                </CardDescription>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -456,6 +461,3 @@ export default function ProfileSettingsPage() {
     </div>
   );
 }
-
-
-    

@@ -7,6 +7,9 @@ export type Branch = string;
 // defaultBranches provides a list of common/suggested branches for forms.
 export const defaultBranches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "AI & ML", "OTHER"];
 
+export type Semester = "1st Sem" | "2nd Sem" | "3rd Sem" | "4th Sem" | "5th Sem" | "6th Sem" | "7th Sem" | "8th Sem";
+export const semesters: Semester[] = ["1st Sem", "2nd Sem", "3rd Sem", "4th Sem", "5th Sem", "6th Sem", "7th Sem", "8th Sem"];
+
 // This interface represents the more detailed user profile stored in localStorage.
 export interface UserProfile {
   uid: string; // For students, USN. For faculty/admin, email.
@@ -18,6 +21,7 @@ export interface UserProfile {
   // Student-specific fields
   usn?: string; // University Seat Number for students
   branch?: Branch; // Student's single branch (derived from USN or set)
+  semester?: Semester; // Student's current semester
   registrationDate: string; // ISO string format (e.g., new Date().toISOString())
   
   isApproved: boolean;
@@ -69,5 +73,3 @@ export interface Post {
   attachments: PostAttachment[];
   likes?: string[]; // Array of user UIDs who liked the post
 }
-
-
