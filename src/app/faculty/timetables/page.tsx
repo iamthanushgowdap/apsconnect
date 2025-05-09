@@ -29,6 +29,8 @@ export default function FacultyTimetablePage() {
   const [viewSemester, setViewSemester] = useState<Semester | undefined>(semesters.length > 0 ? semesters[0] : undefined);
   const [currentViewTimetable, setCurrentViewTimetable] = useState<TimeTable | null>(null);
   const [viewDataLoading, setViewDataLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
 
   useEffect(() => {
     if (!authLoading) {
@@ -38,7 +40,13 @@ export default function FacultyTimetablePage() {
         // Initialize viewBranch and viewSemester if not already set and facultyBranches/semesters are available
         if (!viewBranch && facultyBranches.length > 0) {
           setViewBranch(facultyBranches[0]);
+        } else if (viewBranch && facultyBranches.length > 0 && !facultyBranches.includes(viewBranch)) {
+          // If current viewBranch is no longer valid for the faculty, reset to the first assigned one
+          setViewBranch(facultyBranches[0]);
+        } else if (facultyBranches.length === 0) {
+           setViewBranch(undefined); // No branches assigned
         }
+
         if (!viewSemester && semesters.length > 0) {
           setViewSemester(semesters[0]);
         }
@@ -66,11 +74,20 @@ export default function FacultyTimetablePage() {
     } else {
       setCurrentViewTimetable(null);
     }
-  }, [viewBranch, viewSemester]);
+  }, [viewBranch, viewSemester, refreshKey]); // Added refreshKey
 
   useEffect(() => {
-    loadTimetableForView();
-  }, [loadTimetableForView]);
+     if (!pageLoading && user?.role === 'faculty') {
+        loadTimetableForView();
+     }
+  }, [loadTimetableForView, pageLoading, user]);
+
+
+  const handleTabChange = (newTabValue: string) => {
+    if (newTabValue === "view") {
+      setRefreshKey(prev => prev + 1); // Trigger a refresh
+    }
+  };
 
   if (pageLoading || authLoading) {
     return (
@@ -81,7 +98,6 @@ export default function FacultyTimetablePage() {
   }
 
   if (!user || user.role !== 'faculty') {
-    // This check is somewhat redundant due to useEffect but good for safety
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -130,7 +146,7 @@ export default function FacultyTimetablePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="view" className="w-full">
+      <Tabs defaultValue="view" className="w-full" onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
           <TabsTrigger value="view" className="flex items-center gap-2"><Eye className="h-4 w-4"/> View Timetable</TabsTrigger>
           <TabsTrigger value="edit" className="flex items-center gap-2"><Edit className="h-4 w-4"/> Create/Update Timetable</TabsTrigger>
@@ -146,7 +162,7 @@ export default function FacultyTimetablePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="view-faculty-branch-select" className="block text-sm font-medium text-muted-foreground mb-1">Branch</label>
-                  <Select onValueChange={setViewBranch} value={viewBranch}>
+                  <Select onValueChange={(value) => setViewBranch(value as Branch)} value={viewBranch}>
                     <SelectTrigger id="view-faculty-branch-select"><SelectValue placeholder="Select branch" /></SelectTrigger>
                     <SelectContent>
                       {facultyBranches.map(b => (
@@ -157,7 +173,7 @@ export default function FacultyTimetablePage() {
                 </div>
                 <div>
                    <label htmlFor="view-faculty-semester-select" className="block text-sm font-medium text-muted-foreground mb-1">Semester</label>
-                  <Select onValueChange={setViewSemester} value={viewSemester}>
+                  <Select onValueChange={(value) => setViewSemester(value as Semester)} value={viewSemester}>
                     <SelectTrigger id="view-faculty-semester-select"><SelectValue placeholder="Select semester" /></SelectTrigger>
                     <SelectContent>
                       {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}

@@ -24,38 +24,60 @@ export default function AdminTimetablePage() {
   const [pageLoading, setPageLoading] = useState(true);
 
   // State for View Tab
-  const [viewBranch, setViewBranch] = useState<Branch | undefined>(undefined);
-  const [viewSemester, setViewSemester] = useState<Semester | undefined>(undefined);
+  const [availableBranchesForView, setAvailableBranchesForView] = useState<Branch[]>(defaultBranches);
+  const [viewBranch, setViewBranch] = useState<Branch | undefined>(availableBranchesForView.length > 0 ? availableBranchesForView[0] : undefined);
+  const [viewSemester, setViewSemester] = useState<Semester | undefined>(semesters.length > 0 ? semesters[0] : undefined);
   const [currentViewTimetable, setCurrentViewTimetable] = useState<TimeTable | null>(null);
   const [viewDataLoading, setViewDataLoading] = useState(false);
-  const [availableBranchesForView, setAvailableBranchesForView] = useState<Branch[]>(defaultBranches);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
+      if (storedBranches) {
+        try {
+          const parsed = JSON.parse(storedBranches);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAvailableBranchesForView(parsed);
+            if (!viewBranch || !parsed.includes(viewBranch)) {
+              setViewBranch(parsed[0]);
+            }
+          } else {
+             setAvailableBranchesForView(defaultBranches);
+             if (!viewBranch || !defaultBranches.includes(viewBranch)) {
+                setViewBranch(defaultBranches[0]);
+             }
+          }
+        } catch (e) { 
+          console.error("Error parsing managed branches:", e);
+          setAvailableBranchesForView(defaultBranches);
+          if (!viewBranch || !defaultBranches.includes(viewBranch)) {
+            setViewBranch(defaultBranches[0]);
+          }
+        }
+      } else {
+        setAvailableBranchesForView(defaultBranches);
+        if (!viewBranch || !defaultBranches.includes(viewBranch)) {
+           setViewBranch(defaultBranches.length > 0 ? defaultBranches[0] : undefined);
+        }
+      }
+      if (!viewSemester && semesters.length > 0) {
+        setViewSemester(semesters[0]);
+      }
+    }
+  }, []); // Runs once on mount to set initial branches
 
   useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'admin') {
         router.push(user ? '/dashboard' : '/login');
       } else {
-        if (typeof window !== 'undefined') {
-          const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
-          if (storedBranches) {
-            try {
-              const parsed = JSON.parse(storedBranches);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setAvailableBranchesForView(parsed);
-                if (!viewBranch && parsed.length > 0) setViewBranch(parsed[0]); // Initialize
-              } else {
-                 if (!viewBranch && defaultBranches.length > 0) setViewBranch(defaultBranches[0]);
-              }
-            } catch (e) { console.error("Error parsing managed branches:", e); if (!viewBranch && defaultBranches.length > 0) setViewBranch(defaultBranches[0]);}
-          } else {
-             if (!viewBranch && defaultBranches.length > 0) setViewBranch(defaultBranches[0]);
-          }
-          if (!viewSemester && semesters.length > 0) setViewSemester(semesters[0]); // Initialize
-        }
         setPageLoading(false);
       }
     }
-  }, [user, authLoading, router, viewBranch, viewSemester]);
+  }, [user, authLoading, router]);
+
 
   const loadTimetableForView = useCallback(() => {
     if (viewBranch && viewSemester && typeof window !== 'undefined') {
@@ -76,12 +98,19 @@ export default function AdminTimetablePage() {
     } else {
       setCurrentViewTimetable(null);
     }
-  }, [viewBranch, viewSemester]);
+  }, [viewBranch, viewSemester, refreshKey]); // Added refreshKey to dependencies
 
   useEffect(() => {
-    loadTimetableForView();
-  }, [loadTimetableForView]);
+    if (!pageLoading && user?.role === 'admin') { // Ensure user role is checked before loading
+        loadTimetableForView();
+    }
+  }, [loadTimetableForView, pageLoading, user]);
 
+  const handleTabChange = (newTabValue: string) => {
+    if (newTabValue === "view") {
+      setRefreshKey(prev => prev + 1); // Trigger a refresh of the view tab
+    }
+  };
 
   if (pageLoading || authLoading) {
     return (
@@ -118,7 +147,7 @@ export default function AdminTimetablePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="view" className="w-full">
+      <Tabs defaultValue="view" className="w-full" onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
           <TabsTrigger value="view" className="flex items-center gap-2"><Eye className="h-4 w-4"/> View Timetable</TabsTrigger>
           <TabsTrigger value="edit" className="flex items-center gap-2"><Edit className="h-4 w-4"/> Create/Update Timetable</TabsTrigger>
@@ -134,7 +163,7 @@ export default function AdminTimetablePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="view-branch-select" className="block text-sm font-medium text-muted-foreground mb-1">Branch</label>
-                  <Select onValueChange={setViewBranch} value={viewBranch}>
+                  <Select onValueChange={(value) => setViewBranch(value as Branch)} value={viewBranch}>
                     <SelectTrigger id="view-branch-select"><SelectValue placeholder="Select branch" /></SelectTrigger>
                     <SelectContent>
                       {availableBranchesForView.length > 0 ? availableBranchesForView.map(b => (
@@ -145,7 +174,7 @@ export default function AdminTimetablePage() {
                 </div>
                 <div>
                   <label htmlFor="view-semester-select" className="block text-sm font-medium text-muted-foreground mb-1">Semester</label>
-                  <Select onValueChange={setViewSemester} value={viewSemester}>
+                  <Select onValueChange={(value) => setViewSemester(value as Semester)} value={viewSemester}>
                     <SelectTrigger id="view-semester-select"><SelectValue placeholder="Select semester" /></SelectTrigger>
                     <SelectContent>
                       {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
