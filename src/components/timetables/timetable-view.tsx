@@ -2,8 +2,8 @@
 "use client";
 
 import React from 'react';
-import type { TimeTable, Branch, Semester, DayOfWeek, TimeTableDaySchedule } from '@/types';
-import { daysOfWeek, defaultTimeSlots } from '@/types';
+import type { TimeTable, Branch, Semester, DayOfWeek, TimeTableDaySchedule, TimeSlotDescriptor } from '@/types';
+import { daysOfWeek, timeSlotDescriptors, saturdayLastSlotIndex } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CalendarDays, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,21 +57,21 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
     );
   }
   
-  // Ensure the schedule is in the correct order of daysOfWeek
   const orderedSchedule = daysOfWeek.map(dayString => {
     const daySchedule = timetable.schedule.find(ds => ds.day === dayString);
     if (daySchedule && Array.isArray(daySchedule.entries)) {
-      // Ensure entries are ordered by period index and cover all defaultTimeSlots
-      const orderedEntries = defaultTimeSlots.map((_, periodIdx) => {
+      const orderedEntries = timeSlotDescriptors.map((descriptor, periodIdx) => {
         const entry = daySchedule.entries.find(e => e.period === periodIdx);
-        return entry || { period: periodIdx, subject: "-" }; // Default for missing entries
+        return entry || { period: periodIdx, subject: descriptor.isBreak ? descriptor.label : "-" }; 
       });
       return { ...daySchedule, entries: orderedEntries };
     }
-    // If a day is missing entirely from the stored schedule, or entries are not an array, create a blank one
     return {
       day: dayString as DayOfWeek,
-      entries: defaultTimeSlots.map((_, periodIdx) => ({ period: periodIdx, subject: "-" })),
+      entries: timeSlotDescriptors.map((descriptor, periodIdx) => ({ 
+        period: periodIdx, 
+        subject: descriptor.isBreak ? descriptor.label : "-" 
+      })),
     };
   });
 
@@ -100,16 +100,22 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
             </TableRow>
           </TableHeader>
           <TableBody>
-            {defaultTimeSlots.map((slot, periodIndex) => (
+            {timeSlotDescriptors.map((descriptor, periodIndex) => (
               <TableRow key={periodIndex}>
                 <TableCell className="border border-border p-2 font-medium bg-muted/30 text-muted-foreground text-xs sm:text-sm sticky left-0 z-10 w-[150px]">
-                  {slot} <br/> (Period {periodIndex + 1})
+                  {descriptor.time} <br/> ({descriptor.label})
                 </TableCell>
-                {orderedSchedule.map(daySchedule => (
-                  <TableCell key={`${daySchedule.day}-${periodIndex}`} className="border border-border p-2 text-center text-xs sm:text-sm min-w-[120px]">
-                    {daySchedule.entries[periodIndex]?.subject || "-"}
-                  </TableCell>
-                ))}
+                {orderedSchedule.map(daySchedule => {
+                  const isSaturday = daySchedule.day === "Saturday";
+                  const isAfterSaturdayCutoff = isSaturday && periodIndex > saturdayLastSlotIndex;
+                  const entrySubject = daySchedule.entries[periodIndex]?.subject;
+
+                  return (
+                    <TableCell key={`${daySchedule.day}-${periodIndex}`} className="border border-border p-2 text-center text-xs sm:text-sm min-w-[120px]">
+                      {isAfterSaturdayCutoff ? "-" : (entrySubject || "-")}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>
@@ -118,4 +124,3 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
     </Card>
   );
 }
-

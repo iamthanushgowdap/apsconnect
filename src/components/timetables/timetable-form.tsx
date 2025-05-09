@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from '@/hooks/use-toast';
-import type { Branch, Semester, TimeTable, TimeTableDaySchedule, TimeTableEntry, DayOfWeek } from '@/types';
-import { defaultBranches, semesters, daysOfWeek, defaultTimeSlots } from '@/types';
+import type { Branch, Semester, TimeTable, TimeTableDaySchedule, TimeTableEntry, DayOfWeek, TimeSlotDescriptor } from '@/types';
+import { defaultBranches, semesters, daysOfWeek, timeSlotDescriptors, saturdayLastSlotIndex } from '@/types';
 import { useAuth } from '@/components/auth-provider';
 import { Loader2, Save, CalendarDays, AlertTriangle } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -48,9 +48,9 @@ interface TimetableFormProps {
 const createEmptySchedule = (): TimeTableDaySchedule[] => {
   return daysOfWeek.map(day => ({
     day,
-    entries: defaultTimeSlots.map((_, periodIndex) => ({
+    entries: timeSlotDescriptors.map((descriptor, periodIndex) => ({
       period: periodIndex,
-      subject: "",
+      subject: descriptor.isBreak ? descriptor.label : "", // Pre-fill breaks
     })),
   }));
 };
@@ -110,18 +110,17 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
           const storedData = localStorage.getItem(key);
           if (storedData) {
             try {
-              const timetable = JSON.parse(storedData) as Partial<TimeTable>; // Use Partial for safety
+              const timetable = JSON.parse(storedData) as Partial<TimeTable>; 
               if (timetable && Array.isArray(timetable.schedule)) {
-                // Ensure schedule has the correct structure
                 const validSchedule = daysOfWeek.map(dayString => {
-                  const existingDaySchedule = timetable.schedule!.find(ds => ds.day === dayString); // Safe with ! due to Array.isArray check
+                  const existingDaySchedule = timetable.schedule!.find(ds => ds.day === dayString); 
                   return {
                     day: dayString,
-                    entries: defaultTimeSlots.map((_, periodIdx) => {
+                    entries: timeSlotDescriptors.map((descriptor, periodIdx) => {
                       const existingEntry = existingDaySchedule?.entries.find(e => e.period === periodIdx);
                       return {
                         period: periodIdx,
-                        subject: existingEntry?.subject || "",
+                        subject: existingEntry?.subject || (descriptor.isBreak ? descriptor.label : ""),
                       };
                     }),
                   };
@@ -141,7 +140,7 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
         }
         setFormLoading(false);
       } else {
-         replace(createEmptySchedule()); // Clear form if branch/sem not selected
+         replace(createEmptySchedule()); 
          setFormLoading(false);
       }
     };
@@ -166,9 +165,12 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
         semester: data.semester,
         schedule: data.schedule.map(daySchedule => ({
           day: daySchedule.day as DayOfWeek,
-          entries: daySchedule.entries.map(entry => ({
+          entries: daySchedule.entries.map((entry, periodIndex) => ({
             period: entry.period,
-            subject: entry.subject || "", 
+            // Ensure break subjects are preserved from timeSlotDescriptors if user empties them
+            subject: timeSlotDescriptors[periodIndex].isBreak 
+                       ? timeSlotDescriptors[periodIndex].label 
+                       : entry.subject || "", 
           })),
         })),
         lastUpdatedBy: user.uid,
@@ -269,26 +271,39 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {defaultTimeSlots.map((slot, periodIndex) => (
+                        {timeSlotDescriptors.map((descriptor, periodIndex) => (
                         <TableRow key={periodIndex}>
                             <TableCell className="border border-border p-2 font-medium bg-muted/30 text-muted-foreground text-xs sm:text-sm">
-                            {slot} <br/> (Period {periodIndex + 1})
+                            {descriptor.time} <br/> ({descriptor.label})
                             </TableCell>
-                            {fields.map((dayField, dayIndex) => (
-                            <TableCell key={dayField.id + '-' + periodIndex} className="border border-border p-1">
-                                <FormField
-                                control={form.control}
-                                name={`schedule.${dayIndex}.entries.${periodIndex}.subject`}
-                                render={({ field }) => (
-                                    <Input 
-                                    {...field} 
-                                    placeholder="Subject" 
-                                    className="w-full h-10 text-xs sm:text-sm p-1 sm:p-2"
+                            {fields.map((dayField, dayIndex) => {
+                              const isSaturday = dayField.day === "Saturday";
+                              const isAfterSaturdayCutoff = isSaturday && periodIndex > saturdayLastSlotIndex;
+
+                              return (
+                                <TableCell key={dayField.id + '-' + periodIndex} className="border border-border p-1">
+                                    <FormField
+                                    control={form.control}
+                                    name={`schedule.${dayIndex}.entries.${periodIndex}.subject`}
+                                    render={({ field }) => (
+                                        <Input 
+                                        {...field} 
+                                        placeholder={descriptor.isBreak ? "" : "Subject"}
+                                        className="w-full h-10 text-xs sm:text-sm p-1 sm:p-2"
+                                        disabled={isAfterSaturdayCutoff || descriptor.isBreak}
+                                        readOnly={isAfterSaturdayCutoff || descriptor.isBreak}
+                                        value={descriptor.isBreak ? descriptor.label : field.value} // Show break label, allow edit for others
+                                        onChange={(e) => { // Only allow changing if not a break
+                                            if (!descriptor.isBreak) {
+                                                field.onChange(e);
+                                            }
+                                        }}
+                                        />
+                                    )}
                                     />
-                                )}
-                                />
-                            </TableCell>
-                            ))}
+                                </TableCell>
+                              );
+                            })}
                         </TableRow>
                         ))}
                     </TableBody>
@@ -307,4 +322,3 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
     </Card>
   );
 }
-

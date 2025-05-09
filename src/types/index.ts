@@ -72,35 +72,46 @@ export interface Post {
 export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
 export const daysOfWeek: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export const defaultTimeSlots = [
-  "9:00 AM - 10:00 AM",
-  "10:00 AM - 11:00 AM",
-  "11:00 AM - 11:15 AM", // Break
-  "11:15 AM - 12:15 PM",
-  "12:15 PM - 1:15 PM",
-  "1:15 PM - 2:00 PM",   // Lunch Break
-  "2:00 PM - 3:00 PM",
-  "3:00 PM - 4:00 PM",
-  "4:00 PM - 5:00 PM"    // Optional/Lab
+export interface TimeSlotDescriptor {
+  time: string;
+  label: string; // "Period 1", "Short Break", "Period 2", etc.
+  isBreak: boolean;
+}
+
+export const timeSlotDescriptors: TimeSlotDescriptor[] = [
+  { time: "9:00 AM - 9:50 AM",   label: "Period 1",    isBreak: false },
+  { time: "9:50 AM - 10:40 AM",  label: "Period 2",    isBreak: false },
+  { time: "10:40 AM - 11:00 AM", label: "Short Break", isBreak: true  },
+  { time: "11:00 AM - 11:50 AM", label: "Period 3",    isBreak: false },
+  { time: "11:50 AM - 12:40 PM", label: "Period 4",    isBreak: false },
+  { time: "12:40 PM - 1:20 PM",  label: "Lunch Break", isBreak: true  },
+  { time: "1:20 PM - 2:10 PM",   label: "Period 5",    isBreak: false },
+  { time: "2:10 PM - 3:00 PM",   label: "Period 6",    isBreak: false },
+  { time: "3:00 PM - 3:50 PM",   label: "Period 7",    isBreak: false }
 ];
-export const defaultPeriods = defaultTimeSlots.length;
+
+export const defaultTimeSlots = timeSlotDescriptors.map(d => d.time); // For compatibility if needed
+export const defaultPeriods = timeSlotDescriptors.length; // Number of rows in the table
+
+// Saturday ends after Period 4. Index of "Period 4" in timeSlotDescriptors is 4.
+export const saturdayLastSlotIndex = timeSlotDescriptors.findIndex(d => d.label === "Period 4");
+
 
 export interface TimeTableEntry {
-  period: number; // Index corresponding to defaultTimeSlots
-  subject: string; // Subject name, or "Break", or empty
-  // Add other fields if needed, e.g., facultyName, roomNo
+  period: number; // Index corresponding to timeSlotDescriptors
+  subject: string; // Subject name, or pre-filled break label, or empty
 }
 
 export interface TimeTableDaySchedule {
   day: DayOfWeek;
-  entries: TimeTableEntry[]; // Array of length `defaultPeriods`
+  entries: TimeTableEntry[]; 
 }
 
 export interface TimeTable {
   id: string; // Unique ID for the timetable, e.g., `${branch}_${semester}`
   branch: Branch;
   semester: Semester;
-  schedule: TimeTableDaySchedule[]; // Array of day schedules (e.g., 6 days)
+  schedule: TimeTableDaySchedule[]; 
   lastUpdatedBy: string; // UID of user who last updated
   lastUpdatedAt: string; // ISO string
 }
