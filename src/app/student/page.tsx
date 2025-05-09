@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -31,6 +32,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
+import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 
 interface RecentPostItemProps {
   post: Post;
@@ -248,6 +250,7 @@ const StudentDashboardPage = () => {
           )}
         </section>
       )}
+      <AdminEditableContentBlock />
       <DownloadAppSection />
     </div>
   );

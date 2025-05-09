@@ -6,7 +6,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { AuthProvider } from '@/components/auth-provider';
 import { SiteConfig } from '@/config/site';
-import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block'; // Added import
+// Removed import for AdminEditableContentBlock as it's moved to specific pages
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -63,7 +63,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-background text-foreground`}>
         <AuthProvider>
           <Navbar />
-          <AdminEditableContentBlock /> {/* Added component here */}
+          {/* AdminEditableContentBlock removed from here */}
           <main className="flex-grow container mx-auto px-4 py-8">
             {children}
           </main>

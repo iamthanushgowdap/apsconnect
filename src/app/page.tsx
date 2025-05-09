@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
+import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
@@ -94,6 +95,7 @@ export default function Home() {
             </p>
         </div>
       </section>
+      <AdminEditableContentBlock />
       <DownloadAppSection />
     </div>
   );

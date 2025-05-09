@@ -11,6 +11,7 @@ import { useAuth } from "@/components/auth-provider";
 import type { UserProfile, Post } from "@/types";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
+import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 
 
 interface MockUserFromAuth { 
@@ -216,6 +217,7 @@ export default function AdminDashboardPage() {
             </div>
         </CardContent>
       </Card>
+      <AdminEditableContentBlock />
       <DownloadAppSection />
     </div>
   );
@@ -254,4 +256,3 @@ function StyledActionCard({ title, description, icon, link, actionText, disabled
     </Card>
   );
 }
-
