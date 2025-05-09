@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
@@ -137,8 +137,11 @@ export function Navbar() {
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      router.push(`/search`);
     }
   };
 
@@ -182,7 +185,7 @@ export function Navbar() {
                 <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="Search posts, users..."
+                    placeholder="Search APSConnect..."
                     className="pl-8 h-9 text-sm w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -234,12 +237,12 @@ export function Navbar() {
                     )}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/profile/settings" className="flex items-center">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                   <Link href="/profile/settings" className="flex items-center">
+                     <UserCircle className="mr-2 h-4 w-4" />
+                     <span>Profile Settings</span>
+                   </Link>
+                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <ThemeToggleButton />
@@ -254,7 +257,18 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-                {/* Login and Register buttons already conditionally rendered via mainNav loop */}
+                {SiteConfig.mainNav.filter(item => item.hideWhenLoggedIn).map(item => (
+                   <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                            buttonVariants({ variant: "ghost", size: "sm" }),
+                            "text-xs sm:text-sm px-2 sm:px-3"
+                        )}
+                    >
+                    {item.title}
+                  </Link>
+                ))}
             </>
           )}
         </div>
@@ -262,3 +276,4 @@ export function Navbar() {
     </header>
   );
 }
+
