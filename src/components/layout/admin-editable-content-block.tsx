@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,13 +17,13 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Edit3, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
+import { Edit3, Image as ImageIcon, Eye, EyeOff, UploadCloud } from 'lucide-react';
 
 const STORAGE_KEY = 'apsconnect_admin_editable_content';
-const EDIT_PASSWORD = "9986";
+const EDIT_PASSWORD = "9986"; // This remains the actual password, but won't be displayed
 
 interface EditableContent {
-  imageSrc: string;
+  imageSrc: string; // Will store data URI for uploaded images
   imageVisible: boolean;
   textLine1: string;
   textLine2: string;
@@ -45,6 +44,16 @@ const defaultContent: EditableContent = {
   textLine6: "Preparing your experience.",
 };
 
+const readFileAsDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
+
 export function AdminEditableContentBlock() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,6 +62,7 @@ export function AdminEditableContentBlock() {
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [editFormState, setEditFormState] = useState<EditableContent>(defaultContent);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -61,15 +71,17 @@ export function AdminEditableContentBlock() {
         try {
           const parsedContent = JSON.parse(storedContent);
           setContent(parsedContent);
-          setEditFormState(parsedContent);
+          setEditFormState(parsedContent); // Initialize form with stored content
         } catch (e) {
           console.error("Failed to parse stored content for admin block", e);
           setContent(defaultContent);
           setEditFormState(defaultContent);
         }
       } else {
+        // Set default content if nothing is stored
         setContent(defaultContent);
         setEditFormState(defaultContent);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultContent));
       }
     }
   }, []);
@@ -85,19 +97,53 @@ export function AdminEditableContentBlock() {
     setPasswordInput("");
   };
 
-  const handleContentSave = () => {
-    setContent(editFormState);
+  const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ title: "File too large", description: "Image must be less than 2MB.", variant: "destructive" });
+        return;
+      }
+      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+        toast({ title: "Invalid File Type", description: "Please upload a valid image (JPEG, PNG, GIF, WebP).", variant: "destructive" });
+        return;
+      }
+      setSelectedImageFile(file);
+      // Optionally, show a preview if editFormState.imageSrc is updated here
+      // For now, we'll process it on save
+    }
+  };
+
+  const handleContentSave = async () => {
+    const newContent = { ...editFormState };
+    if (selectedImageFile) {
+      try {
+        const dataUrl = await readFileAsDataURL(selectedImageFile);
+        newContent.imageSrc = dataUrl;
+      } catch (error) {
+        toast({ title: "Image Upload Error", description: "Could not process the image file.", variant: "destructive" });
+        return; // Prevent saving if image processing fails
+      }
+    } else if (editFormState.imageSrc === "" && content.imageSrc !== "") {
+      // If imageSrc was cleared in form and there was an old image, keep it cleared
+      newContent.imageSrc = "";
+    }
+
+
+    setContent(newContent);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(editFormState));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newContent));
     }
     toast({ title: "Content Updated", description: "The placeholder content has been saved." });
     setIsEditDialogOpen(false);
     setIsPasswordVerified(false); // Reset password verification
+    setSelectedImageFile(null); // Clear selected file
   };
 
   const handleOpenEditDialog = () => {
     // Refresh editFormState from current content when opening
     setEditFormState(content);
+    setSelectedImageFile(null); // Reset file input on dialog open
     setIsPasswordVerified(false); // Always ask for password
     setPasswordInput("");
     setIsEditDialogOpen(true);
@@ -118,18 +164,16 @@ export function AdminEditableContentBlock() {
         {content.imageVisible && (
           <div className="flex items-center justify-center w-full h-48 bg-gray-300 rounded-sm sm:w-96 dark:bg-gray-700">
             {content.imageSrc ? (
-              <img src={content.imageSrc} alt="Placeholder" className="w-full h-full object-cover rounded-sm" />
+              <img src={content.imageSrc} alt="Placeholder" className="w-full h-full object-cover rounded-sm" data-ai-hint="abstract banner" />
             ) : (
-              <svg className="w-10 h-10 text-gray-200 dark:text-gray-600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
-                <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
-              </svg>
+              <ImageIcon className="w-10 h-10 text-gray-200 dark:text-gray-600" aria-hidden="true" />
             )}
           </div>
         )}
         <div className="w-full">
           {[content.textLine1, content.textLine2, content.textLine3, content.textLine4, content.textLine5, content.textLine6].map((text, index) => (
             <div key={index} className={`${lineClasses[index]}`}>
-              <span className="text-transparent">{text}</span>
+              <span className="text-transparent">{text || "Loading..."}</span>
             </div>
           ))}
         </div>
@@ -149,7 +193,7 @@ export function AdminEditableContentBlock() {
           <DialogHeader>
             <DialogTitle>Edit Placeholder Content</DialogTitle>
             <DialogDescription>
-              {isPasswordVerified ? "Modify the content of the placeholder block." : "Enter password to edit."}
+              {isPasswordVerified ? "Modify the content of the placeholder block." : "Enter admin password to edit."}
             </DialogDescription>
           </DialogHeader>
           {!isPasswordVerified ? (
@@ -161,7 +205,7 @@ export function AdminEditableContentBlock() {
                   type="password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="Enter password (9986)"
+                  placeholder="Enter password"
                 />
               </div>
               <Button type="submit" className="w-full">Verify Password</Button>
@@ -169,14 +213,31 @@ export function AdminEditableContentBlock() {
           ) : (
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               <div className="space-y-2">
-                <Label htmlFor="edit-imageSrc">Image URL (leave blank for default SVG)</Label>
-                <Input
-                  id="edit-imageSrc"
-                  value={editFormState.imageSrc}
-                  onChange={(e) => setEditFormState({ ...editFormState, imageSrc: e.target.value })}
-                  placeholder="https://example.com/image.png"
-                />
+                <Label htmlFor="edit-imageFile">Upload Image (Optional)</Label>
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="admin-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                          <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag & drop</p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG, GIF, WebP (MAX. 2MB)</p>
+                      </div>
+                      <Input 
+                          id="admin-image-upload" 
+                          type="file" 
+                          className="sr-only" 
+                          accept="image/png, image/jpeg, image/gif, image/webp"
+                          onChange={handleImageFileChange}
+                      />
+                  </label>
+                </div>
+                {selectedImageFile && <p className="text-xs text-muted-foreground mt-1">Selected: {selectedImageFile.name}</p>}
+                {!selectedImageFile && editFormState.imageSrc && <p className="text-xs text-muted-foreground mt-1">Current image will be kept. Upload a new one to replace.</p>}
+                {selectedImageFile && <Button variant="link" size="sm" className="text-destructive h-auto p-0" onClick={() => {setSelectedImageFile(null); if (document.getElementById('admin-image-upload') as HTMLInputElement) (document.getElementById('admin-image-upload') as HTMLInputElement).value = "";}}>Clear selection</Button>}
+                 {!selectedImageFile && editFormState.imageSrc && (
+                  <Button variant="link" size="sm" className="text-destructive h-auto p-0" onClick={() => setEditFormState(prev => ({...prev, imageSrc: ""}))}>Remove current image</Button>
+                )}
               </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="edit-imageVisible"
