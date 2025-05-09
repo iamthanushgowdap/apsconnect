@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, Twitter, Facebook, Instagram, Github } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, BookOpen } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -28,7 +28,6 @@ export type SiteConfig = {
   facultySidebarNav?: NavItem[];
   studentSidebarNav?: NavItem[];
   LATEST_APP_VERSION: string;
-  // socialLinks object removed from here as it's dynamic via admin settings
 };
 
 export const SiteConfigData: SiteConfig = {
@@ -49,11 +48,10 @@ export const SiteConfigData: SiteConfig = {
       protected: true,
       studentOnly: true, 
       icon: LayoutDashboard,
-      hideWhenLoggedIn: false, // Ensure it's shown when student is logged in
+      hideWhenLoggedIn: false, 
     },
-    // Login and Register items removed as they are handled by buttons in Navbar
   ],
-  footerNav: [ // Only static links here
+  footerNav: [ 
     {
       title: "Privacy Policy",
       href: "/privacy", 
@@ -68,6 +66,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "User Management", href: "/admin/users", icon: Users },
     { title: "Create Post", href: "/admin/posts/new", icon: FilePlus2 },
     { title: "Manage Timetables", href: "/admin/timetables", icon: CalendarClock },
+    { title: "Study Materials", href: "/admin/study-materials", icon: BookOpen },
     { title: "Branch Management", href: "/admin/branches", icon: BarChart3 },
     { title: "Site Settings", href: "/admin/settings", icon: Settings },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
@@ -77,6 +76,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "Manage Students", href: "/faculty/user-management", icon: Users },
     { title: "Create Content", href: "/faculty/content/new", icon: FilePlus2 },
     { title: "Manage Timetables", href: "/faculty/timetables", icon: CalendarClock },
+    { title: "Study Materials", href: "/faculty/study-materials", icon: BookOpen },
     { title: "Activity Feed", href: "/feed", icon: Newspaper },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
@@ -84,6 +84,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "Dashboard", href: "/student", icon: LayoutDashboard },
     { title: "Activity Feed", href: "/feed", icon: Newspaper },
     { title: "View Timetable", href: "/student/timetable", icon: CalendarClock },
+    { title: "Study Materials", href: "/student/study-materials", icon: BookOpen },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
 };

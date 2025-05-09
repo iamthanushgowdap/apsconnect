@@ -119,12 +119,42 @@ export interface TimeTable {
   lastUpdatedAt: string; 
 }
 
+// Study Material related types
+export interface StudyMaterialAttachment {
+  name: string;
+  type: string;
+  size: number;
+  // In a real backend, this would be a URL. For localStorage mock, it's just metadata.
+  // mockFileId could be used to simulate a download later if needed.
+  mockFileId: string; 
+}
+
+export interface StudyMaterial {
+  id: string;
+  branch: Branch;
+  semester: Semester;
+  title: string;
+  description?: string;
+  attachments: StudyMaterialAttachment[]; // Array to support multiple files per material entry
+  uploadedByUid: string; // UID of admin/faculty who uploaded
+  uploadedByDisplayName: string;
+  uploadedAt: string; // ISO string
+}
+
+export const STUDY_MATERIAL_STORAGE_KEY = 'apsconnect_study_materials';
+
+
 // Search related types
 export type SearchResultItem = 
   | ({ type: 'post' } & Post)
-  | ({ type: 'user' } & UserProfile);
+  | ({ type: 'user' } & UserProfile)
+  | ({ type: 'timetable' } & TimeTable) // Added for timetable search
+  | ({ type: 'studymaterial' } & StudyMaterial); // Added for study material search
+
 
 export interface SearchResults {
   posts: Post[];
   users: UserProfile[];
+  timetables: TimeTable[];
+  studyMaterials: StudyMaterial[];
 }

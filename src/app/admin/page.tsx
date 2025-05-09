@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -185,6 +185,13 @@ export default function AdminDashboardPage() {
                 icon={<CalendarClock />}
                 link="/admin/timetables"
                 actionText="Manage Timetables"
+            />
+             <StyledActionCard
+                title="Study Materials"
+                description="Upload and manage study materials for various branches."
+                icon={<BookOpen />}
+                link="/admin/study-materials"
+                actionText="Manage Materials"
             />
             <StyledActionCard
                 title="Branch Management"

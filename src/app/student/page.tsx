@@ -31,7 +31,7 @@ import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
-import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
+import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 
 interface RecentPostItemProps {
@@ -78,7 +78,7 @@ function RecentPostItem({ post }: RecentPostItemProps) {
       <CardFooter className="pt-3 px-6 pb-5 border-t border-border/50">
         <Link href={`/post/${post.id}`} className="w-full">
           <Button variant="ghost" size="sm" className="w-full justify-between text-primary hover:bg-primary/10 group">
-            View Full Post <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            View Full Post <ArrowRight className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Button>
         </Link>
       </CardFooter>
@@ -100,7 +100,7 @@ const StudentDashboardPage = () => {
         setStudentUser(authUser);
         
         if (typeof window !== 'undefined') {
-          const postsStr = localStorage.getItem('apsconnect_posts'); // Corrected key
+          const postsStr = localStorage.getItem('apsconnect_posts'); 
           const allPosts: Post[] = postsStr ? JSON.parse(postsStr) : [];
           
           let relevantPosts = allPosts;
@@ -205,7 +205,7 @@ const StudentDashboardPage = () => {
 
       <section className="mb-12">
         <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-6 text-center sm:text-left">Quick Links</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <ActionCard
             title="My Profile"
             description="View and update your personal information and password."
@@ -220,6 +220,14 @@ const StudentDashboardPage = () => {
             icon={<CalendarClock className="h-10 w-10 text-accent" />}
             link="/student/timetable"
             actionText="View Timetable"
+            disabled={isPendingApproval || isRejected}
+          />
+           <ActionCard
+            title="Study Materials"
+            description="Access notes, presentations, and other materials shared by faculty."
+            icon={<BookOpen className="h-10 w-10 text-accent" />}
+            link="/student/study-materials"
+            actionText="View Materials"
             disabled={isPendingApproval || isRejected}
           />
         </div>
