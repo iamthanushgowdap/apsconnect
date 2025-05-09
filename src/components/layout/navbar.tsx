@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { SiteConfig } from "@/config/site";
 import { Icons } from "@/components/icons";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle, Sun, Moon } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
@@ -158,6 +158,7 @@ export function Navbar() {
         </Link>
         <nav className="hidden md:flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
+            // Conditional rendering logic based on auth state and item properties
             if (isLoading) { 
               if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly || item.hideWhenLoggedIn) return null;
             } else { 
@@ -168,7 +169,8 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            if (user && item.title === 'Activity Feed') { // Hide activity feed from main nav if user logged in
+            // Specifically hide Activity Feed from main nav if user is logged in, as it's in dropdown
+            if (user && item.title === 'Activity Feed') { 
                 return null;
             }
             
@@ -194,6 +196,8 @@ export function Navbar() {
           {isLoading ? (
              <SimpleRotatingSpinner className="h-8 w-8 text-primary" />
           ) : user ? (
+            <>
+            <ThemeToggleButton />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full" suppressHydrationWarning>
@@ -241,21 +245,24 @@ export function Navbar() {
                    </Link>
                  </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <ThemeToggleButton />
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {/* Theme toggle is now outside the dropdown for logged-in users */}
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </>
           ) : (
             <>
-               <ThemeToggleButton />
-                {/* Removed the mapping for SiteConfig.mainNav.filter(item => item.hideWhenLoggedIn && !item.protected) */}
-                {/* This ensures Login and Register text links are not rendered, assuming buttons are primary */}
+              <Button asChild variant="outline" size="sm">
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/register">Register</Link>
+              </Button>
+              {/* Theme toggle button is shown here if no user is logged in */}
+              <ThemeToggleButton /> 
             </>
           )}
         </div>
@@ -263,4 +270,3 @@ export function Navbar() {
     </header>
   );
 }
-

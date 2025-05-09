@@ -1,15 +1,13 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Assuming you want to style it like a button or use DropdownMenuItem directly
+import { Button } from '@/components/ui/button'; 
 
 export function ThemeToggleButton() {
-  const [theme, setTheme] = useState('light'); // Default to light, will be updated by useEffect
+  const [theme, setTheme] = useState('light'); 
 
   useEffect(() => {
-    // Set initial theme based on localStorage or system preference
     const savedTheme = localStorage.getItem('color-theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -32,18 +30,18 @@ export function ThemeToggleButton() {
   };
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="icon"
       onClick={toggleTheme}
-      className="w-full flex items-center justify-between text-sm"
       aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+      suppressHydrationWarning
     >
-      <span>{theme === 'light' ? 'Light' : 'Dark'}</span>
       {theme === 'light' ? (
-        <Sun className="h-4 w-4" />
+        <Sun className="h-[1.2rem] w-[1.2rem]" />
       ) : (
-        <Moon className="h-4 w-4" />
+        <Moon className="h-[1.2rem] w-[1.2rem]" />
       )}
-    </button>
+    </Button>
   );
 }
