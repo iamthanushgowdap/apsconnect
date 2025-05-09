@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -141,7 +142,7 @@ export function Navbar() {
     if (trimmedQuery) {
       router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
-      router.push(`/search`);
+      router.push(`/search`); // Navigate to search page even if query is empty to show filters
     }
   };
 
@@ -164,6 +165,11 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
+            // Skip "Activity Feed" if user is student or faculty, as it's in their dropdown
+            if (user && (user.role === 'student' || user.role === 'faculty') && item.href === '/feed') {
+                return null;
+            }
+            
             return (
                 <Link
                     key={item.href}
@@ -176,11 +182,16 @@ export function Navbar() {
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
+                     {item.href === '/feed' && user && user.role === 'admin' && unseenPostsCount > 0 && (
+                         <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                        </span>
+                     )}
                 </Link>
             );
           })}
         </nav>
-         <form onSubmit={handleSearchSubmit} className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-xs w-full">
+         <form onSubmit={handleSearchSubmit} className="flex-1 md:flex-grow-0 md:ml-auto md:mr-4 max-w-md w-full"> {/* Changed max-w-xs to max-w-md */}
             <div className="relative">
                 <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -265,6 +276,7 @@ export function Navbar() {
                             buttonVariants({ variant: "ghost", size: "sm" }),
                             "text-xs sm:text-sm px-2 sm:px-3"
                         )}
+                        suppressHydrationWarning
                     >
                     {item.title}
                   </Link>
