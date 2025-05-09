@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -99,6 +98,7 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
         form.setValue("branch", facultyAssignedBranches[0]);
       }
     }
+    setFormLoading(false); // Initial form setup done
   }, [role, facultyAssignedBranches, form]);
 
   useEffect(() => {
@@ -264,24 +264,26 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
                 <Table className="min-w-full border-collapse border border-border">
                     <TableHeader>
                         <TableRow>
-                        <TableHead className="border border-border p-2 font-semibold bg-muted/50 w-[150px]">Time / Day</TableHead>
-                        {daysOfWeek.map(day => (
-                            <TableHead key={day} className="border border-border p-2 font-semibold bg-muted/50 text-center">{day}</TableHead>
+                        <TableHead className="border border-border p-2 font-semibold bg-muted/50 sticky left-0 z-10 w-[100px] min-w-[100px]">Day</TableHead>
+                        {timeSlotDescriptors.map((descriptor, periodIndex) => (
+                            <TableHead key={periodIndex} className="border border-border p-2 font-semibold bg-muted/50 text-center min-w-[150px]">
+                                {descriptor.label} <br/> <span className="text-xs font-normal">({descriptor.time})</span>
+                            </TableHead>
                         ))}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {timeSlotDescriptors.map((descriptor, periodIndex) => (
-                        <TableRow key={periodIndex}>
-                            <TableCell className="border border-border p-2 font-medium bg-muted/30 text-muted-foreground text-xs sm:text-sm">
-                            {descriptor.time} <br/> ({descriptor.label})
+                        {fields.map((dayField, dayIndex) => ( // `fields` iterates through days in the form's schedule
+                        <TableRow key={dayField.id}>
+                            <TableCell className="border border-border p-2 font-medium bg-muted/30 text-muted-foreground text-xs sm:text-sm sticky left-0 z-10 w-[100px] min-w-[100px]">
+                                {dayField.day}
                             </TableCell>
-                            {fields.map((dayField, dayIndex) => {
+                            {timeSlotDescriptors.map((descriptor, periodIndex) => {
                               const isSaturday = dayField.day === "Saturday";
                               const isAfterSaturdayCutoff = isSaturday && periodIndex > saturdayLastSlotIndex;
 
                               return (
-                                <TableCell key={dayField.id + '-' + periodIndex} className="border border-border p-1">
+                                <TableCell key={`${dayField.id}-${periodIndex}`} className="border border-border p-1 min-w-[150px]">
                                     <FormField
                                     control={form.control}
                                     name={`schedule.${dayIndex}.entries.${periodIndex}.subject`}
@@ -289,11 +291,11 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
                                         <Input 
                                         {...field} 
                                         placeholder={descriptor.isBreak ? "" : "Subject"}
-                                        className="w-full h-10 text-xs sm:text-sm p-1 sm:p-2"
+                                        className="w-full h-12 text-xs sm:text-sm p-1 sm:p-2 text-center"
                                         disabled={isAfterSaturdayCutoff || descriptor.isBreak}
                                         readOnly={isAfterSaturdayCutoff || descriptor.isBreak}
-                                        value={descriptor.isBreak ? descriptor.label : field.value} // Show break label, allow edit for others
-                                        onChange={(e) => { // Only allow changing if not a break
+                                        value={descriptor.isBreak ? descriptor.label : field.value || ""}
+                                        onChange={(e) => { 
                                             if (!descriptor.isBreak) {
                                                 field.onChange(e);
                                             }
@@ -322,3 +324,4 @@ export function TimetableForm({ role, facultyAssignedBranches, onTimetableUpdate
     </Card>
   );
 }
+

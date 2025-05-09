@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -60,7 +59,7 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
   const orderedSchedule = daysOfWeek.map(dayString => {
     const daySchedule = timetable.schedule.find(ds => ds.day === dayString);
     if (daySchedule && Array.isArray(daySchedule.entries)) {
-      const orderedEntries = timeSlotDescriptors.map((descriptor, periodIdx) => {
+      const orderedEntries = timeSlotDescriptors.map((descriptor, periodIdx) => { 
         const entry = daySchedule.entries.find(e => e.period === periodIdx);
         return entry || { period: periodIdx, subject: descriptor.isBreak ? descriptor.label : "-" }; 
       });
@@ -93,26 +92,29 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
         <Table className="min-w-full border-collapse border border-border">
           <TableHeader>
             <TableRow>
-              <TableHead className="border border-border p-2 font-semibold bg-muted/50 w-[150px] sticky left-0 z-10">Time / Day</TableHead>
-              {daysOfWeek.map(day => (
-                <TableHead key={day} className="border border-border p-2 font-semibold bg-muted/50 text-center min-w-[120px]">{day}</TableHead>
+              <TableHead className="border border-border p-2 font-semibold bg-muted/50 sticky left-0 z-10 w-[100px] min-w-[100px]">Day</TableHead>
+              {timeSlotDescriptors.map((descriptor, periodIndex) => (
+                <TableHead key={periodIndex} className="border border-border p-2 font-semibold bg-muted/50 text-center min-w-[150px]">
+                    {descriptor.label} <br/> <span className="text-xs font-normal">({descriptor.time})</span>
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {timeSlotDescriptors.map((descriptor, periodIndex) => (
-              <TableRow key={periodIndex}>
-                <TableCell className="border border-border p-2 font-medium bg-muted/30 text-muted-foreground text-xs sm:text-sm sticky left-0 z-10 w-[150px]">
-                  {descriptor.time} <br/> ({descriptor.label})
+            {orderedSchedule.map(daySchedule => (
+              <TableRow key={daySchedule.day}>
+                <TableCell className="border border-border p-2 font-medium bg-muted/30 text-muted-foreground text-xs sm:text-sm sticky left-0 z-10 w-[100px] min-w-[100px]">
+                  {daySchedule.day}
                 </TableCell>
-                {orderedSchedule.map(daySchedule => {
+                {daySchedule.entries.map((entry, periodIndex) => { 
+                  const entrySubject = entry.subject;
                   const isSaturday = daySchedule.day === "Saturday";
                   const isAfterSaturdayCutoff = isSaturday && periodIndex > saturdayLastSlotIndex;
-                  const entrySubject = daySchedule.entries[periodIndex]?.subject;
-
+                  const currentDescriptor = timeSlotDescriptors[periodIndex]; 
+                  
                   return (
-                    <TableCell key={`${daySchedule.day}-${periodIndex}`} className="border border-border p-2 text-center text-xs sm:text-sm min-w-[120px]">
-                      {isAfterSaturdayCutoff ? "-" : (entrySubject || "-")}
+                    <TableCell key={`${daySchedule.day}-${periodIndex}`} className="border border-border p-2 text-center text-xs sm:text-sm min-w-[150px]">
+                      {isAfterSaturdayCutoff ? "-" : (currentDescriptor.isBreak ? currentDescriptor.label : (entrySubject || "-"))}
                     </TableCell>
                   );
                 })}
@@ -124,3 +126,4 @@ export function TimetableView({ timetable, isLoading, studentBranch, studentSeme
     </Card>
   );
 }
+
