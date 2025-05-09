@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, LogIn, UserPlus } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, Archive as ArchiveIcon } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -42,7 +42,6 @@ export const SiteConfigData: SiteConfig = {
       href: "/",
       icon: Home,
     },
-    // Activity Feed is in user dropdown
     {
       title: "Admin Dashboard",
       href: "/admin",
@@ -64,7 +63,6 @@ export const SiteConfigData: SiteConfig = {
       studentOnly: true, 
       icon: LayoutDashboard, 
     },
-    // Login and Register are handled by the auth block at the end of the navbar
   ],
   footerNav: [
     {

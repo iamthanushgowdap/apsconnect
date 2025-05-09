@@ -19,8 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Archive as ArchiveIcon } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
+import { getInitials } from "@/components/content/post-item-utils"; // Adjusted import
 
 export function Navbar() {
   const pathname = usePathname();
@@ -117,30 +118,6 @@ export function Navbar() {
     router.push('/'); 
   };
 
-  const getUserInitials = (currentUser: User | null): string => {
-    if (!currentUser) return "??";
-    const nameSource = currentUser.displayName || currentUser.email || currentUser.usn;
-    if (!nameSource) return "??"; 
-    
-    const nameParts = nameSource.split(/[\s@]+/); // Split by space or @ for email
-    if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
-      const firstInitial = nameParts[0][0];
-      let secondInitial = '';
-      // Try to get initial from last part if it's not the same as first (e.g. "user@example.com" -> "UE")
-      // If only one part (e.g. "username" from "username@domain"), take second char of that part.
-      const lastPart = nameParts[nameParts.length - 1];
-      if (lastPart && lastPart.length > 0 && nameParts.length > 1) {
-         secondInitial = lastPart[0];
-      } else if (nameParts[0].length > 1) {
-        secondInitial = nameParts[0][1];
-      }
-      return `${firstInitial}${secondInitial}`.toUpperCase();
-    }
-    if (nameSource.length >=2) return nameSource.substring(0, 2).toUpperCase();
-    if (nameSource.length === 1) return nameSource.substring(0,1).toUpperCase();
-    return "??"; 
-  };
-
   const getDashboardLink = () => {
     if (!user) return "/";
     switch (user.role) {
@@ -173,7 +150,6 @@ export function Navbar() {
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
               if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
-              if (item.title === "Activity Feed" && user) return null;
             }
             
             return (
@@ -202,7 +178,7 @@ export function Navbar() {
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={userAvatarUrl || undefined} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
                     <AvatarFallback>
-                      {getUserInitials(user)}
+                      {getInitials(user.displayName || user.email || user.usn)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -234,6 +210,12 @@ export function Navbar() {
                          {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
                        </span>
                     )}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/archive" className="flex items-center">
+                    <ArchiveIcon className="mr-2 h-4 w-4" />
+                    <span>Archive</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -269,4 +251,3 @@ export function Navbar() {
     </header>
   );
 }
-
