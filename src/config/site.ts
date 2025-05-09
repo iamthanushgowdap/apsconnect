@@ -48,6 +48,7 @@ export const SiteConfigData: SiteConfig = {
       protected: true, 
       icon: Newspaper,
     },
+    // Chatbot link was never here, so no change needed for this specific item
     {
       title: "Admin Dashboard",
       href: "/admin",

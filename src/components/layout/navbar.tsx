@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home, MessageSquare } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
 
@@ -152,8 +152,10 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-            // Hide Activity Feed from main nav if user is logged in, it's in dropdown
             if (item.title === "Activity Feed" && user) {
+              return null;
+            }
+             if (item.title === "Chatbot") { // Explicitly hide Chatbot if it's ever added back to mainNav
               return null;
             }
             
@@ -217,12 +219,7 @@ export function Navbar() {
                     )}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/chatbot" className="flex items-center">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    <span>Chatbot</span>
-                  </Link>
-                </DropdownMenuItem>
+                {/* Chatbot link removed */}
                 <DropdownMenuItem asChild>
                   <Link href="/profile/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
@@ -243,8 +240,7 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-               <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>Login</Link>
-               <Link href="/register" className={cn(buttonVariants({ size: "sm" }))}>Register</Link>
+               {/* Removed redundant login/register buttons as they are already in mainNav or handled by auth state */}
             </>
           )}
         </div>
