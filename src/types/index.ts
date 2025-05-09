@@ -72,15 +72,35 @@ export interface Post {
 export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
 export const daysOfWeek: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-// TimeTableEntry and TimeTableDaySchedule are no longer needed for image-based timetable
-// export interface TimeTableEntry { ... }
-// export interface TimeTableDaySchedule { ... }
+export const defaultTimeSlots = [
+  "9:00 AM - 10:00 AM",
+  "10:00 AM - 11:00 AM",
+  "11:00 AM - 11:15 AM", // Break
+  "11:15 AM - 12:15 PM",
+  "12:15 PM - 1:15 PM",
+  "1:15 PM - 2:00 PM",   // Lunch Break
+  "2:00 PM - 3:00 PM",
+  "3:00 PM - 4:00 PM",
+  "4:00 PM - 5:00 PM"    // Optional/Lab
+];
+export const defaultPeriods = defaultTimeSlots.length;
+
+export interface TimeTableEntry {
+  period: number; // Index corresponding to defaultTimeSlots
+  subject: string; // Subject name, or "Break", or empty
+  // Add other fields if needed, e.g., facultyName, roomNo
+}
+
+export interface TimeTableDaySchedule {
+  day: DayOfWeek;
+  entries: TimeTableEntry[]; // Array of length `defaultPeriods`
+}
 
 export interface TimeTable {
   id: string; // Unique ID for the timetable, e.g., `${branch}_${semester}`
   branch: Branch;
   semester: Semester;
-  imageDataUrl: string; // Stores the timetable image as a base64 data URI
+  schedule: TimeTableDaySchedule[]; // Array of day schedules (e.g., 6 days)
   lastUpdatedBy: string; // UID of user who last updated
   lastUpdatedAt: string; // ISO string
 }

@@ -1,11 +1,12 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useAuth, User } from '@/components/auth-provider';
+import { useAuth } from '@/components/auth-provider'; // User type is implicitly imported via useAuth
 import { useRouter } from 'next/navigation';
 import type { TimeTable, Branch, Semester } from '@/types';
 import { TimetableView } from '@/components/timetables/timetable-view';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // CardDescription not used here
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ShieldCheck, AlertTriangle, Info } from 'lucide-react';
@@ -35,12 +36,11 @@ export default function StudentTimetablePage() {
       });
 
       if (user.role === 'pending' && !user.rejectionReason) {
-        // Allow pending (non-rejected) students to see this page, but timetable might be unavailable or profile incomplete
         setPageLoading(false);
         return; 
       }
       
-      if (user.role === 'student' && isProfileCompleteForTimetable) {
+      if (user.role === 'student' && isProfileCompleteForTimetable && user.branch && user.semester) {
         if (typeof window !== 'undefined') {
           const key = `${TIMETABLE_STORAGE_KEY_PREFIX}${user.branch}_${user.semester}`;
           const storedData = localStorage.getItem(key);
@@ -52,7 +52,7 @@ export default function StudentTimetablePage() {
               setTimetable(null);
             }
           } else {
-            setTimetable(null); // No timetable found
+            setTimetable(null); 
           }
         }
       }
@@ -69,6 +69,7 @@ export default function StudentTimetablePage() {
   }
 
   if (!user || (user.role !== 'student' && user.role !== 'pending')) {
+    // This should ideally not be reached due to the useEffect redirect, but as a fallback.
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -99,14 +100,14 @@ export default function StudentTimetablePage() {
     );
   }
 
-  if (!studentDetails.isProfileComplete && user.role === 'student') { // Check specifically for approved students with incomplete profiles
+  if (!studentDetails.isProfileComplete && user.role === 'student') { 
     return (
         <div className="container mx-auto px-4 py-8 text-center">
             <Card className="max-w-md mx-auto shadow-lg border-orange-400">
                 <CardHeader><CardTitle className="text-orange-600 text-xl sm:text-2xl flex items-center justify-center"><Info className="mr-2 h-6 w-6" />Profile Incomplete</CardTitle></CardHeader>
                 <CardContent>
                     <p className="text-md sm:text-lg text-muted-foreground">
-                        Your profile information (branch or semester) is incomplete. Please contact administration to update your details.
+                        Your profile information (branch or semester) is incomplete. Please contact administration to update your details. The timetable cannot be displayed.
                     </p>
                     <Link href="/student"><Button variant="outline" className="mt-6">Back to Dashboard</Button></Link>
                 </CardContent>
@@ -127,4 +128,3 @@ export default function StudentTimetablePage() {
     </div>
   );
 }
-

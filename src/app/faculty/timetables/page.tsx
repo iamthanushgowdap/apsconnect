@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -8,7 +9,7 @@ import { TimetableView } from '@/components/timetables/timetable-view';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, Info, CalendarClock, Eye, Edit } from 'lucide-react';
+import { ShieldCheck, Info, CalendarDays, Eye, Edit } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,36 +25,24 @@ export default function FacultyTimetablePage() {
   
   const facultyBranches = user?.assignedBranches || [];
 
-  // State for View Tab
-  const [viewBranch, setViewBranch] = useState<Branch | undefined>(facultyBranches.length > 0 ? facultyBranches[0] : undefined);
+  const [viewBranch, setViewBranch] = useState<Branch | undefined>(undefined);
   const [viewSemester, setViewSemester] = useState<Semester | undefined>(semesters.length > 0 ? semesters[0] : undefined);
   const [currentViewTimetable, setCurrentViewTimetable] = useState<TimeTable | null>(null);
   const [viewDataLoading, setViewDataLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
+  const [activeTab, setActiveTab] = useState("view");
 
   useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'faculty') {
         router.push(user ? '/dashboard' : '/login');
-      } else {
-        // Initialize viewBranch and viewSemester if not already set and facultyBranches/semesters are available
-        if (!viewBranch && facultyBranches.length > 0) {
-          setViewBranch(facultyBranches[0]);
-        } else if (viewBranch && facultyBranches.length > 0 && !facultyBranches.includes(viewBranch)) {
-          // If current viewBranch is no longer valid for the faculty, reset to the first assigned one
-          setViewBranch(facultyBranches[0]);
-        } else if (facultyBranches.length === 0) {
-           setViewBranch(undefined); // No branches assigned
-        }
-
-        if (!viewSemester && semesters.length > 0) {
-          setViewSemester(semesters[0]);
-        }
-        setPageLoading(false);
+        return;
       }
+      if (facultyBranches.length > 0 && !viewBranch) {
+        setViewBranch(facultyBranches[0]);
+      }
+      setPageLoading(false);
     }
-  }, [user, authLoading, router, facultyBranches, viewBranch, viewSemester]);
+  }, [user, authLoading, router, facultyBranches, viewBranch]);
 
   const loadTimetableForView = useCallback(() => {
     if (viewBranch && viewSemester && typeof window !== 'undefined') {
@@ -74,18 +63,17 @@ export default function FacultyTimetablePage() {
     } else {
       setCurrentViewTimetable(null);
     }
-  }, [viewBranch, viewSemester, refreshKey]); // Added refreshKey
+  }, [viewBranch, viewSemester]);
 
   useEffect(() => {
-     if (!pageLoading && user?.role === 'faculty') {
+     if (!pageLoading && user?.role === 'faculty' && activeTab === "view") {
         loadTimetableForView();
      }
-  }, [loadTimetableForView, pageLoading, user]);
+  }, [loadTimetableForView, pageLoading, user, activeTab]);
 
-
-  const handleTabChange = (newTabValue: string) => {
-    if (newTabValue === "view") {
-      setRefreshKey(prev => prev + 1); // Trigger a refresh
+  const handleTimetableUpdate = () => {
+    if (activeTab === "view") {
+        loadTimetableForView();
     }
   };
 
@@ -138,7 +126,7 @@ export default function FacultyTimetablePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-          <CalendarClock className="mr-3 h-7 w-7" />
+          <CalendarDays className="mr-3 h-7 w-7" />
           Timetable Management
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
@@ -146,7 +134,7 @@ export default function FacultyTimetablePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="view" className="w-full" onValueChange={handleTabChange}>
+      <Tabs defaultValue="view" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
           <TabsTrigger value="view" className="flex items-center gap-2"><Eye className="h-4 w-4"/> View Timetable</TabsTrigger>
           <TabsTrigger value="edit" className="flex items-center gap-2"><Edit className="h-4 w-4"/> Create/Update Timetable</TabsTrigger>
@@ -191,7 +179,7 @@ export default function FacultyTimetablePage() {
         </TabsContent>
 
         <TabsContent value="edit">
-          <TimetableForm role="faculty" facultyAssignedBranches={facultyBranches} />
+          <TimetableForm role="faculty" facultyAssignedBranches={facultyBranches} onTimetableUpdate={handleTimetableUpdate} />
         </TabsContent>
       </Tabs>
     </div>

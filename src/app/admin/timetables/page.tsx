@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -23,50 +24,34 @@ export default function AdminTimetablePage() {
   const router = useRouter();
   const [pageLoading, setPageLoading] = useState(true);
 
-  // State for View Tab
   const [availableBranchesForView, setAvailableBranchesForView] = useState<Branch[]>(defaultBranches);
-  const [viewBranch, setViewBranch] = useState<Branch | undefined>(availableBranchesForView.length > 0 ? availableBranchesForView[0] : undefined);
+  const [viewBranch, setViewBranch] = useState<Branch | undefined>(undefined);
   const [viewSemester, setViewSemester] = useState<Semester | undefined>(semesters.length > 0 ? semesters[0] : undefined);
   const [currentViewTimetable, setCurrentViewTimetable] = useState<TimeTable | null>(null);
   const [viewDataLoading, setViewDataLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState("view");
 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedBranches = localStorage.getItem(BRANCH_STORAGE_KEY);
+      let branchesToSet = defaultBranches;
       if (storedBranches) {
         try {
           const parsed = JSON.parse(storedBranches);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setAvailableBranchesForView(parsed);
-            if (!viewBranch || !parsed.includes(viewBranch)) {
-              setViewBranch(parsed[0]);
-            }
-          } else {
-             setAvailableBranchesForView(defaultBranches);
-             if (!viewBranch || !defaultBranches.includes(viewBranch)) {
-                setViewBranch(defaultBranches[0]);
-             }
+            branchesToSet = parsed;
           }
         } catch (e) { 
           console.error("Error parsing managed branches:", e);
-          setAvailableBranchesForView(defaultBranches);
-          if (!viewBranch || !defaultBranches.includes(viewBranch)) {
-            setViewBranch(defaultBranches[0]);
-          }
-        }
-      } else {
-        setAvailableBranchesForView(defaultBranches);
-        if (!viewBranch || !defaultBranches.includes(viewBranch)) {
-           setViewBranch(defaultBranches.length > 0 ? defaultBranches[0] : undefined);
         }
       }
-      if (!viewSemester && semesters.length > 0) {
-        setViewSemester(semesters[0]);
+      setAvailableBranchesForView(branchesToSet);
+      if (!viewBranch && branchesToSet.length > 0) {
+        setViewBranch(branchesToSet[0]);
       }
     }
-  }, []); // Runs once on mount to set initial branches
+  }, []); 
 
   useEffect(() => {
     if (!authLoading) {
@@ -98,19 +83,22 @@ export default function AdminTimetablePage() {
     } else {
       setCurrentViewTimetable(null);
     }
-  }, [viewBranch, viewSemester, refreshKey]); // Added refreshKey to dependencies
+  }, [viewBranch, viewSemester]);
 
   useEffect(() => {
-    if (!pageLoading && user?.role === 'admin') { // Ensure user role is checked before loading
+    if (!pageLoading && user?.role === 'admin' && activeTab === "view") { 
         loadTimetableForView();
     }
-  }, [loadTimetableForView, pageLoading, user]);
-
-  const handleTabChange = (newTabValue: string) => {
-    if (newTabValue === "view") {
-      setRefreshKey(prev => prev + 1); // Trigger a refresh of the view tab
+  }, [loadTimetableForView, pageLoading, user, activeTab]);
+  
+  const handleTimetableUpdate = () => {
+    if (activeTab === "view") { // If currently on view tab, refresh it
+        loadTimetableForView();
     }
+    // If on edit tab, the form itself has the latest, no need to force refresh of form
+    // but if they switch to view tab, it will load the latest
   };
+
 
   if (pageLoading || authLoading) {
     return (
@@ -121,6 +109,7 @@ export default function AdminTimetablePage() {
   }
 
   if (!user || user.role !== 'admin') {
+    // This should ideally not be reached due to the useEffect redirect, but as a fallback.
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -147,7 +136,7 @@ export default function AdminTimetablePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="view" className="w-full" onValueChange={handleTabChange}>
+      <Tabs defaultValue="view" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
           <TabsTrigger value="view" className="flex items-center gap-2"><Eye className="h-4 w-4"/> View Timetable</TabsTrigger>
           <TabsTrigger value="edit" className="flex items-center gap-2"><Edit className="h-4 w-4"/> Create/Update Timetable</TabsTrigger>
@@ -192,7 +181,7 @@ export default function AdminTimetablePage() {
         </TabsContent>
 
         <TabsContent value="edit">
-          <TimetableForm role="admin" />
+          <TimetableForm role="admin" onTimetableUpdate={handleTimetableUpdate} />
         </TabsContent>
       </Tabs>
     </div>
