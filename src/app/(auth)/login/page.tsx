@@ -87,7 +87,7 @@ export default function LoginPage() {
       let loggedInUser: User;
 
       if (mode === "admin") {
-        const adminProfileKey = `apsconnect_user_${ADMIN_EMAIL.toLowerCase()}`; // Changed key
+        const adminProfileKey = `apsconnect_user_${ADMIN_EMAIL.toLowerCase()}`; 
         const adminProfileStr = typeof window !== 'undefined' ? localStorage.getItem(adminProfileKey) : null;
         let effectiveAdminPassword = ADMIN_PASSWORD;
         let adminDisplayName = "Admin User";
@@ -177,7 +177,7 @@ export default function LoginPage() {
     }
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('apsconnect_user_')) { // Changed key
+        if (key && key.startsWith('apsconnect_user_')) { 
             try {
                 const profile = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
                 if (profile.role === 'pending' && 
@@ -308,3 +308,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

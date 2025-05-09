@@ -89,13 +89,13 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-sm">Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base"/>
+                        <Input type="email" placeholder="you@example.com" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
                       </FormControl>
                       <FormMessage className="text-xs sm:text-sm"/>
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base" disabled={isLoading} suppressHydrationWarning>
                   {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
               </form>
@@ -115,3 +115,4 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+

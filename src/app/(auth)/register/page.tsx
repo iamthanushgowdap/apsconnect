@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -365,3 +366,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

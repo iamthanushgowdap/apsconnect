@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
+import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -152,10 +153,6 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
-             if (item.title === "Activity Feed") { 
-              return null;
-            }
-            
             return (
                 <Link
                     key={item.href}
@@ -174,7 +171,7 @@ export function Navbar() {
         </nav>
         <div className="flex items-center space-x-1 sm:space-x-2">
           {isLoading ? (
-             <Button variant="ghost" className="relative h-10 w-10 rounded-full animate-pulse bg-muted"></Button>
+             <SimpleRotatingSpinner className="h-8 w-8 text-primary" />
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -236,8 +233,8 @@ export function Navbar() {
           ) : (
             <>
                <ThemeToggleButton />
-                <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>Login</Link>
-                <Link href="/register" className={cn(buttonVariants({ size: "sm" }))}>Register</Link>
+                <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "sm" }))} suppressHydrationWarning>Login</Link>
+                <Link href="/register" className={cn(buttonVariants({ size: "sm" }))} suppressHydrationWarning>Register</Link>
             </>
           )}
         </div>
