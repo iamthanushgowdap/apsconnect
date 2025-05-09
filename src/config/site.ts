@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, Archive as ArchiveIcon } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -41,6 +41,12 @@ export const SiteConfigData: SiteConfig = {
       title: "Home",
       href: "/",
       icon: Home,
+    },
+    {
+      title: "Activity Feed",
+      href: "/feed",
+      protected: true, 
+      icon: Newspaper,
     },
     {
       title: "Admin Dashboard",

@@ -19,9 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Archive as ArchiveIcon } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
-import { getInitials } from "@/components/content/post-item-utils"; // Adjusted import
+import { getInitials } from "@/components/content/post-item-utils"; 
 
 export function Navbar() {
   const pathname = usePathname();
@@ -152,6 +152,12 @@ export function Navbar() {
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
             }
             
+            if (item.title === "Activity Feed" && (user?.role === "student" || user?.role === "faculty")) {
+              // Hide "Activity Feed" for student and faculty roles in the main nav
+              // It will be shown in their dropdown instead
+              return null;
+            }
+            
             return (
                 <Link
                     key={item.href}
@@ -164,6 +170,11 @@ export function Navbar() {
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
+                    {item.title === "Activity Feed" && user && unseenPostsCount > 0 && (
+                         <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold p-1">
+                            {unseenPostsCount > 9 ? '9+' : unseenPostsCount}
+                        </span>
+                    )}
                 </Link>
             );
           })}
@@ -177,7 +188,7 @@ export function Navbar() {
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={userAvatarUrl || undefined} alt={user.displayName || 'User Avatar'} data-ai-hint="person avatar" />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-muted text-muted-foreground">
                       {getInitials(user.displayName || user.email || user.usn)}
                     </AvatarFallback>
                   </Avatar>
@@ -213,12 +224,6 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/archive" className="flex items-center">
-                    <ArchiveIcon className="mr-2 h-4 w-4" />
-                    <span>Archive</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link href="/profile/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
@@ -237,12 +242,6 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <>
-              <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "px-2 sm:px-3")}>
-                Login
-              </Link>
-              <Link href="/register" className={cn(buttonVariants({ variant: "default", size: "sm" }), "px-2 sm:px-3")}>
-                Register
-              </Link>
                <ThemeToggleButton />
             </>
           )}
