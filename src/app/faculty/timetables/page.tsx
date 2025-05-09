@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -8,7 +7,7 @@ import { TimetableForm } from '@/components/timetables/timetable-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, Info } from 'lucide-react';
+import { ShieldCheck, Info, CalendarClock } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import type { Branch } from '@/types';
 
@@ -81,3 +80,4 @@ export default function FacultyTimetablePage() {
     </div>
   );
 }
+

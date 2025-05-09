@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -85,13 +84,17 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
   const selectedSemester = form.watch("semester");
 
   useEffect(() => {
+    // Update default branch if availableBranchesForForm changes and current selection is not valid
+    if (availableBranchesForForm.length > 0 && !availableBranchesForForm.includes(form.getValues("branch"))) {
+      form.setValue("branch", availableBranchesForForm[0]);
+    }
     if (selectedBranch && selectedSemester) {
       loadTimetableImage(selectedBranch, selectedSemester);
     } else {
-      setImagePreview(null); // Clear preview if branch/sem not selected
+      setImagePreview(null); 
       form.resetField("timetableImage");
     }
-  }, [selectedBranch, selectedSemester]);
+  }, [selectedBranch, selectedSemester, availableBranchesForForm, form]);
 
 
   const loadTimetableImage = (branch: Branch, semester: Semester) => {
@@ -102,8 +105,6 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
         try {
           const timetable: TimeTable = JSON.parse(storedData);
           setImagePreview(timetable.imageDataUrl);
-          // No need to set form.setValue for timetableImage here, as it's for upload
-          // User must re-upload if they want to change it.
         } catch (error) {
           console.error("Error parsing timetable from localStorage:", error);
           setImagePreview(null);
@@ -124,7 +125,6 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
         setImagePreview(dataUrl);
       } else {
         setImagePreview(null);
-        // Errors will be shown by FormMessage
       }
     } else {
         form.setValue("timetableImage", undefined, {shouldValidate: true});
@@ -143,7 +143,7 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
 
   const onSubmit = async (data: TimetableFormValues) => {
     if (!user || !data.timetableImage || data.timetableImage.length === 0) {
-      toast({ title: "Error", description: "User not authenticated or image not selected.", variant: "destructive" });
+      toast({ title: "Error", description: "User not authenticated or image not selected.", variant: "destructive", duration: 3000 });
       return;
     }
     setIsLoading(true);
@@ -166,7 +166,8 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
 
       toast({
         title: "Timetable Saved",
-        description: `Timetable for ${data.branch} - ${data.semester} has been saved successfully.`,
+        description: `Timetable for ${data.branch} - ${data.semester} has been created/updated.`,
+        duration: 3000,
       });
     } catch (error) {
       console.error("Error saving timetable:", error);
@@ -174,6 +175,7 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
         title: "Error Saving Timetable",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsLoading(false);
@@ -186,7 +188,7 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
         <CardTitle className="text-2xl font-bold tracking-tight text-primary flex items-center">
             <CalendarDays className="mr-3 h-7 w-7"/> Manage Timetables
         </CardTitle>
-        <ShadCnCardDescription>Upload an image of the class schedule for a specific branch and semester.</ShadCnCardDescription>
+        <ShadCnCardDescription>Upload or update an image of the class schedule for a specific branch and semester.</ShadCnCardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -201,11 +203,12 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
                     <Select 
                       onValueChange={(value) => {
                         field.onChange(value);
-                        setImagePreview(null); // Clear preview on branch change
+                        setImagePreview(null); 
                         form.resetField("timetableImage");
+                         if(fileInputRef.current) fileInputRef.current.value = "";
                       }} 
-                      defaultValue={field.value}
-                      disabled={role === 'faculty' && facultyAssignedBranches?.length === 1}
+                      value={field.value} // Ensure value is controlled
+                      disabled={role === 'faculty' && facultyAssignedBranches?.length === 1 && facultyAssignedBranches.includes(field.value)}
                     >
                       <FormControl><SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -227,10 +230,11 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
                     <Select 
                       onValueChange={(value) => {
                         field.onChange(value);
-                        setImagePreview(null); // Clear preview on semester change
+                        setImagePreview(null); 
                         form.resetField("timetableImage");
+                        if(fileInputRef.current) fileInputRef.current.value = "";
                       }}
-                      defaultValue={field.value}
+                      value={field.value} // Ensure value is controlled
                     >
                       <FormControl><SelectTrigger><SelectValue placeholder="Select semester" /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -246,7 +250,7 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
             <FormField
               control={form.control}
               name="timetableImage"
-              render={({ fieldState }) => ( // field is not directly used for input value due to FileList
+              render={({ fieldState }) => ( 
                 <FormItem>
                   <FormLabel>Timetable Image</FormLabel>
                   <FormControl>
@@ -263,13 +267,13 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
                                 accept="image/*"
                                 className="sr-only" 
                                 onChange={handleFileChange}
-                                ref={fileInputRef} // Use ref for clearing
+                                ref={fileInputRef}
                             />
                         </label>
                     </div>
                   </FormControl>
                   <FormDescription>
-                    Upload a clear image of the timetable.
+                    Upload a clear image of the timetable. This will replace any existing image for the selected branch and semester.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -280,7 +284,7 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Image Preview:</h4>
                 <div className="relative border rounded-md overflow-hidden aspect-video max-w-md mx-auto bg-muted/20">
-                   <Image src={imagePreview} alt="Timetable preview" layout="fill" objectFit="contain" />
+                   <Image src={imagePreview} alt="Timetable preview" layout="fill" objectFit="contain" data-ai-hint="timetable schedule"/>
                    <Button
                      type="button"
                      variant="destructive"
@@ -305,10 +309,10 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
             <div className="pt-6 border-t mt-6">
               <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || !selectedBranch || !selectedSemester || !form.formState.isValid}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Timetable Image
+                Create/Update Timetable
               </Button>
               <FormDescription className="mt-2 text-xs">
-                This will overwrite any existing timetable image for the selected branch and semester.
+                This will create a new timetable image or overwrite an existing one for the selected branch and semester.
               </FormDescription>
             </div>
           </form>
@@ -317,3 +321,4 @@ export function TimetableForm({ role, facultyAssignedBranches }: TimetableFormPr
     </Card>
   );
 }
+
