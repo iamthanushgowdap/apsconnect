@@ -36,6 +36,7 @@ export interface UserProfile {
 
   // Faculty-specific fields
   assignedBranches?: Branch[]; // Branches faculty is associated with
+  assignedSemesters?: Semester[]; // Semesters faculty is associated with
   facultyTitle?: string; // e.g., "Professor", "HOD of CSE"
   phoneNumber?: string; // Primarily for faculty, set by admin
   

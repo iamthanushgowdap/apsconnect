@@ -1,8 +1,7 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Branch, defaultBranches } from '@/types';
+import { UserProfile, Branch, defaultBranches, Semester, semesters } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
-  DialogTrigger, // Added DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label'; 
@@ -45,6 +44,7 @@ const facultyFormSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')),
   confirmPassword: z.string().optional().or(z.literal('')),
   assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."),
+  assignedSemesters: z.array(z.string()).optional(), // Optional, but if provided, must be an array of strings (Semester type)
   facultyTitle: z.string().optional().or(z.literal('')),
 }).refine(data => {
   if (data.password || data.confirmPassword) {
@@ -76,6 +76,7 @@ export default function ManageFacultyTab() {
       password: "",
       confirmPassword: "",
       assignedBranches: [],
+      assignedSemesters: [],
       facultyTitle: "",
     },
   });
@@ -130,7 +131,6 @@ export default function ManageFacultyTab() {
 
   const handleFormSubmit = (data: FacultyFormValues) => {
     if (typeof window !== 'undefined') {
-      // Check if email already exists for any user type when creating new faculty
       if (!editingFaculty) {
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -156,10 +156,7 @@ export default function ManageFacultyTab() {
 
 
       const facultyUserKey = `apsconnect_user_${data.email.toLowerCase()}`;
-      // This specific check is now less critical due to the global email check above for new faculty
-      // but it's harmless for existing logic during edit.
       if (!editingFaculty && localStorage.getItem(facultyUserKey)) {
-        // This case should ideally be caught by the loop above, but kept as a fallback.
         toast({
           title: "Error",
           description: "A faculty member with this email already exists.",
@@ -183,10 +180,11 @@ export default function ManageFacultyTab() {
         phoneNumber: data.phoneNumber || undefined,
         password: data.password ? data.password : (existingProfileData?.password || data.password!),
         assignedBranches: data.assignedBranches,
+        assignedSemesters: data.assignedSemesters as Semester[] || [],
         facultyTitle: data.facultyTitle || undefined,
         role: 'faculty',
         registrationDate: editingFaculty?.registrationDate || new Date().toISOString(),
-        isApproved: true, // Faculty members are auto-approved on creation by admin
+        isApproved: true,
       };
 
       localStorage.setItem(facultyUserKey, JSON.stringify(facultyProfile));
@@ -209,6 +207,7 @@ export default function ManageFacultyTab() {
       email: faculty.email,
       phoneNumber: faculty.phoneNumber || "",
       assignedBranches: faculty.assignedBranches || [],
+      assignedSemesters: faculty.assignedSemesters || [],
       facultyTitle: faculty.facultyTitle || "",
       password: "",
       confirmPassword: "",
@@ -218,7 +217,16 @@ export default function ManageFacultyTab() {
 
   const openCreateDialog = () => {
     setEditingFaculty(null);
-    form.reset();
+    form.reset({ // Reset with defaults including empty assignedSemesters
+        displayName: "",
+        email: "",
+        phoneNumber: "",
+        password: "",
+        confirmPassword: "",
+        assignedBranches: [],
+        assignedSemesters: [],
+        facultyTitle: "",
+    });
     setIsFormOpen(true);
   }
 
@@ -250,6 +258,7 @@ export default function ManageFacultyTab() {
       faculty.displayName?.toLowerCase().includes(searchLower) ||
       faculty.email.toLowerCase().includes(searchLower) ||
       faculty.assignedBranches?.some(b => b.toLowerCase().includes(searchLower)) ||
+      faculty.assignedSemesters?.some(s => s.toLowerCase().includes(searchLower)) ||
       faculty.facultyTitle?.toLowerCase().includes(searchLower) ||
       faculty.phoneNumber?.includes(searchLower)
     );
@@ -377,6 +386,54 @@ export default function ManageFacultyTab() {
               />
               <FormField
                 control={form.control}
+                name="assignedSemesters"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Assigned Semesters (Optional)</FormLabel>
+                     <ShadCnFormDescription>
+                      Select all semesters this faculty member is associated with.
+                    </ShadCnFormDescription>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md">
+                      {semesters.map((semester) => (
+                        <FormField
+                          key={semester}
+                          control={form.control}
+                          name="assignedSemesters"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={semester}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(semester)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), semester])
+                                        : field.onChange(
+                                            (field.value || []).filter(
+                                              (value) => value !== semester
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {semester}
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
@@ -442,6 +499,7 @@ export default function ManageFacultyTab() {
                   <TableHead>Email</TableHead>
                   <TableHead>Title/Role</TableHead>
                   <TableHead>Branches</TableHead>
+                  <TableHead>Semesters</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -454,8 +512,13 @@ export default function ManageFacultyTab() {
                     <TableCell>{faculty.facultyTitle || 'N/A'}</TableCell>
                     <TableCell>
                         {faculty.assignedBranches && faculty.assignedBranches.length > 0
-                          ? faculty.assignedBranches.join(', ')
-                          : 'N/A'}
+                          ? faculty.assignedBranches.map(b => <Badge key={b} variant="outline" className="mr-1 mb-1">{b}</Badge>)
+                          : <Badge variant="secondary">N/A</Badge>}
+                    </TableCell>
+                     <TableCell>
+                        {faculty.assignedSemesters && faculty.assignedSemesters.length > 0
+                          ? faculty.assignedSemesters.map(s => <Badge key={s} variant="secondary" className="mr-1 mb-1">{s}</Badge>)
+                          : <Badge variant="secondary">N/A</Badge>}
                     </TableCell>
                     <TableCell>{faculty.phoneNumber || 'N/A'}</TableCell>
                     <TableCell className="text-right space-x-2">

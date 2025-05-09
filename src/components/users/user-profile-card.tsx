@@ -5,7 +5,7 @@ import type { UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Briefcase, Award, GraduationCap, Users } from 'lucide-react';
+import { Mail, Briefcase, Award, GraduationCap, Users, BookOpen } from 'lucide-react';
 import { getInitials } from '@/components/content/post-item-utils';
 
 interface UserProfileCardProps {
@@ -54,8 +54,14 @@ export function UserProfileCard({ profile }: UserProfileCardProps) {
             {profile.assignedBranches && profile.assignedBranches.length > 0 && (
               <div className="flex items-center text-muted-foreground">
                 <Users className="h-4 w-4 mr-2" />
-                <span>Manages: {profile.assignedBranches.join(', ')}</span>
+                <span>Branches: {profile.assignedBranches.join(', ')}</span>
               </div>
+            )}
+            {profile.assignedSemesters && profile.assignedSemesters.length > 0 && (
+                <div className="flex items-center text-muted-foreground">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    <span>Semesters: {profile.assignedSemesters.join(', ')}</span>
+                </div>
             )}
           </>
         )}
