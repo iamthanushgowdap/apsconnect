@@ -6,22 +6,115 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Settings } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { ShieldCheck, Settings, UploadCloud, Mail, Users, Tool, Globe } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
+import { useToast } from '@/hooks/use-toast';
+
+// Mock storage key for these new settings
+const SITE_SETTINGS_STORAGE_KEY = 'apsconnect_site_settings_v1';
+
+interface SiteSettingsData {
+  collegeLogoUrl?: string;
+  contactEmail?: string;
+  enableStudentRegistration?: boolean;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+  socialFacebook?: string;
+  socialTwitter?: string;
+  socialLinkedIn?: string;
+  socialInstagram?: string;
+}
+
+const defaultSiteSettings: SiteSettingsData = {
+  collegeLogoUrl: '',
+  contactEmail: 'info@apsconnect.example.com',
+  enableStudentRegistration: true,
+  maintenanceMode: false,
+  maintenanceMessage: 'APSConnect is currently undergoing scheduled maintenance. We will be back shortly. Thank you for your patience.',
+  socialFacebook: '',
+  socialTwitter: '',
+  socialLinkedIn: '',
+  socialInstagram: '',
+};
+
 
 export default function AdminSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [pageLoading, setPageLoading] = useState(true);
+  const [settings, setSettings] = useState<SiteSettingsData>(defaultSiteSettings);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'admin') {
         router.push(user ? '/dashboard' : '/login');
+        return; // Ensure no further execution if redirecting
+      }
+      // Load settings from localStorage
+      if (typeof window !== 'undefined') {
+        const storedSettings = localStorage.getItem(SITE_SETTINGS_STORAGE_KEY);
+        if (storedSettings) {
+          try {
+            setSettings(JSON.parse(storedSettings));
+          } catch (e) {
+            console.error("Failed to parse site settings, using defaults.", e);
+            setSettings(defaultSiteSettings);
+          }
+        } else {
+          setSettings(defaultSiteSettings);
+        }
       }
       setPageLoading(false);
     }
   }, [user, authLoading, router]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setSettings(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSwitchChange = (name: keyof SiteSettingsData, checked: boolean) => {
+    setSettings(prev => ({ ...prev, [name]: checked }));
+  };
+  
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ title: "File too large", description: "Logo image must be less than 2MB.", variant: "destructive" });
+        return;
+      }
+      if (!['image/png', 'image/jpeg', 'image/svg+xml'].includes(file.type)) {
+        toast({ title: "Invalid File Type", description: "Please upload a PNG, JPG, or SVG.", variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings(prev => ({ ...prev, collegeLogoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveChanges = () => {
+    setIsSaving(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      toast({
+        title: "Settings Saved",
+        description: "Site settings have been updated successfully.",
+        duration: 3000,
+      });
+    }
+    setIsSaving(false);
+  };
+
 
   if (pageLoading || authLoading) {
     return (
@@ -49,8 +142,8 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Settings className="h-8 w-8 text-primary" />
           <div>
@@ -65,43 +158,119 @@ export default function AdminSettingsPage() {
           </Link>
       </div>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle>Configuration Options</CardTitle>
-          <CardDescription>
-            This area will allow administrators to manage various site-wide settings.
-            (Feature under development)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 border rounded-md bg-muted/50">
-              <h3 className="font-semibold text-lg mb-2">Theme Customization</h3>
-              <p className="text-sm text-muted-foreground">
-                Options to change site colors, logo, and overall appearance.
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Column 1: General & Appearance */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">General & Appearance</CardTitle>
+            <CardDescription>Manage basic site information and visual elements.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="collegeLogoUrl">College Logo</Label>
+              <div className="flex items-center gap-4">
+                {settings.collegeLogoUrl && (
+                  <img src={settings.collegeLogoUrl} alt="College Logo Preview" className="h-16 w-auto border rounded bg-muted p-1" data-ai-hint="logo building" />
+                )}
+                <label htmlFor="logo-upload-input" className="flex-1 cursor-pointer">
+                    <div className="flex items-center justify-center w-full p-2 border-2 border-dashed rounded-md hover:border-primary transition-colors">
+                        <UploadCloud className="h-6 w-6 text-muted-foreground mr-2" />
+                        <span className="text-sm text-muted-foreground">
+                            {settings.collegeLogoUrl ? 'Change logo' : 'Upload logo'}
+                        </span>
+                    </div>
+                    <Input id="logo-upload-input" name="collegeLogoUrl" type="file" className="sr-only" onChange={handleLogoUpload} accept="image/png, image/jpeg, image/svg+xml" />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Recommended: SVG or PNG format. Max 2MB.</p>
             </div>
-            <div className="p-4 border rounded-md bg-muted/50">
-              <h3 className="font-semibold text-lg mb-2">Notification Settings</h3>
-              <p className="text-sm text-muted-foreground">
-                Manage email templates, notification triggers, and integrated services.
-              </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Input
+                id="contactEmail"
+                name="contactEmail"
+                type="email"
+                placeholder="e.g., contact@apsconnect.example.com"
+                value={settings.contactEmail || ''}
+                onChange={handleInputChange}
+              />
+              <p className="text-xs text-muted-foreground">Public contact email for inquiries.</p>
             </div>
-            <div className="p-4 border rounded-md bg-muted/50">
-              <h3 className="font-semibold text-lg mb-2">Feature Flags</h3>
-              <p className="text-sm text-muted-foreground">
-                Enable or disable specific features across the application.
-              </p>
+          </CardContent>
+        </Card>
+
+        {/* Column 2: Functionality & Social */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">Functionality & Social</CardTitle>
+            <CardDescription>Control site features and link social media profiles.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between space-x-2 p-3 border rounded-md">
+              <div className="space-y-0.5">
+                <Label htmlFor="enableStudentRegistration" className="text-base">Enable Student Registration</Label>
+                <p className="text-xs text-muted-foreground">Allow new students to register accounts.</p>
+              </div>
+              <Switch
+                id="enableStudentRegistration"
+                checked={settings.enableStudentRegistration}
+                onCheckedChange={(checked) => handleSwitchChange('enableStudentRegistration', checked)}
+              />
             </div>
-             <div className="p-4 border rounded-md bg-muted/50">
-              <h3 className="font-semibold text-lg mb-2">Maintenance Mode</h3>
-              <p className="text-sm text-muted-foreground">
-                Put the site into maintenance mode for updates.
-              </p>
+            
+            <div className="space-y-2">
+                <div className="flex items-center justify-between space-x-2 mb-2">
+                    <Label htmlFor="maintenanceMode" className="text-base">Maintenance Mode</Label>
+                    <Switch
+                        id="maintenanceMode"
+                        checked={settings.maintenanceMode}
+                        onCheckedChange={(checked) => handleSwitchChange('maintenanceMode', checked)}
+                    />
+                </div>
+                <p className="text-xs text-muted-foreground -mt-1">Temporarily disable access to the site for non-admins.</p>
+                {settings.maintenanceMode && (
+                    <Textarea
+                    id="maintenanceMessage"
+                    name="maintenanceMessage"
+                    placeholder="Enter maintenance message..."
+                    value={settings.maintenanceMessage || ''}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="mt-2"
+                    />
+                )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="space-y-4 pt-4 border-t">
+                <h4 className="text-md font-semibold text-foreground flex items-center"><Globe className="mr-2 h-5 w-5"/> Social Media Links</h4>
+                <div className="space-y-2">
+                    <Label htmlFor="socialFacebook">Facebook URL</Label>
+                    <Input id="socialFacebook" name="socialFacebook" placeholder="https://facebook.com/yourcollege" value={settings.socialFacebook || ''} onChange={handleInputChange} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="socialTwitter">Twitter/X URL</Label>
+                    <Input id="socialTwitter" name="socialTwitter" placeholder="https://twitter.com/yourcollege" value={settings.socialTwitter || ''} onChange={handleInputChange} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="socialLinkedIn">LinkedIn URL</Label>
+                    <Input id="socialLinkedIn" name="socialLinkedIn" placeholder="https://linkedin.com/school/yourcollege" value={settings.socialLinkedIn || ''} onChange={handleInputChange} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="socialInstagram">Instagram URL</Label>
+                    <Input id="socialInstagram" name="socialInstagram" placeholder="https://instagram.com/yourcollege" value={settings.socialInstagram || ''} onChange={handleInputChange} />
+                </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="mt-8 flex justify-end">
+        <Button onClick={handleSaveChanges} disabled={isSaving}>
+          {isSaving ? <SimpleRotatingSpinner className="mr-2 h-4 w-4" /> : null}
+          {isSaving ? 'Saving...' : 'Save All Settings'}
+        </Button>
+      </div>
     </div>
   );
 }
