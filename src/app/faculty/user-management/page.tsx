@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ShieldCheck } from "lucide-react";
 import ManageStudentsTab from "@/app/admin/users/manage-students-tab"; // Reusing the component
-import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners';
+import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
 export default function FacultyUserManagementPage() {
   const router = useRouter();
@@ -33,32 +34,28 @@ export default function FacultyUserManagementPage() {
 
   if (pageLoading || authLoading) {
     return (
-      
-        
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
+      </div>
     );
   }
 
   if (!isAuthorized || !actor) {
     return (
-      
-        
-          
-            Access Denied
-          
-          
-            
-              
-            
-            You do not have permission to view this page.
-            
-              Go to Dashboard
-            
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 text-center">
+        <Card className="max-w-md mx-auto shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+            <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
+            <Link href="/dashboard">
+              <Button variant="outline" className="mt-6">Go to Dashboard</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
   
@@ -67,13 +64,17 @@ export default function FacultyUserManagementPage() {
     : 'N/A';
 
   return (
-    
-      
-        
-          Manage Students
-          View, approve, and manage student accounts for your assigned branches: {assignedBranchesText}.
-        
-       
-    
+    <div className="container mx-auto px-4 py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage Students</CardTitle>
+          <CardDescription>View, approve, and manage student accounts for your assigned branches: {assignedBranchesText}.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ManageStudentsTab actor={actor} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
+

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, AlertCircle, Users, Loader2, Search, XCircle, MessageSquareWarning, Info, KeyRound } from 'lucide-react';
+import { CheckCircle, AlertCircle, Users, Loader2, Search, XCircle, MessageSquareWarning, Info, KeyRound, ShieldAlert } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -423,10 +422,15 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                         <span>Reason: {student.rejectionReason.substring(0,20)}{student.rejectionReason.length > 20 ? '...' : ''}</span>
                                     </DropdownMenuItem>
                                 )}
-                                {student.isApproved && (
-                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
-                                        <Info className="mr-2 h-4 w-4 text-accent" /> Approved
-                                    </DropdownMenuItem>
+                                {student.isApproved && student.role === 'student' && (
+                                     <>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
+                                            <Info className="mr-2 h-4 w-4 text-accent" /> Approved
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => openRejectDialog(student)} className="text-destructive focus:text-destructive">
+                                            <ShieldAlert className="mr-2 h-4 w-4" /> Revoke & Reject
+                                        </DropdownMenuItem>
+                                     </>
                                 )}
                                 {actor.role === 'admin' && (student.role === 'student' || student.role === 'pending') && (
                                      <DropdownMenuItem onSelect={() => openChangePasswordDialog(student)}>
