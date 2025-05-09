@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -19,7 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
-import type { UserProfile } from '@/types';
+import type { UserProfile, Semester } from '@/types'; // Added Semester
+import { semesters as allSemesters } from '@/types'; // Added allSemesters
 import { Loader2, ShieldCheck, Camera, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -145,7 +147,7 @@ export default function ProfileSettingsPage() {
             currentPassword: "",
             newPassword: "",
             confirmNewPassword: "",
-            currentEmail: "",
+            currentEmail: "", // Keep currentEmail fields blank initially for security
             newEmail: "",
             confirmNewEmail: ""
           });
@@ -157,10 +159,10 @@ export default function ProfileSettingsPage() {
             displayName: 'Admin User',
             registrationDate: new Date().toISOString(),
             isApproved: true,
-            password: ADMIN_PASSWORD_CONST,
+            password: ADMIN_PASSWORD_CONST, // This is a mock password
           };
           setUserProfileState(defaultAdminProfile);
-          setAvatarPreview(null);
+          setAvatarPreview(null); // No default avatar for hardcoded admin unless explicitly set
           form.reset({
             displayName: defaultAdminProfile.displayName || "",
             currentPassword: "",
@@ -184,8 +186,8 @@ export default function ProfileSettingsPage() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant = "destructive" });
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant: "destructive" });
         return;
       }
       setSelectedFile(file);
@@ -196,15 +198,16 @@ export default function ProfileSettingsPage() {
 
   const handleRemoveAvatar = () => {
     setSelectedFile(null);
-    setAvatarPreview(null);
+    setAvatarPreview(null); // This will trigger fallback
     if (fileInputRef.current) {
         fileInputRef.current.value = ""; // Clear the file input
     }
   };
 
+
   async function onSubmit(data: ProfileFormValues) {
     if (!authUser || !userProfile) {
-        toast({ title: "Error", description: "User session or profile not found.", variant = "destructive", duration: 3000 });
+        toast({ title: "Error", description: "User session or profile not found.", variant: "destructive", duration: 3000 });
         return;
     }
 
@@ -214,11 +217,12 @@ export default function ProfileSettingsPage() {
     const isDisplayNameChanged = data.displayName !== undefined && data.displayName !== userProfile.displayName;
     const isPasswordChanged = !!data.newPassword;
     const isEmailChanged = !!data.newEmail;
-    const isAvatarChanged = selectedFile || (avatarPreview = null && userProfile.avatarDataUrl);
+    // Check if avatar was explicitly removed OR a new file was selected
+    const isAvatarChanged = (avatarPreview === null && userProfile.avatarDataUrl) || selectedFile;
 
 
     if (!isDisplayNameChanged && !isPasswordChanged && !isEmailChanged && !isAvatarChanged) {
-        toast({ title: "No Changes", description: "Please provide new information to update.", variant = "default", duration: 3000});
+        toast({ title: "No Changes", description: "Please provide new information to update.", variant: "default", duration: 3000});
         return;
     }
 
@@ -228,10 +232,11 @@ export default function ProfileSettingsPage() {
       if (selectedFile) {
         updatedProfileData.avatarDataUrl = await readFileAsDataURL(selectedFile);
         changesMade = true;
-      } else if (avatarPreview = null && userProfile.avatarDataUrl) {
-        updatedProfileData.avatarDataUrl = undefined;
+      } else if (avatarPreview === null && userProfile.avatarDataUrl) { // If avatarPreview is null and there was an old avatar
+        updatedProfileData.avatarDataUrl = undefined; // Remove avatar
         changesMade = true;
       }
+
 
       if (data.displayName !== undefined && data.displayName !== userProfile.displayName) {
         updatedProfileData.displayName = data.displayName;
@@ -243,19 +248,20 @@ export default function ProfileSettingsPage() {
              form.setError("currentPassword", { message: "Current password is required."});
              setFormSubmitting(false); return;
         }
-        const actualCurrentPassword = userProfile.password || (userProfile.uid = ADMIN_EMAIL_CONST ? ADMIN_PASSWORD_CONST : "");
+        // For mock purposes, password comparison is simple. In a real app, this would involve hashing.
+        const actualCurrentPassword = userProfile.password || (userProfile.uid === ADMIN_EMAIL_CONST ? ADMIN_PASSWORD_CONST : "");
         if (data.currentPassword !== actualCurrentPassword) {
-          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant = "destructive", duration: 3000 });
+          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant: "destructive", duration: 3000 });
           form.setError("currentPassword", { message: "Incorrect current password." });
           setFormSubmitting(false);
           return;
         }
-        updatedProfileData.password = data.newPassword;
+        updatedProfileData.password = data.newPassword; // Store new password (mock only)
         changesMade = true;
       }
 
-      let oldEmailKey: string = null;
-      let newEmailKey: string = null;
+      let oldEmailKey: string | null = null;
+      let newEmailKey: string | null = null;
 
       if (data.newEmail) {
         if (!data.currentEmail) {
@@ -263,13 +269,13 @@ export default function ProfileSettingsPage() {
             setFormSubmitting(false); return;
         }
         if (data.currentEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
-          toast({ title: "Incorrect Email", description: "The current email you entered is incorrect.", variant = "destructive", duration: 3000 });
+          toast({ title: "Incorrect Email", description: "The current email you entered is incorrect.", variant: "destructive", duration: 3000 });
           form.setError("currentEmail", { message: "Incorrect current email." });
           setFormSubmitting(false);
           return;
         }
          if (data.newEmail.toLowerCase() === userProfile.email.toLowerCase()) {
-          toast({ title: "Same Email", description: "New email cannot be the same as the current email.", variant = "destructive", duration: 3000});
+          toast({ title: "Same Email", description: "New email cannot be the same as the current email.", variant: "destructive", duration: 3000});
           form.setError("newEmail", { message: "New email cannot be the same as the current email." });
           setFormSubmitting(false); return;
         }
@@ -289,13 +295,15 @@ export default function ProfileSettingsPage() {
                                     emailExistsForOtherUser = true;
                                     break;
                                 }
-                            } catch (e) {  Ignore parse errors  }
+                            } catch (e) {  
+                              // Ignore parse errors  
+                            }
                         }
                     }
                 }
             }
             if (emailExistsForOtherUser) {
-                toast({ title: "Update Failed", description: "This email address is already in use by another account.", variant = "destructive", duration: 3000 });
+                toast({ title: "Update Failed", description: "This email address is already in use by another account.", variant: "destructive", duration: 3000 });
                 form.setError("newEmail", { message: "Email already in use." });
                 setFormSubmitting(false);
                 return;
@@ -304,9 +312,10 @@ export default function ProfileSettingsPage() {
 
 
         if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
-            oldEmailKey = `apsconnect_user_${userProfile.uid}`;
-            updatedProfileData.uid = data.newEmail.toLowerCase(); // UID changes with email for admin/faculty
-            newEmailKey = `apsconnect_user_${updatedProfileData.uid}`;
+            // For admin/faculty, UID is their email. So, changing email means changing UID.
+            oldEmailKey = `apsconnect_user_${userProfile.uid}`; // Old key based on old UID (email)
+            updatedProfileData.uid = data.newEmail.toLowerCase(); // New UID is the new email
+            newEmailKey = `apsconnect_user_${updatedProfileData.uid}`; // New key based on new UID (email)
         }
         updatedProfileData.email = data.newEmail.toLowerCase();
         changesMade = true;
@@ -318,23 +327,27 @@ export default function ProfileSettingsPage() {
         return;
       }
 
+      // Save updated profile to localStorage
       if (typeof window !== 'undefined') {
         if (newEmailKey && oldEmailKey && oldEmailKey !== newEmailKey && (userProfile.role === 'admin' || userProfile.role === 'faculty')) {
           localStorage.removeItem(oldEmailKey); // Remove old profile if UID changed
           localStorage.setItem(newEmailKey, JSON.stringify(updatedProfileData));
         } else {
+          // For students, UID (USN) doesn't change, or if email didn't change for admin/faculty
           localStorage.setItem(`apsconnect_user_${updatedProfileData.uid}`, JSON.stringify(updatedProfileData));
         }
 
+        // Update auth context and mockUser if it exists
         const updatedAuthUser: User = {
           ...authUser,
-          uid: updatedProfileData.uid,
+          uid: updatedProfileData.uid, // This will be new email for admin/faculty if changed
           email: updatedProfileData.email,
           displayName: updatedProfileData.displayName || authUser.displayName,
+          // other fields like role, branch, usn, assignedBranches should remain from authUser
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
-        updateUserContext(updatedAuthUser);
-        setUserProfileState(updatedProfileData);
+        updateUserContext(updatedAuthUser); // Update context so Navbar reflects changes
+        setUserProfileState(updatedProfileData); // Update local component state
       }
 
       toast({
@@ -342,18 +355,19 @@ export default function ProfileSettingsPage() {
         description: "Your profile details have been successfully updated.",
         duration: 3000,
       });
+      // Reset form fields for passwords and emails to blank for security
       form.reset({
         displayName: updatedProfileData.displayName || "",
         currentPassword: "", newPassword: "", confirmNewPassword: "",
         currentEmail: "", newEmail: "", confirmNewEmail: ""
       });
-      setSelectedFile(null);
+      setSelectedFile(null); // Clear selected file after successful upload
 
     } catch (error: any) {
       toast({
         title: "Update Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
-        variant = "destructive",
+        variant: "destructive",
         duration: 3000,
       });
     } finally {
@@ -369,7 +383,7 @@ export default function ProfileSettingsPage() {
     );
   }
 
-  if (!authUser || !userProfile) {
+  if (!authUser || !userProfile) { // Check both authUser and userProfile
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -377,7 +391,7 @@ export default function ProfileSettingsPage() {
           <CardContent>
             <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You must be logged in to view this page.</p>
-            <Link href="/login"><Button variant = "outline" className="mt-6">Login</Button></Link>
+            <Link href="/login"><Button variant="outline" className="mt-6">Login</Button></Link>
           </CardContent>
         </Card>
       </div>
@@ -391,13 +405,13 @@ export default function ProfileSettingsPage() {
         <CardHeader className="items-center text-center sm:text-left">
            <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-              <AvatarImage src={avatarPreview = undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
+              <AvatarImage src={avatarPreview || undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
               <AvatarFallback className="text-3xl bg-muted text-muted-foreground">
                  {getProfileInitials(userProfile)}
               </AvatarFallback>
             </Avatar>
             <div className="flex gap-2 mt-2">
-              <Button size="sm" variant = "outline" onClick={() => fileInputRef.current = click()}>
+              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <Camera className="mr-2 h-4 w-4" /> Change Photo
               </Button>
               <Input
@@ -406,10 +420,10 @@ export default function ProfileSettingsPage() {
                 className="hidden"
                 accept="image/png, image/jpeg, image/gif, image/webp"
                 onChange={handleFileChange}
-                id="avatar-upload-input"
+                id="avatar-upload-input" // Ensure id is unique if multiple instances
               />
               {avatarPreview && (
-                <Button size="sm" variant = "destructive" onClick={handleRemoveAvatar}>
+                <Button size="sm" variant="destructive" onClick={handleRemoveAvatar}>
                   <Trash2 className="mr-2 h-4 w-4" /> Remove
                 </Button>
               )}
@@ -443,79 +457,48 @@ export default function ProfileSettingsPage() {
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Name" {...field} value={field.value = ""} />
+                      <Input placeholder="Your Name" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Password Change Section */}
               <div className="space-y-1 pt-4 border-t">
                 <h3 className="text-md font-medium text-foreground">Change Password</h3>
                 <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change password.</p>
               </div>
-              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value = ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value = ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value = ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
 
+             {/* Email Change Section - Only for Admin/Faculty */}
              {(userProfile.role === 'admin' || userProfile.role === 'faculty') && (
-                
-                    
-                        
-                            
-                        
-                        
-                            
-                        
-                    
-                    
-                        
-                            Current Email ({userProfile.email})
-                        
-                        
-                            
-                                
-                            
-                            
-                        
-                    
-                    
-                        
-                            New Email
-                        
-                        
-                            
-                                
-                            
-                            
-                        
-                    
-                    
-                        
-                            Confirm New Email
-                        
-                        
-                            
-                                
-                            
-                            
-                        
-                    
-                
+                <>
+                    <div className="space-y-1 pt-4 border-t">
+                        <h3 className="text-md font-medium text-foreground">Change Email Address</h3>
+                        <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change your email.</p>
+                    </div>
+                    <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} value={field.value || ""} autoComplete="email"/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>)} />
+                </>
              )}
 
-              
-                {formSubmitting ?  Updating... : "Update Profile"}
-              
-            
-          
-          
-            
-              Back to Dashboard
-            
-          
-        
-      
-    
+              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={formSubmitting}>
+                {formSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {formSubmitting ? "Updating..." : "Update Profile"}
+              </Button>
+            </form>
+          </Form>
+          <div className="mt-6 text-center">
+            <Link href="/dashboard">
+              <Button variant="outline">Back to Dashboard</Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

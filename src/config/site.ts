@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -43,32 +43,21 @@ export const SiteConfigData: SiteConfig = {
       icon: Home,
     },
     {
-      title: "Activity Feed",
-      href: "/feed",
-      protected: true, 
-      icon: Newspaper,
-    },
-    // Chatbot link was never here, so no change needed for this specific item
-    {
-      title: "Admin Dashboard",
-      href: "/admin",
-      protected: true,
-      adminOnly: true,
-      icon: Settings, 
-    },
-    {
-      title: "Faculty Dashboard", 
-      href: "/faculty", 
-      protected: true,
-      facultyOnly: true, 
-      icon: UserCircle, 
-    },
-    {
       title: "Student Dashboard",
       href: "/student",
       protected: true,
       studentOnly: true, 
       icon: LayoutDashboard, 
+    },
+    {
+      title: "Login",
+      href: "/login",
+      hideWhenLoggedIn: true,
+    },
+    {
+      title: "Register",
+      href: "/register",
+      hideWhenLoggedIn: true,
     },
   ],
   footerNav: [
@@ -85,6 +74,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "Overview", href: "/admin", icon: LayoutDashboard },
     { title: "User Management", href: "/admin/users", icon: Users },
     { title: "Create Post", href: "/admin/posts/new", icon: FilePlus2 },
+    { title: "Manage Timetables", href: "/admin/timetables", icon: CalendarClock },
     { title: "Branch Management", href: "/admin/branches", icon: BarChart3 },
     { title: "Site Settings", href: "/admin/settings", icon: Settings },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
@@ -93,10 +83,12 @@ export const SiteConfigData: SiteConfig = {
     { title: "Dashboard", href: "/faculty", icon: LayoutDashboard },
     { title: "Manage Students", href: "/faculty/user-management", icon: Users },
     { title: "Create Content", href: "/faculty/content/new", icon: FilePlus2 },
+    { title: "Manage Timetables", href: "/faculty/timetables", icon: CalendarClock },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
   studentSidebarNav: [
     { title: "Dashboard", href: "/student", icon: LayoutDashboard },
+    { title: "View Timetable", href: "/student/timetable", icon: CalendarClock },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
 };

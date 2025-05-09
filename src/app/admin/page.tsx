@@ -3,13 +3,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import type { UserProfile, Post } from "@/types";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
+import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
+
 
 interface MockUserFromAuth { 
   displayName: string | null;
@@ -82,15 +84,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[calc(100vh-10rem)]">
-          <div className="animate-pulse space-y-8 w-full">
-            <div className="h-10 w-1/2 rounded bg-muted"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map(i => <Card key={i} className="h-36 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5].map(i => <Card key={i} className="h-64 rounded-lg bg-muted"><CardContent></CardContent></Card>)}
-            </div>
-          </div>
+         <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
         </div>
       </div>
     );
@@ -183,6 +177,13 @@ export default function AdminDashboardPage() {
                 icon={<FilePlus2 />}
                 link="/admin/posts/new"
                 actionText="Create New Post"
+            />
+            <StyledActionCard
+                title="Manage Timetables"
+                description="Create and update class and lab timetables for branches."
+                icon={<CalendarClock />}
+                link="/admin/timetables"
+                actionText="Manage Timetables"
             />
             <StyledActionCard
                 title="Branch Management"

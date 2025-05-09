@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, FileText, FilePlus2, ArrowRight, Newspaper } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, FileText, FilePlus2, ArrowRight, Newspaper, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -92,6 +92,13 @@ export default function FacultyDashboardPage() {
                 icon={<FilePlus2 />}
                 link="/faculty/content/new"
                 actionText="Create New Post"
+            />
+            <StyledActionCard
+                title="Manage Timetables"
+                description="Update class schedules for your assigned branches."
+                icon={<CalendarClock />}
+                link="/faculty/timetables"
+                actionText="Manage Timetables"
             />
             <StyledActionCard
                 title="My Profile"

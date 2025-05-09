@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -23,7 +24,8 @@ import {
   CalendarDays,
   FileText,
   ArrowRight,
-  Paperclip
+  Paperclip,
+  CalendarClock
 } from "lucide-react";
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -211,7 +213,14 @@ const StudentDashboardPage = () => {
             actionText="Manage Profile"
             disabled={isRejected}
           />
-          {/* Campus Feed card removed as per previous request */}
+           <ActionCard
+            title="View Timetable"
+            description="Check your class and lab schedules for the current semester."
+            icon={<CalendarClock className="h-10 w-10 text-accent" />}
+            link="/student/timetable"
+            actionText="View Timetable"
+            disabled={isPendingApproval || isRejected}
+          />
         </div>
       </section>
       

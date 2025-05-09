@@ -73,3 +73,29 @@ export interface Post {
   attachments: PostAttachment[];
   likes?: string[]; // Array of user UIDs who liked the post
 }
+
+// Timetable related types
+export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
+export const daysOfWeek: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export interface TimeTableEntry {
+  id: string; // Unique ID for each entry, e.g., crypto.randomUUID()
+  time: string; // e.g., "09:00 AM - 10:00 AM"
+  subject: string;
+  faculty?: string; // Optional faculty name
+  roomLab?: string; // Optional room or lab number
+}
+
+export interface TimeTableDaySchedule {
+  day: DayOfWeek;
+  entries: TimeTableEntry[];
+}
+
+export interface TimeTable {
+  id: string; // Unique ID for the timetable, e.g., `${branch}_${semester}`
+  branch: Branch;
+  semester: Semester;
+  schedule: TimeTableDaySchedule[]; // Array of schedules, one for each day
+  lastUpdatedBy: string; // UID of user who last updated
+  lastUpdatedAt: string; // ISO string
+}
