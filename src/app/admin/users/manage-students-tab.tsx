@@ -17,8 +17,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { TooltipProvider } from '@/components/ui/tooltip'; // Tooltip components were not used, but provider is fine.
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
@@ -434,23 +434,30 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                {student.rejectionReason && (
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
-                                        <MessageSquareWarning className="mr-2 h-4 w-4 text-destructive" />
-                                        <span>Reason: {student.rejectionReason.substring(0,20)}{student.rejectionReason.length > 20 ? '...' : ''}</span>
-                                    </DropdownMenuItem>
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {student.rejectionReason && ( // If student was rejected
+                                    <>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
+                                            <MessageSquareWarning className="mr-2 h-4 w-4 text-destructive" />
+                                            <span>Reason: {student.rejectionReason.substring(0,20)}{student.rejectionReason.length > 20 ? '...' : ''}</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => openApproveDialog(student)} className="text-green-600 focus:text-green-700 focus:bg-green-100 dark:text-green-400 dark:focus:text-green-300 dark:focus:bg-green-700/30">
+                                            <CheckCircle className="mr-2 h-4 w-4" /> Approve Student
+                                        </DropdownMenuItem>
+                                    </>
                                 )}
-                                {student.isApproved && student.role === 'student' && (
+                                {student.isApproved && student.role === 'student' && ( // If student is currently approved
                                      <>
                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
                                             <Info className="mr-2 h-4 w-4 text-accent" /> Approved
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => openRejectDialog(student)} className="text-destructive focus:text-destructive">
-                                            <ShieldAlert className="mr-2 h-4 w-4" /> Revoke & Reject
+                                        <DropdownMenuItem onSelect={() => openRejectDialog(student)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <ShieldAlert className="mr-2 h-4 w-4" /> Revoke Approval & Reject
                                         </DropdownMenuItem>
                                      </>
                                 )}
-                                {(actor.role === 'admin' || actor.role === 'faculty') && (student.role === 'student' || student.role === 'pending') && (
+                                {(actor.role === 'admin' || (actor.role === 'faculty' && student.branch && actor.assignedBranches?.includes(student.branch))) && (student.role === 'student' || student.role === 'pending') && (
                                      <DropdownMenuItem onSelect={() => openChangePasswordDialog(student)}>
                                         <KeyRound className="mr-2 h-4 w-4" /> Change Password
                                     </DropdownMenuItem>
@@ -471,7 +478,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Approval</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to approve student {studentToProcess?.displayName || studentToProcess?.usn}?
+              Are you sure you want to approve student {studentToProcess?.displayName || studentToProcess?.usn}? 
+              {studentToProcess?.rejectionReason && " This will revoke the previous rejection."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -493,6 +501,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             <DialogTitle>Confirm Rejection</DialogTitle>
             <DialogDescription>
               Please provide a reason for rejecting {studentToProcess?.displayName || studentToProcess?.usn}. This reason will be recorded.
+              {studentToProcess?.isApproved && " This will also revoke their current approval."}
             </DialogDescription>
           </DialogHeader>
           <Form {...rejectionForm}>
@@ -522,7 +531,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </DialogContent>
       </Dialog>
 
-      {(actor.role === 'admin' || actor.role === 'faculty') && (
+      {(actor.role === 'admin' || (actor.role === 'faculty' && studentToChangePassword?.branch && actor.assignedBranches?.includes(studentToChangePassword.branch))) && (
         <Dialog open={isChangePasswordDialogVisible} onOpenChange={(isOpen) => {
             if (!isOpen) {
                 changePasswordForm.reset();
@@ -582,4 +591,3 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     </TooltipProvider>
   );
 }
-
