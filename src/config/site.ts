@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, Twitter, Facebook, Instagram, Github } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -23,11 +23,12 @@ export type SiteConfig = {
   url: string;
   ogImage: string;
   mainNav: NavItem[];
-  footerNav?: NavItem[];
+  footerNav: NavItem[]; // footerNav will now only contain static links like Privacy, Terms
   adminSidebarNav?: NavItem[];
   facultySidebarNav?: NavItem[];
   studentSidebarNav?: NavItem[];
   LATEST_APP_VERSION: string;
+  // socialLinks object removed from here as it's dynamic via admin settings
 };
 
 export const SiteConfigData: SiteConfig = {
@@ -42,18 +43,17 @@ export const SiteConfigData: SiteConfig = {
       href: "/",
       icon: Home,
     },
-    {
+     {
       title: "Student Dashboard",
       href: "/student",
       protected: true,
       studentOnly: true, 
-      icon: LayoutDashboard, 
+      icon: LayoutDashboard,
+      hideWhenLoggedIn: false, // Ensure it's shown when student is logged in
     },
-    // Login and Register items removed from here as per:
-    // "login register button keep other login and register option is there remove that beside home"
-    // They are handled by the buttons in the Navbar's right section.
+    // Login and Register items removed as they are handled by buttons in Navbar
   ],
-  footerNav: [
+  footerNav: [ // Only static links here
     {
       title: "Privacy Policy",
       href: "/privacy", 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -27,6 +28,7 @@ interface SiteSettingsData {
   socialTwitter?: string;
   socialLinkedIn?: string;
   socialInstagram?: string;
+  socialGithub?: string; // Added Github
 }
 
 const defaultSiteSettings: SiteSettingsData = {
@@ -39,6 +41,7 @@ const defaultSiteSettings: SiteSettingsData = {
   socialTwitter: '',
   socialLinkedIn: '',
   socialInstagram: '',
+  socialGithub: '', // Added Github
 };
 
 
@@ -259,6 +262,10 @@ export default function AdminSettingsPage() {
                  <div className="space-y-2">
                     <Label htmlFor="socialInstagram">Instagram URL</Label>
                     <Input id="socialInstagram" name="socialInstagram" placeholder="https://instagram.com/yourcollege" value={settings.socialInstagram || ''} onChange={handleInputChange} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="socialGithub">GitHub URL</Label>
+                    <Input id="socialGithub" name="socialGithub" placeholder="https://github.com/yourcollege" value={settings.socialGithub || ''} onChange={handleInputChange} />
                 </div>
             </div>
           </CardContent>
