@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -49,16 +49,9 @@ export const SiteConfigData: SiteConfig = {
       studentOnly: true, 
       icon: LayoutDashboard, 
     },
-    {
-      title: "Login",
-      href: "/login",
-      hideWhenLoggedIn: true,
-    },
-    {
-      title: "Register",
-      href: "/register",
-      hideWhenLoggedIn: true,
-    },
+    // Login and Register items removed from here as per:
+    // "login register button keep other login and register option is there remove that beside home"
+    // They are handled by the buttons in the Navbar's right section.
   ],
   footerNav: [
     {
@@ -84,10 +77,12 @@ export const SiteConfigData: SiteConfig = {
     { title: "Manage Students", href: "/faculty/user-management", icon: Users },
     { title: "Create Content", href: "/faculty/content/new", icon: FilePlus2 },
     { title: "Manage Timetables", href: "/faculty/timetables", icon: CalendarClock },
+    { title: "Activity Feed", href: "/feed", icon: Newspaper },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
   studentSidebarNav: [
     { title: "Dashboard", href: "/student", icon: LayoutDashboard },
+    { title: "Activity Feed", href: "/feed", icon: Newspaper },
     { title: "View Timetable", href: "/student/timetable", icon: CalendarClock },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],

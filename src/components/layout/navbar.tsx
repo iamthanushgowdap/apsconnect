@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -31,7 +32,7 @@ export function Navbar() {
   const { user, isLoading, signOut } = useAuth(); 
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState('');
+  // Search query state removed as search bar is moved to Activity Feed page
 
 
   const calculateUnseenPosts = React.useCallback(() => {
@@ -137,17 +138,7 @@ export function Navbar() {
     }
   };
   
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery) {
-      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-    } else {
-      router.push(`/search`); // Go to search page even if query is empty to allow using filters
-    }
-    setSearchQuery(''); // Clear input after search
-  };
-
+  // Search form submit handler removed as search bar is moved to Activity Feed page
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -158,16 +149,21 @@ export function Navbar() {
         </Link>
         <nav className="hidden md:flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-            // Conditional rendering logic based on auth state and item properties
-            if (isLoading) { 
-              if (item.protected || item.adminOnly || item.facultyOnly || item.studentOnly || item.hideWhenLoggedIn) return null;
-            } else { 
-              if (item.hideWhenLoggedIn && user) return null; 
+            // If still loading auth state, only render "Home" or truly public, non-auth-dependent items
+            if (isLoading) {
+              if (item.title === "Home") {
+                // Always render Home link
+              } else {
+                // Defer rendering of other links until auth state is known to prevent hydration mismatch
+                return null;
+              }
+            } else {
+              // Auth state is known, apply full logic
+              if (item.hideWhenLoggedIn && user) return null;
               if (item.protected && !user) return null;       
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
               if (item.facultyOnly && (!user || user.role !== 'faculty')) return null;
               if (item.studentOnly && (!user || !(user.role === 'student' || user.role === 'pending'))) return null;
-              if (!user && (item.title === "Login" || item.title === "Register")) return null;
             }
             
             return (
@@ -179,7 +175,7 @@ export function Navbar() {
                     pathname === item.href ? "text-primary" : "text-foreground/60",
                     "text-xs sm:text-sm" 
                     )}
-                    suppressHydrationWarning
+                    suppressHydrationWarning // Added to potentially help with extension-related hydration issues
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
@@ -187,6 +183,8 @@ export function Navbar() {
             );
           })}
         </nav>
+         
+        {/* Search bar removed from here */}
          
         <div className="flex items-center space-x-1 sm:space-x-2 ml-auto">
           {isLoading ? (
@@ -255,22 +253,19 @@ export function Navbar() {
           ) : (
             <>
               <Button asChild variant="outline" size="sm" suppressHydrationWarning>
-                <Link href="/login">Login</Link>
+                <Link href="/login" suppressHydrationWarning>Login</Link>
               </Button>
               <Button asChild size="sm" suppressHydrationWarning>
-                <Link href="/register">Register</Link>
+                <Link href="/register" suppressHydrationWarning>Register</Link>
               </Button>
-               <div className="hidden md:block"> 
+               <div className="md:hidden ml-2"> {/* Theme toggle for mobile when logged out */}
+                 <ThemeToggleButton />
+               </div>
+               <div className="hidden md:block">  {/* Theme toggle for desktop when logged out */}
                  <ThemeToggleButton />
                </div>
             </>
           )}
-           {/* Theme toggle for mobile when logged out, if needed and space allows */}
-           {!user && (
-             <div className="md:hidden ml-2">
-                <ThemeToggleButton />
-             </div>
-           )}
         </div>
       </div>
     </header>
