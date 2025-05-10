@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -70,10 +69,10 @@ export default function UsefulToolsPage() {
   const [calculatorInput, setCalculatorInput] = useState<string>("");
 
 
-  // States for Unit Converter
-  const [unitFrom, setUnitFrom] = useState<string>('meters');
-  const [unitTo, setUnitTo] = useState<string>('feet');
-  const [unitInputValue, setUnitInputValue] = useState<string>('');
+  // States for Unit Converter - Updated based on new HTML
+  const [unitFrom, setUnitFrom] = useState<string>('m'); // Default to meters
+  const [unitTo, setUnitTo] = useState<string>('ft');   // Default to feet
+  const [unitInputValue, setUnitInputValue] = useState<string>('1'); // Default value 1
   const [unitOutputValue, setUnitOutputValue] = useState<string>('');
 
 
@@ -91,9 +90,9 @@ export default function UsefulToolsPage() {
     stopCameraStream();
     setActiveTool(null);
     setCalculatorInput("");
-    setUnitFrom('meters');
-    setUnitTo('feet');
-    setUnitInputValue('');
+    setUnitFrom('m'); // Reset to new defaults
+    setUnitTo('ft');
+    setUnitInputValue('1');
     setUnitOutputValue('');
   };
 
@@ -159,18 +158,14 @@ export default function UsefulToolsPage() {
   const calculateResult = () => {
     if (!calculatorInput) return;
     try {
-      // WARNING: Using eval() is generally unsafe and not recommended for production applications
-      // due to security risks. This is a direct translation of the user's provided script.
-      // A safer alternative would involve a proper math expression parser.
       let expression = calculatorInput
-        .replace(/sin\(/g, 'Math.sin(') // Assumes radians for Math.sin, Math.cos, Math.tan
+        .replace(/sin\(/g, 'Math.sin(') 
         .replace(/cos\(/g, 'Math.cos(')
         .replace(/tan\(/g, 'Math.tan(')
-        .replace(/log\(/g, 'Math.log10(') // Assuming base 10 log. For natural log, use Math.log()
+        .replace(/log\(/g, 'Math.log10(') 
         .replace(/sqrt\(/g, 'Math.sqrt(')
-        .replace(/\^/g, '**'); // Power operator
+        .replace(/\^/g, '**'); 
 
-      // A very basic check for potentially harmful characters - NOT a foolproof security measure.
       const simpleSanitizeRegex = /^[0-9()+\-*/.^% Math.sqrtMath.sinMath.cosMath.tanMath.log10\s]+$/;
       if (!simpleSanitizeRegex.test(expression)) {
         setCalculatorInput('Invalid Input');
@@ -185,15 +180,14 @@ export default function UsefulToolsPage() {
     }
   };
 
-
-  const unitConversionRates: Record<string, Record<string, number | ((val: number) => number)>> = {
-    meters: { feet: 3.28084, kilometers: 0.001, miles: 0.000621371 },
-    feet: { meters: 0.3048, kilometers: 0.0003048, miles: 0.000189394 },
-    kilometers: { meters: 1000, feet: 3280.84, miles: 0.621371 },
-    miles: { meters: 1609.34, feet: 5280, kilometers: 1.60934 },
-    celsius: { fahrenheit: (c: number) => (c * 9/5) + 32, kelvin: (c: number) => c + 273.15 },
-    fahrenheit: { celsius: (f: number) => (f - 32) * 5/9, kelvin: (f: number) => (f - 32) * 5/9 + 273.15 },
-    kelvin: { celsius: (k: number) => k - 273.15, fahrenheit: (k: number) => (k - 273.15) * 9/5 + 32 },
+  // Updated unit conversion rates based on new HTML
+  const unitConversionRates: Record<string, Record<string, number>> = {
+    m: { ft: 3.28084, in: 39.3701, yd: 1.09361, km: 0.001, cm: 100, m: 1 },
+    km: { ft: 3280.84, in: 39370.1, yd: 1093.61, m: 1000, cm: 100000, km: 1 },
+    cm: { ft: 0.0328084, in: 0.393701, yd: 0.0109361, m: 0.01, km: 0.00001, cm: 1 },
+    ft: { m: 0.3048, km: 0.0003048, cm: 30.48, in: 12, yd: 1/3, ft: 1 },
+    in: { m: 0.0254, km: 0.0000254, cm: 2.54, ft: 1/12, yd: 1/36, in: 1 },
+    yd: { m: 0.9144, km: 0.0009144, cm: 91.44, ft: 3, in: 36, yd: 1 },
   };
 
   const handleUnitConversion = () => {
@@ -202,28 +196,15 @@ export default function UsefulToolsPage() {
       setUnitOutputValue("Invalid Input");
       return;
     }
-    const fromGroup = unitFrom.includes('meters') || unitFrom.includes('feet') || unitFrom.includes('kilometers') || unitFrom.includes('miles') ? 'length' : 'temp';
-    const toGroup = unitTo.includes('meters') || unitTo.includes('feet') || unitTo.includes('kilometers') || unitTo.includes('miles') ? 'length' : 'temp';
-
-    if (fromGroup !== toGroup) {
-        setUnitOutputValue("Cannot convert between different types (e.g., length to temperature)");
-        return;
-    }
 
     if (unitConversionRates[unitFrom] && unitConversionRates[unitFrom][unitTo]) {
-      const rateOrFn = unitConversionRates[unitFrom][unitTo];
-      if (typeof rateOrFn === 'function') {
-        setUnitOutputValue(rateOrFn(val).toFixed(2));
-      } else {
-        setUnitOutputValue((val * rateOrFn).toFixed(2));
-      }
-    } else if (unitFrom === unitTo) {
-        setUnitOutputValue(val.toFixed(2));
-    }
-     else {
-      setUnitOutputValue("Conversion not supported");
+      const rate = unitConversionRates[unitFrom][unitTo];
+      setUnitOutputValue((val * rate).toFixed(4)); // Using 4 decimal places for precision
+    } else {
+      setUnitOutputValue("N/A"); // Conversion not directly supported
     }
   };
+
 
   useEffect(() => {
     return () => {
@@ -292,12 +273,10 @@ export default function UsefulToolsPage() {
             {activeTool === 'documentScanner' && (
               <div className="space-y-4">
                 {!capturedImage && hasCameraPermission === null && <SimpleRotatingSpinner className="mx-auto h-10 w-10 text-primary" />}
+                <video ref={videoRef} className={`w-full aspect-video rounded-md border bg-muted ${capturedImage || hasCameraPermission === false || hasCameraPermission === null ? 'hidden' : ''}`} autoPlay muted playsInline />
                 {!capturedImage && hasCameraPermission === false && <Alert variant="destructive"><AlertTitle>Camera Access Denied</AlertTitle><AlertDescription>Please enable camera permissions.</AlertDescription></Alert>}
                 {!capturedImage && hasCameraPermission === true && (
-                  <>
-                    <video ref={videoRef} className="w-full aspect-video rounded-md border bg-muted" autoPlay muted playsInline />
-                    <Button onClick={handleCaptureImage} className="w-full"><Camera className="mr-2 h-4 w-4" />Capture Image</Button>
-                  </>
+                  <Button onClick={handleCaptureImage} className="w-full"><Camera className="mr-2 h-4 w-4" />Capture Image</Button>
                 )}
                 <canvas ref={canvasRef} className="hidden"></canvas>
                 {capturedImage && (
@@ -338,12 +317,10 @@ export default function UsefulToolsPage() {
             {activeTool === 'qrCodeScanner' && (
               <div className="space-y-4">
                 {hasCameraPermission === null && <SimpleRotatingSpinner className="mx-auto h-10 w-10 text-primary" />}
+                <video ref={videoRef} className={`w-full aspect-video rounded-md border bg-muted ${hasCameraPermission === false || hasCameraPermission === null ? 'hidden' : ''}`} autoPlay muted playsInline />
                 {hasCameraPermission === false && <Alert variant="destructive"><AlertTitle>Camera Access Denied</AlertTitle><AlertDescription>Please enable camera permissions to use the QR scanner.</AlertDescription></Alert>}
                 {hasCameraPermission === true && (
-                  <>
-                    <video ref={videoRef} className="w-full aspect-video rounded-md border bg-muted" autoPlay muted playsInline />
-                    <p className="text-sm text-muted-foreground text-center">Point your camera at a QR code. Scanning functionality coming soon.</p>
-                  </>
+                  <p className="text-sm text-muted-foreground text-center">Point your camera at a QR code. Scanning functionality coming soon.</p>
                 )}
               </div>
             )}
@@ -369,7 +346,7 @@ export default function UsefulToolsPage() {
                       action = calculatorBackspace;
                     } else if (btn === 'sqrt(') {
                        action = () => appendToCalculatorDisplay('sqrt(');
-                       displayValue = '√'; // Display √ symbol for sqrt(
+                       displayValue = '√'; 
                     }
                      else {
                       action = () => appendToCalculatorDisplay(btn);
@@ -378,7 +355,7 @@ export default function UsefulToolsPage() {
                       <Button 
                         key={index} 
                         variant="outline"
-                        className="p-2.5 text-base aspect-square flex items-center justify-center" // Added aspect-square for better button look
+                        className="p-2.5 text-base aspect-square flex items-center justify-center" 
                         onClick={action}
                       >
                         {displayValue}
@@ -391,45 +368,41 @@ export default function UsefulToolsPage() {
             )}
             
             {activeTool === 'unitConverter' && (
-               <div className="space-y-4 max-w-md mx-auto">
-                 <div className="grid grid-cols-2 gap-4 items-end">
-                    <div className="space-y-1">
-                        <label htmlFor="unit-input-value" className="text-sm font-medium text-muted-foreground">Value</label>
-                        <Input id="unit-input-value" type="number" value={unitInputValue} onChange={e => setUnitInputValue(e.target.value)} placeholder="Enter value" />
-                    </div>
-                    <div className="space-y-1">
-                        <label htmlFor="unit-from" className="text-sm font-medium text-muted-foreground">From</label>
-                         <Select value={unitFrom} onValueChange={setUnitFrom}>
-                            <SelectTrigger id="unit-from"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="meters">Meters (m)</SelectItem><SelectItem value="feet">Feet (ft)</SelectItem>
-                                <SelectItem value="kilometers">Kilometers (km)</SelectItem><SelectItem value="miles">Miles (mi)</SelectItem>
-                                <SelectItem value="celsius">Celsius (°C)</SelectItem><SelectItem value="fahrenheit">Fahrenheit (°F)</SelectItem>
-                                <SelectItem value="kelvin">Kelvin (K)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+               <div className="w-full max-w-md mx-auto p-4 border border-border rounded-lg bg-card text-card-foreground space-y-4">
+                 <div>
+                    <label htmlFor="fromValue" className="block mb-1 text-sm font-medium text-muted-foreground">Value:</label>
+                    <Input type="number" id="fromValue" value={unitInputValue} onChange={e => setUnitInputValue(e.target.value)} className="w-full p-2 border border-input rounded-md bg-background" />
                  </div>
-                 <div className="grid grid-cols-2 gap-4 items-end">
-                     <div className="space-y-1">
-                        <label htmlFor="unit-output-value" className="text-sm font-medium text-muted-foreground">Result</label>
-                        <Input id="unit-output-value" type="text" value={unitOutputValue} readOnly placeholder="Converted value" className="bg-muted/70"/>
-                    </div>
-                    <div className="space-y-1">
-                        <label htmlFor="unit-to" className="text-sm font-medium text-muted-foreground">To</label>
-                        <Select value={unitTo} onValueChange={setUnitTo}>
-                            <SelectTrigger id="unit-to"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="meters">Meters (m)</SelectItem><SelectItem value="feet">Feet (ft)</SelectItem>
-                                <SelectItem value="kilometers">Kilometers (km)</SelectItem><SelectItem value="miles">Miles (mi)</SelectItem>
-                                <SelectItem value="celsius">Celsius (°C)</SelectItem><SelectItem value="fahrenheit">Fahrenheit (°F)</SelectItem>
-                                <SelectItem value="kelvin">Kelvin (K)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                 <div>
+                    <label htmlFor="fromUnit" className="block mb-1 text-sm font-medium text-muted-foreground">From:</label>
+                    <Select value={unitFrom} onValueChange={setUnitFrom}>
+                        <SelectTrigger id="fromUnit" className="w-full p-2 border border-input rounded-md bg-background"><SelectValue placeholder="Select unit" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="m">Meters</SelectItem>
+                          <SelectItem value="km">Kilometers</SelectItem>
+                          <SelectItem value="cm">Centimeters</SelectItem>
+                          <SelectItem value="ft">Feet</SelectItem>
+                          <SelectItem value="in">Inches</SelectItem>
+                          <SelectItem value="yd">Yards</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
+                 <div>
+                    <label htmlFor="toUnit" className="block mb-1 text-sm font-medium text-muted-foreground">To:</label>
+                     <Select value={unitTo} onValueChange={setUnitTo}>
+                        <SelectTrigger id="toUnit" className="w-full p-2 border border-input rounded-md bg-background"><SelectValue placeholder="Select unit" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="m">Meters</SelectItem>
+                          <SelectItem value="km">Kilometers</SelectItem>
+                          <SelectItem value="cm">Centimeters</SelectItem>
+                          <SelectItem value="ft">Feet</SelectItem>
+                          <SelectItem value="in">Inches</SelectItem>
+                          <SelectItem value="yd">Yards</SelectItem>
+                        </SelectContent>
+                    </Select>
                  </div>
                  <Button onClick={handleUnitConversion} className="w-full">Convert</Button>
-                 <p className="text-xs text-muted-foreground text-center">Basic length & temp converter. More units coming soon.</p>
+                 <div className="mt-2 font-semibold text-center">Result: {unitOutputValue || ''}</div>
                </div>
             )}
           </CardContent>
