@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -30,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Trash2, Users, ShieldCheck, BarChart3, Search } from 'lucide-react';
+import { PlusCircle, Trash2, Users, ShieldCheck, BarChart3, Search, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -185,12 +186,17 @@ export default function BranchManagementPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-                <BarChart3 className="mr-3 h-7 w-7" /> Branch Management
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Define and manage college branches and view associated faculty.</p>
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
+                    <BarChart3 className="mr-3 h-7 w-7" /> Branch Management
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">Define and manage college branches and view associated faculty.</p>
+            </div>
         </div>
         <Dialog open={isAddBranchDialogOpen} onOpenChange={setIsAddBranchDialogOpen}>
           <DialogTrigger asChild>
@@ -309,3 +315,5 @@ export default function BranchManagementPage() {
     </div>
   );
 }
+
+    

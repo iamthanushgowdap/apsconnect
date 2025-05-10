@@ -1,15 +1,15 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth, User } from "@/components/auth-provider";
-// import type { User } from "@/components/auth-provider"; // This line is redundant as User is imported from useAuth
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, Users, Briefcase } from "lucide-react";
-import ManageStudentsTab from "@/components/admin/ManageStudentsTab"; // Using alias path for moved component
+import { ShieldCheck, Users, Briefcase, ArrowLeft } from "lucide-react";
+import ManageStudentsTab from "@/components/admin/ManageStudentsTab";
 import ManageFacultyTab from "@/app/admin/users/manage-faculty-tab";
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
@@ -63,16 +63,21 @@ export default function UserManagementPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-          {actor.role === 'admin' ? <Users className="mr-3 h-7 w-7" /> : <Users className="mr-3 h-7 w-7" />}
-          User Management
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          {actor.role === 'admin' 
-            ? "View, approve, and manage student and faculty accounts."
-            : "View and manage student accounts for your assigned branches."}
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
+            {actor.role === 'admin' ? <Users className="mr-3 h-7 w-7" /> : <Users className="mr-3 h-7 w-7" />}
+            User Management
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+            {actor.role === 'admin' 
+                ? "View, approve, and manage student and faculty accounts."
+                : "View and manage student accounts for your assigned branches."}
+            </p>
+        </div>
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
 
       <Tabs defaultValue={actor.role === 'admin' ? "students" : "students"} className="w-full">
@@ -98,3 +103,5 @@ export default function UserManagementPage() {
     </div>
   );
 }
+
+    
