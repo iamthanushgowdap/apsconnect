@@ -1,6 +1,5 @@
-
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, BookOpen } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, BookOpen, CreditCard } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -23,10 +22,10 @@ export type SiteConfig = {
   url: string;
   ogImage: string;
   mainNav: NavItem[];
-  footerNav: NavItem[]; // footerNav will now only contain static links like Privacy, Terms
-  adminSidebarNav?: NavItem[];
-  facultySidebarNav?: NavItem[];
-  studentSidebarNav?: NavItem[];
+  footerNav: NavItem[]; 
+  adminSidebarNav: NavItem[];
+  facultySidebarNav: NavItem[];
+  studentSidebarNav: NavItem[];
   LATEST_APP_VERSION: string;
 };
 
@@ -85,6 +84,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "Activity Feed", href: "/feed", icon: Newspaper },
     { title: "View Timetable", href: "/student/timetable", icon: CalendarClock },
     { title: "Study Materials", href: "/student/study-materials", icon: BookOpen },
+    { title: "Digital ID", href: "/student/digital-id", icon: CreditCard },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
 };
@@ -117,3 +117,4 @@ export const TermsOfServicePage = (): React.ReactElement => {
     )
   );
 };
+
