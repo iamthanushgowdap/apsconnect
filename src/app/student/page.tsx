@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -11,7 +10,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,76 +19,22 @@ import {
   AlertTriangle,
   Newspaper,
   BookOpen,
-  CalendarDays,
+  CalendarClock,
+  CreditCard,
+  MessageSquareWarning,
+  Wrench,
   FileText,
   ArrowRight,
-  Paperclip,
-  CalendarClock,
-  CreditCard, 
-  MessageSquareWarning,
-  Wrench // Changed from Tool
 } from "lucide-react";
 import type { Post } from "@/types";
-import { formatDistanceToNow, parseISO } from 'date-fns';
-import { Badge } from "@/components/ui/badge";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
-
-interface RecentPostItemProps {
-  post: Post;
-}
-
-function RecentPostItem({ post }: RecentPostItemProps) {
-  const categoryIcons: Partial<Record<Post['category'], React.ElementType>> = {
-    event: CalendarDays,
-    news: Newspaper,
-    link: Paperclip,
-    note: BookOpen,
-    schedule: CalendarDays,
-  };
-
-  const IconComponent = post?.category && categoryIcons[post.category] ? categoryIcons[post.category] : FileText;
-
-  return (
-    <Card className="shadow-md hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col h-full bg-background border border-border/50 rounded-2xl overflow-hidden">
-      <CardHeader className="pb-2 pt-5 px-6">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-3">
-            <IconComponent className="h-6 w-6 text-primary" />
-            <CardTitle className="text-lg font-semibold text-primary leading-tight line-clamp-2">
-              {post.title}
-            </CardTitle>
-          </div>
-          <Badge
-            variant={post.category === "event" || post.category === "schedule" ? "default" : "secondary"}
-            className="text-xs ml-2 px-2 py-1 rounded-full"
-          >
-            {post.category ? post.category.charAt(0).toUpperCase() + post.category.slice(1) : "Other"}
-          </Badge>
-        </div>
-        <CardDescription className="text-xs text-muted-foreground">
-          By {post.authorName || "Unknown"} — {post.createdAt ? formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true }) : "some time ago"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-6 py-4 flex-grow">
-        <p className="text-sm text-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed">
-          {post.content || "No content available."}
-        </p>
-      </CardContent>
-      <CardFooter className="pt-3 px-6 pb-5 border-t border-border/50">
-        <Link href={`/post/${post.id}`} className="w-full">
-          <Button variant="ghost" size="sm" className="w-full justify-between text-primary hover:bg-primary/10 group">
-            View Full Post <ArrowRight className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </Button>
-        </Link>
-      </CardFooter>
-    </Card>
-  );
-}
+import { RecentPostItem } from '@/components/dashboard/RecentPostItem';
+import { ActionCard } from '@/components/dashboard/ActionCard';
 
 // StudentDashboardPage Component
-const StudentDashboardPage = () => {
+export default function StudentDashboardPage() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [studentUser, setStudentUser] = useState<User | null>(null);
@@ -117,7 +61,7 @@ const StudentDashboardPage = () => {
             relevantPosts = allPosts.filter(post => !post.targetBranches || post.targetBranches.length === 0);
           }
 
-          relevantPosts.sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime());
+          relevantPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           setRecentPosts(relevantPosts.slice(0, 3));
         }
 
@@ -252,7 +196,7 @@ const StudentDashboardPage = () => {
           <ActionCard
             title="Useful Tools"
             description="Access various utility tools like scanners and converters."
-            icon={<Wrench />} // Changed from Tool
+            icon={<Wrench />}
             link="/tools"
             actionText="Access Tools"
             disabled={isPendingApproval || isRejected}
@@ -290,39 +234,3 @@ const StudentDashboardPage = () => {
     </div>
   );
 }
-
-interface ActionCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  link: string;
-  actionText: string;
-  disabled?: boolean;
-}
-
-function ActionCard({ title, description, icon, link, actionText, disabled = false }: ActionCardProps) {
-  return (
-    <Card className={`shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-xl border ${disabled ? 'opacity-60 bg-muted/30 dark:bg-muted/10 pointer-events-none' : 'bg-card border-border/70 hover:border-primary/50'}`}>
-      <CardHeader className="pb-4 pt-5 px-5">
-        <div className="flex items-start space-x-4">
-          <div className={`p-3 rounded-full ${disabled ? 'bg-muted dark:bg-muted/30' : 'bg-accent/10 dark:bg-accent/20'}`}>
-            {React.cloneElement(icon as React.ReactElement, { className: `h-10 w-10 ${disabled ? 'text-muted-foreground' : 'text-accent'}`})}
-          </div>
-          <div>
-            <CardTitle className="text-lg sm:text-xl font-semibold text-foreground">{title}</CardTitle>
-            <CardDescription className="text-sm mt-1 text-muted-foreground">{description}</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-end mt-auto px-5 pb-5">
-        <Link href={disabled ? "#" : link} className={`w-full ${disabled ? 'pointer-events-none' : ''}`}>
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-3 rounded-lg" disabled={disabled}>
-            {actionText} <ArrowRight className="ml-2 h-4 w-4"/>
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
-// export default StudentDashboardPage; // Removed default export to avoid conflict as StudentDashboardPage is already default export
