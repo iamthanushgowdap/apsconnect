@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Wrench, ScanLine, QrCode, Calculator, Scale, FileImage, FileText, FileArchive, Camera, UploadCloud, X, ArrowLeft } from 'lucide-react'; // Changed Tool to Wrench
+import { Wrench, ScanLine, QrCode, Calculator, Scale, FileImage, FileText, FileArchive, Camera, UploadCloud, X, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
@@ -60,18 +60,15 @@ export default function UsefulToolsPage() {
   const { toast } = useToast();
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
   
-  // States for camera-based tools
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  // States for calculator
-  const [calcDisplay, setCalcDisplay] = useState("0");
-  const [calcCurrentValue, setCalcCurrentValue] = useState<string | null>(null);
-  const [calcOperator, setCalcOperator] = useState<string | null>(null);
-  const [calcWaitingForOperand, setCalcWaitingForOperand] = useState(false);
+  // States for Scientific Calculator
+  const [calculatorInput, setCalculatorInput] = useState<string>("");
+
 
   // States for Unit Converter
   const [unitFrom, setUnitFrom] = useState<string>('meters');
@@ -82,7 +79,7 @@ export default function UsefulToolsPage() {
 
   const openTool = (tool: ActiveTool) => {
     setActiveTool(tool);
-    setCapturedImage(null); // Reset captured image when switching tools
+    setCapturedImage(null); 
     if (tool === 'documentScanner' || tool === 'qrCodeScanner') {
       requestCameraPermission();
     } else {
@@ -93,10 +90,7 @@ export default function UsefulToolsPage() {
   const closeTool = () => {
     stopCameraStream();
     setActiveTool(null);
-    setCalcDisplay("0");
-    setCalcCurrentValue(null);
-    setCalcOperator(null);
-    setCalcWaitingForOperand(false);
+    setCalculatorInput("");
     setUnitFrom('meters');
     setUnitTo('feet');
     setUnitInputValue('');
@@ -104,7 +98,7 @@ export default function UsefulToolsPage() {
   };
 
   const requestCameraPermission = async () => {
-    setHasCameraPermission(null); // Reset while requesting
+    setHasCameraPermission(null); 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
@@ -144,65 +138,55 @@ export default function UsefulToolsPage() {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
         setCapturedImage(dataUrl);
-        stopCameraStream(); // Stop camera after capture
+        stopCameraStream(); 
       }
     }
   };
   
-  const handleCalcInput = (input: string) => {
-    if (input === "C") {
-      setCalcDisplay("0");
-      setCalcCurrentValue(null);
-      setCalcOperator(null);
-      setCalcWaitingForOperand(false);
-      return;
-    }
-    if (input === "." && calcDisplay.includes(".")) return;
-
-    if (calcWaitingForOperand) {
-      setCalcDisplay(input);
-      setCalcWaitingForOperand(false);
-    } else {
-      setCalcDisplay(calcDisplay === "0" && input !== "." ? input : calcDisplay + input);
-    }
+  // Scientific Calculator Functions
+  const appendToCalculatorDisplay = (value: string) => {
+    setCalculatorInput(prev => prev + value);
   };
 
-  const handleCalcOperation = (nextOperator: string) => {
-    const inputValue = parseFloat(calcDisplay);
-    if (calcCurrentValue === null) {
-      setCalcCurrentValue(inputValue);
-    } else if (calcOperator) {
-      const result = performCalculation();
-      setCalcDisplay(String(result));
-      setCalcCurrentValue(result);
-    }
-    setCalcWaitingForOperand(true);
-    setCalcOperator(nextOperator);
+  const clearCalculatorDisplay = () => {
+    setCalculatorInput("");
   };
-  
-  const performCalculation = (): number => {
-    const prevValue = calcCurrentValue;
-    const currentValue = parseFloat(calcDisplay);
-    if (prevValue === null || !calcOperator) return currentValue;
 
-    switch (calcOperator) {
-      case '+': return prevValue + currentValue;
-      case '-': return prevValue - currentValue;
-      case '*': return prevValue * currentValue;
-      case '/': return prevValue / currentValue;
-      default: return currentValue;
+  const calculatorBackspace = () => {
+    setCalculatorInput(prev => prev.slice(0, -1));
+  };
+
+  const calculateResult = () => {
+    if (!calculatorInput) return;
+    try {
+      // WARNING: Using eval() is generally unsafe and not recommended for production applications
+      // due to security risks. This is a direct translation of the user's provided script.
+      // A safer alternative would involve a proper math expression parser.
+      let expression = calculatorInput
+        .replace(/sin\(/g, 'Math.sin(') // Assumes radians for Math.sin, Math.cos, Math.tan
+        .replace(/cos\(/g, 'Math.cos(')
+        .replace(/tan\(/g, 'Math.tan(')
+        .replace(/log\(/g, 'Math.log10(') // Assuming base 10 log. For natural log, use Math.log()
+        .replace(/sqrt\(/g, 'Math.sqrt(')
+        .replace(/\^/g, '**'); // Power operator
+
+      // A very basic check for potentially harmful characters - NOT a foolproof security measure.
+      const simpleSanitizeRegex = /^[0-9()+\-*/.^% Math.sqrtMath.sinMath.cosMath.tanMath.log10\s]+$/;
+      if (!simpleSanitizeRegex.test(expression)) {
+        setCalculatorInput('Invalid Input');
+        return;
+      }
+      
+      // eslint-disable-next-line no-eval
+      const result = eval(expression);
+      setCalculatorInput(String(result));
+    } catch (error) {
+      setCalculatorInput('Error');
     }
   };
 
-  const handleCalcEquals = () => {
-    const result = performCalculation();
-    setCalcDisplay(String(result));
-    setCalcCurrentValue(null); // Reset for new calculation
-    setCalcOperator(null);
-    setCalcWaitingForOperand(false);
-  };
 
-  const unitConversionRates: Record<string, Record<string, number>> = {
+  const unitConversionRates: Record<string, Record<string, number | ((val: number) => number)>> = {
     meters: { feet: 3.28084, kilometers: 0.001, miles: 0.000621371 },
     feet: { meters: 0.3048, kilometers: 0.0003048, miles: 0.000189394 },
     kilometers: { meters: 1000, feet: 3280.84, miles: 0.621371 },
@@ -210,7 +194,6 @@ export default function UsefulToolsPage() {
     celsius: { fahrenheit: (c: number) => (c * 9/5) + 32, kelvin: (c: number) => c + 273.15 },
     fahrenheit: { celsius: (f: number) => (f - 32) * 5/9, kelvin: (f: number) => (f - 32) * 5/9 + 273.15 },
     kelvin: { celsius: (k: number) => k - 273.15, fahrenheit: (k: number) => (k - 273.15) * 9/5 + 32 },
-    // Add more units and categories
   };
 
   const handleUnitConversion = () => {
@@ -243,11 +226,9 @@ export default function UsefulToolsPage() {
   };
 
   useEffect(() => {
-    // Cleanup camera stream when component unmounts or activeTool changes
     return () => {
       stopCameraStream();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool]);
 
   const tools = [
@@ -260,6 +241,16 @@ export default function UsefulToolsPage() {
     { id: 'unitConverter', title: "Unit Converter", description: "Convert various units of measurement.", icon: <Scale />, action: () => openTool('unitConverter') },
   ];
 
+  const calculatorButtons = [
+    ['7', '8', '9', '+'],
+    ['4', '5', '6', '-'],
+    ['1', '2', '3', '*'],
+    ['0', '.', '=', '/'],
+    ['C', '←', 'sin(', 'cos('],
+    ['tan(', 'log(', 'sqrt(', '^']
+  ];
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
@@ -268,7 +259,7 @@ export default function UsefulToolsPage() {
                 <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-                <Wrench className="mr-3 h-7 w-7" /> Useful Tools {/* Changed Tool to Wrench */}
+                <Wrench className="mr-3 h-7 w-7" /> Useful Tools
             </h1>
         </div>
       </div>
@@ -298,7 +289,6 @@ export default function UsefulToolsPage() {
             <CardDescription>{tools.find(t => t.id === activeTool)?.description}</CardDescription>
           </CardHeader>
           <CardContent className="min-h-[300px]">
-            {/* Document Scanner UI */}
             {activeTool === 'documentScanner' && (
               <div className="space-y-4">
                 {!capturedImage && hasCameraPermission === null && <SimpleRotatingSpinner className="mx-auto h-10 w-10 text-primary" />}
@@ -323,7 +313,6 @@ export default function UsefulToolsPage() {
               </div>
             )}
 
-            {/* Image to PDF Placeholder */}
             {activeTool === 'imageToPdf' && (
               <div className="space-y-4 text-center">
                 <Input type="file" accept="image/*" className="mx-auto max-w-sm" />
@@ -331,7 +320,6 @@ export default function UsefulToolsPage() {
                 <p className="text-sm text-muted-foreground">This feature will allow you to upload an image and convert it to a PDF document.</p>
               </div>
             )}
-            {/* PDF to Image Placeholder */}
             {activeTool === 'pdfToImage' && (
               <div className="space-y-4 text-center">
                 <Input type="file" accept="application/pdf" className="mx-auto max-w-sm" />
@@ -339,7 +327,6 @@ export default function UsefulToolsPage() {
                  <p className="text-sm text-muted-foreground">This feature will allow you to upload a PDF and extract images from it.</p>
               </div>
             )}
-            {/* File Compression Placeholder */}
             {activeTool === 'fileCompression' && (
               <div className="space-y-4 text-center">
                 <Input type="file" multiple className="mx-auto max-w-sm" />
@@ -348,7 +335,6 @@ export default function UsefulToolsPage() {
               </div>
             )}
 
-            {/* QR Code Scanner UI */}
             {activeTool === 'qrCodeScanner' && (
               <div className="space-y-4">
                 {hasCameraPermission === null && <SimpleRotatingSpinner className="mx-auto h-10 w-10 text-primary" />}
@@ -362,32 +348,57 @@ export default function UsefulToolsPage() {
               </div>
             )}
 
-            {/* Scientific Calculator UI Placeholder */}
             {activeTool === 'scientificCalculator' && (
-              <div className="p-4 border rounded-md bg-muted/50 max-w-xs mx-auto">
-                <Input type="text" readOnly value={calcDisplay} className="mb-2 text-right text-2xl h-12 bg-background" />
-                <div className="grid grid-cols-4 gap-2">
-                  {['C', '%', '/', '*'].map(op => <Button key={op} onClick={() => op === "C" ? handleCalcInput("C") : handleCalcOperation(op)} variant="outline" className="text-lg">{op}</Button>)}
-                  {['7','8','9','-'].map(op => <Button key={op} onClick={() => op.match(/\d/) ? handleCalcInput(op) : handleCalcOperation(op)} className="text-lg">{op}</Button>)}
-                  {['4','5','6','+'].map(op => <Button key={op} onClick={() => op.match(/\d/) ? handleCalcInput(op) : handleCalcOperation(op)} className="text-lg">{op}</Button>)}
-                  {['1','2','3','='].map(op => <Button key={op} onClick={() => op.match(/\d/) ? handleCalcInput(op) : handleCalcEquals()} className={`text-lg ${op === "=" ? "col-span-1 row-span-2 h-auto" : ""}`}>{op}</Button>)}
-                   <Button onClick={() => handleCalcInput("0")} className="text-lg col-span-2">0</Button>
-                   <Button onClick={() => handleCalcInput(".")} className="text-lg">.</Button>
+              <div className="w-full max-w-xs mx-auto border border-border p-2.5 rounded-lg bg-card text-card-foreground">
+                <Input 
+                  type="text" 
+                  readOnly 
+                  value={calculatorInput} 
+                  className="w-full mb-2.5 p-2.5 text-xl text-right bg-background border border-input rounded-md h-12" 
+                  placeholder="0"
+                />
+                <div className="grid grid-cols-4 gap-1.25">
+                  {calculatorButtons.flat().map((btn, index) => {
+                    let action: () => void;
+                    let displayValue = btn;
+                    if (btn === '=') {
+                      action = calculateResult;
+                    } else if (btn === 'C') {
+                      action = clearCalculatorDisplay;
+                    } else if (btn === '←') {
+                      action = calculatorBackspace;
+                    } else if (btn === 'sqrt(') {
+                       action = () => appendToCalculatorDisplay('sqrt(');
+                       displayValue = '√'; // Display √ symbol for sqrt(
+                    }
+                     else {
+                      action = () => appendToCalculatorDisplay(btn);
+                    }
+                    return (
+                      <Button 
+                        key={index} 
+                        variant="outline"
+                        className="p-2.5 text-base aspect-square flex items-center justify-center" // Added aspect-square for better button look
+                        onClick={action}
+                      >
+                        {displayValue}
+                      </Button>
+                    );
+                  })}
                 </div>
-                 <p className="text-xs text-muted-foreground text-center mt-2">Basic calculator. Advanced functions coming soon.</p>
+                 <p className="text-xs text-muted-foreground text-center mt-2">Note: `eval()` is used for calculation, use with caution.</p>
               </div>
             )}
             
-            {/* Unit Converter UI Placeholder */}
             {activeTool === 'unitConverter' && (
                <div className="space-y-4 max-w-md mx-auto">
                  <div className="grid grid-cols-2 gap-4 items-end">
                     <div className="space-y-1">
-                        <Label htmlFor="unit-input-value">Value</Label>
+                        <label htmlFor="unit-input-value" className="text-sm font-medium text-muted-foreground">Value</label>
                         <Input id="unit-input-value" type="number" value={unitInputValue} onChange={e => setUnitInputValue(e.target.value)} placeholder="Enter value" />
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="unit-from">From</Label>
+                        <label htmlFor="unit-from" className="text-sm font-medium text-muted-foreground">From</label>
                          <Select value={unitFrom} onValueChange={setUnitFrom}>
                             <SelectTrigger id="unit-from"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -401,11 +412,11 @@ export default function UsefulToolsPage() {
                  </div>
                  <div className="grid grid-cols-2 gap-4 items-end">
                      <div className="space-y-1">
-                        <Label htmlFor="unit-output-value">Result</Label>
+                        <label htmlFor="unit-output-value" className="text-sm font-medium text-muted-foreground">Result</label>
                         <Input id="unit-output-value" type="text" value={unitOutputValue} readOnly placeholder="Converted value" className="bg-muted/70"/>
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="unit-to">To</Label>
+                        <label htmlFor="unit-to" className="text-sm font-medium text-muted-foreground">To</label>
                         <Select value={unitTo} onValueChange={setUnitTo}>
                             <SelectTrigger id="unit-to"><SelectValue /></SelectTrigger>
                             <SelectContent>
