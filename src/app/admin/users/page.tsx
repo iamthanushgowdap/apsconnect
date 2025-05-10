@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -10,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, Users, Briefcase } from "lucide-react";
-import ManageStudentsTab from "./manage-students-tab";
-import ManageFacultyTab from "./manage-faculty-tab";
+import ManageStudentsTab from "@/app/admin/users/manage-students-tab"; // Using alias path
+import ManageFacultyTab from "@/app/admin/users/manage-faculty-tab";
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
 export default function UserManagementPage() {
