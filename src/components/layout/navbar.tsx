@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -21,7 +20,7 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle, Sun, Moon, BookOpen } from "lucide-react"; 
+import { LogOut, LayoutDashboard, Settings, Newspaper, Home, Search as SearchIcon, UserCircle, Sun, Moon, BookOpen, CalendarClock, BarChart3, FilePlus2, Users } from "lucide-react"; 
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { getInitials } from "@/components/content/post-item-utils"; 
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
@@ -32,7 +31,6 @@ export function Navbar() {
   const { user, isLoading, signOut } = useAuth(); 
   const [unseenPostsCount, setUnseenPostsCount] = useState(0);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(undefined);
-  // Search query state removed as search bar is moved to Activity Feed page
 
 
   const calculateUnseenPosts = React.useCallback(() => {
@@ -120,7 +118,7 @@ export function Navbar() {
 
   const handleLogout = async () => {
     await signOut();
-    router.push('/'); 
+    router.push('/login'); 
   };
 
   const getDashboardLink = () => {
@@ -138,7 +136,6 @@ export function Navbar() {
     }
   };
   
-  // Search form submit handler removed as search bar is moved to Activity Feed page
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -149,16 +146,13 @@ export function Navbar() {
         </Link>
         <nav className="hidden md:flex flex-1 items-center space-x-2 sm:space-x-4 md:space-x-6 text-sm font-medium">
           {SiteConfig.mainNav.map((item) => {
-            // If still loading auth state, only render "Home" or truly public, non-auth-dependent items
             if (isLoading) {
               if (item.title === "Home") {
                 // Always render Home link
               } else {
-                // Defer rendering of other links until auth state is known to prevent hydration mismatch
                 return null;
               }
             } else {
-              // Auth state is known, apply full logic
               if (item.hideWhenLoggedIn && user) return null;
               if (item.protected && !user) return null;       
               if (item.adminOnly && (!user || user.role !== 'admin')) return null;
@@ -175,7 +169,7 @@ export function Navbar() {
                     pathname === item.href ? "text-primary" : "text-foreground/60",
                     "text-xs sm:text-sm" 
                     )}
-                    suppressHydrationWarning // Added to potentially help with extension-related hydration issues
+                    suppressHydrationWarning 
                 >
                     {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
                     {item.title}
@@ -183,8 +177,6 @@ export function Navbar() {
             );
           })}
         </nav>
-         
-        {/* Search bar removed from here */}
          
         <div className="flex items-center space-x-1 sm:space-x-2 ml-auto">
           {isLoading ? (
@@ -218,6 +210,7 @@ export function Navbar() {
                         <span>Dashboard</span>
                     </Link>
                     </DropdownMenuItem>
+                    {(user.role === 'admin' || user.role === 'faculty' || user.role === 'student') && (
                     <DropdownMenuItem asChild>
                     <Link href="/feed" className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -231,6 +224,7 @@ export function Navbar() {
                         )}
                     </Link>
                     </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                     <Link href="/profile/settings" className="flex items-center">
                         <UserCircle className="mr-2 h-4 w-4" />
@@ -258,10 +252,10 @@ export function Navbar() {
               <Button asChild size="sm" suppressHydrationWarning>
                 <Link href="/register" suppressHydrationWarning>Register</Link>
               </Button>
-               <div className="md:hidden ml-2"> {/* Theme toggle for mobile when logged out */}
+               <div className="md:hidden ml-2"> 
                  <ThemeToggleButton />
                </div>
-               <div className="hidden md:block">  {/* Theme toggle for desktop when logged out */}
+               <div className="hidden md:block">  
                  <ThemeToggleButton />
                </div>
             </>
@@ -271,3 +265,4 @@ export function Navbar() {
     </header>
   );
 }
+
