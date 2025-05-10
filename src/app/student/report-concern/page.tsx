@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -79,6 +78,9 @@ export default function ReportConcernPage() {
         status: 'new',
         contextBranch: studentContext.branch,
         contextSemester: studentContext.semester,
+        submittedByUid: user.uid,
+        submittedByName: user.displayName || undefined,
+        submittedByUsn: user.usn || undefined,
       };
 
       if (typeof window !== 'undefined') {
@@ -91,7 +93,7 @@ export default function ReportConcernPage() {
       toast({
         title: "Report Submitted Successfully",
         description: "Your concern has been submitted. Thank you.",
-        duration: 5000,
+        duration: 3000, // Autoclose after 3 seconds
       });
       form.reset();
       router.push('/student');
@@ -101,6 +103,7 @@ export default function ReportConcernPage() {
         title: "Submission Failed",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setFormSubmitting(false);
@@ -149,7 +152,7 @@ export default function ReportConcernPage() {
             <MessageSquareWarning className="mr-2 h-7 w-7" /> Report a Concern
           </CardTitle>
           <CardDescription>
-            Submit your concerns (pseudo-)anonymously. Your identity will not be directly attached to the report visible to recipients.
+            Submit your concerns. Your identity (Name &amp; USN) will be visible to the recipient (Faculty/Admin).
             Reports are intended to help improve our college environment. Please be respectful and constructive.
           </CardDescription>
         </CardHeader>
@@ -186,7 +189,7 @@ export default function ReportConcernPage() {
                     <FormLabel>Your Concern / Issue</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Clearly describe your concern. Provide specific details where possible, but avoid sharing personally identifiable information if you wish to remain as anonymous as possible."
+                        placeholder="Clearly describe your concern. Provide specific details where possible."
                         rows={8}
                         {...field}
                       />
@@ -200,7 +203,7 @@ export default function ReportConcernPage() {
               />
               <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-md text-xs text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
                 <AlertTriangle className="inline h-4 w-4 mr-1 align-text-bottom"/>
-                <strong>Please Note:</strong> While your name is not directly sent with the report, repeated misuse or submission of harmful content may be traceable through system logs if legally required. This system is for constructive feedback.
+                <strong>Please Note:</strong> Your name and USN will be shared with the selected recipient. This system is for constructive feedback. Misuse may lead to disciplinary action.
               </div>
               <Button type="submit" className="w-full" disabled={formSubmitting}>
                 {formSubmitting ? <SimpleRotatingSpinner className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />}

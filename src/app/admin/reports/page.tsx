@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -24,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { ShieldCheck, ListChecks, Eye, CheckCircle, Archive, Filter, ArrowLeft, Search as SearchIcon } from 'lucide-react';
+import { ShieldCheck, ListChecks, Eye, CheckCircle, Archive, Filter, ArrowLeft, Search as SearchIcon, Trash2 } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -42,7 +41,7 @@ export default function AdminReportsPage() {
   const [pageLoading, setPageLoading] = useState(true);
   
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [dialogAction, setDialogAction] = useState<'resolve' | 'archive' | null>(null);
+  const [dialogAction, setDialogAction] = useState<'resolve' | 'archive' | 'delete' | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   
   const [filterStatus, setFilterStatus] = useState<ReportStatus | 'all'>('all');
@@ -77,6 +76,8 @@ export default function AdminReportsPage() {
       currentReports = currentReports.filter(r => 
         r.reportContent.toLowerCase().includes(termLower) ||
         r.id.toLowerCase().includes(termLower) ||
+        r.submittedByName?.toLowerCase().includes(termLower) ||
+        r.submittedByUsn?.toLowerCase().includes(termLower) ||
         r.contextBranch?.toLowerCase().includes(termLower) ||
         r.contextSemester?.toLowerCase().includes(termLower) ||
         r.resolutionNotes?.toLowerCase().includes(termLower)
@@ -88,14 +89,14 @@ export default function AdminReportsPage() {
   const updateReportStatus = (reportId: string, newStatus: ReportStatus, notes?: string) => {
     const updatedReports = allReports.map(report => {
       if (report.id === reportId) {
-        const updatedReport: Report = { ...report, status: newStatus };
-        if (newStatus === 'viewed' && !report.viewedAt) updatedReport.viewedAt = new Date().toISOString();
+        const updatedReportData: Report = { ...report, status: newStatus };
+        if (newStatus === 'viewed' && !report.viewedAt) updatedReportData.viewedAt = new Date().toISOString();
         if (newStatus === 'resolved') {
-          updatedReport.resolvedAt = new Date().toISOString();
-          updatedReport.resolvedByUid = user?.uid;
-          updatedReport.resolutionNotes = notes || report.resolutionNotes;
+          updatedReportData.resolvedAt = new Date().toISOString();
+          updatedReportData.resolvedByUid = user?.uid;
+          updatedReportData.resolutionNotes = notes || report.resolutionNotes;
         }
-        return updatedReport;
+        return updatedReportData;
       }
       return report;
     });
@@ -103,33 +104,46 @@ export default function AdminReportsPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(updatedReports));
     }
-    toast({ title: "Report Updated", description: `Report ${reportId.substring(0,8)} status changed to ${newStatus}.` });
+    toast({ title: "Report Updated", description: `Report ${reportId.substring(0,8)} status changed to ${newStatus}.`, duration: 3000 });
+  };
+
+  const handleDeleteReport = (reportId: string) => {
+    const updatedReports = allReports.filter(report => report.id !== reportId);
+    setAllReports(updatedReports);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(updatedReports));
+    }
+    toast({ title: "Report Deleted", description: `Report ${reportId.substring(0,8)} has been deleted.`, duration: 3000 });
   };
 
   const handleDialogAction = () => {
     if (!selectedReport || !dialogAction) return;
 
     if (dialogAction === 'resolve' && !resolutionNotes.trim()) {
-        toast({ title: "Notes Required", description: "Please provide resolution notes.", variant: "destructive"});
+        toast({ title: "Notes Required", description: "Please provide resolution notes.", variant: "destructive", duration: 3000});
         return;
     }
-    updateReportStatus(selectedReport.id, dialogAction === 'resolve' ? 'resolved' : 'archived', resolutionNotes);
+    if (dialogAction === 'delete') {
+        handleDeleteReport(selectedReport.id);
+    } else {
+        updateReportStatus(selectedReport.id, dialogAction === 'resolve' ? 'resolved' : 'archived', resolutionNotes);
+    }
     setSelectedReport(null);
     setDialogAction(null);
     setResolutionNotes('');
   };
 
-  const openActionDialog = (report: Report, action: 'resolve' | 'archive') => {
+  const openActionDialog = (report: Report, action: 'resolve' | 'archive' | 'delete') => {
     setSelectedReport(report);
     setDialogAction(action);
     setResolutionNotes(report.resolutionNotes || '');
      if (action === 'archive' && report.status !== 'resolved') {
-      toast({ title: "Action Not Allowed", description: "Only resolved reports can be archived.", variant: "destructive"});
+      toast({ title: "Action Not Allowed", description: "Only resolved reports can be archived.", variant: "destructive", duration: 3000});
       setSelectedReport(null);
       setDialogAction(null);
       return;
     }
-    if (report.status === 'new') { // Mark as viewed when opening action dialog
+    if (report.status === 'new' && action !== 'delete') { // Mark as viewed when opening action dialog, unless it's delete
       updateReportStatus(report.id, 'viewed');
     }
   };
@@ -184,12 +198,26 @@ export default function AdminReportsPage() {
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Submitted</TableHead><TableHead>Recipient</TableHead><TableHead>Context</TableHead><TableHead>Status</TableHead><TableHead className="w-[40%]">Content</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Submitted At</TableHead>
+                    <TableHead>Submitted By</TableHead>
+                    <TableHead>USN</TableHead>
+                    <TableHead>Recipient</TableHead>
+                    <TableHead>Context</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="min-w-[300px] w-[40%]">Content</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {filteredReports.map(report => (
                     <TableRow key={report.id} className={report.status === 'new' ? 'bg-primary/5 dark:bg-primary/10' : ''}>
                       <TableCell className="font-mono text-xs">{report.id.substring(0,8)}...</TableCell>
                       <TableCell>{format(new Date(report.submittedAt), "PPp")}</TableCell>
+                      <TableCell>{report.submittedByName || <span className="italic text-muted-foreground">N/A</span>}</TableCell>
+                      <TableCell>{report.submittedByUsn || <span className="italic text-muted-foreground">N/A</span>}</TableCell>
                       <TableCell className="capitalize">{report.recipientType}</TableCell>
                       <TableCell className="text-xs">
                         {report.contextBranch && <div>Branch: {report.contextBranch}</div>}
@@ -202,6 +230,7 @@ export default function AdminReportsPage() {
                         {report.status === 'new' && <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'viewed')}><Eye className="mr-1 h-3 w-3"/>Mark Viewed</Button>}
                         {report.status !== 'resolved' && report.status !== 'archived' && <Button variant="default" size="sm" onClick={() => openActionDialog(report, 'resolve')}><CheckCircle className="mr-1 h-3 w-3"/>Resolve</Button>}
                         {report.status === 'resolved' && <Button variant="secondary" size="sm" onClick={() => openActionDialog(report, 'archive')}><Archive className="mr-1 h-3 w-3"/>Archive</Button>}
+                         <Button variant="destructive" size="sm" onClick={() => openActionDialog(report, 'delete')}><Trash2 className="mr-1 h-3 w-3"/>Delete</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -212,14 +241,15 @@ export default function AdminReportsPage() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!selectedReport && (dialogAction === 'resolve' || dialogAction === 'archive')} onOpenChange={() => {setSelectedReport(null); setDialogAction(null); setResolutionNotes('');}}>
+      <AlertDialog open={!!selectedReport && (dialogAction === 'resolve' || dialogAction === 'archive' || dialogAction === 'delete')} onOpenChange={() => {setSelectedReport(null); setDialogAction(null); setResolutionNotes('');}}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm: {dialogAction === 'resolve' ? 'Resolve Report' : 'Archive Report'}</AlertDialogTitle>
+            <AlertDialogTitle>Confirm: {dialogAction === 'resolve' ? 'Resolve Report' : dialogAction === 'archive' ? 'Archive Report' : 'Delete Report'}</AlertDialogTitle>
             <AlertDialogDescription>
               For report ID: {selectedReport?.id.substring(0,8)}...
               {dialogAction === 'resolve' && " Please provide notes on how this concern was addressed. This will mark the report as resolved."}
               {dialogAction === 'archive' && " This will archive the resolved report. It will no longer appear in the main list unless 'Archived' status is filtered."}
+              {dialogAction === 'delete' && " Are you sure you want to delete this report? This action cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {dialogAction === 'resolve' && (
@@ -230,8 +260,11 @@ export default function AdminReportsPage() {
           )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDialogAction} disabled={dialogAction==='resolve' && !resolutionNotes.trim()} className={dialogAction === 'archive' ? "bg-gray-500 hover:bg-gray-600" : ""}>
-              {dialogAction === 'resolve' ? 'Mark Resolved' : 'Confirm Archive'}
+            <AlertDialogAction 
+                onClick={handleDialogAction} 
+                disabled={dialogAction==='resolve' && !resolutionNotes.trim()} 
+                className={dialogAction === 'archive' ? "bg-gray-500 hover:bg-gray-600" : dialogAction === 'delete' ? 'bg-destructive hover:bg-destructive/90' : ""}>
+              {dialogAction === 'resolve' ? 'Mark Resolved' : dialogAction === 'archive' ? 'Confirm Archive' : 'Confirm Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

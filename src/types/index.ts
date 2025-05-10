@@ -185,6 +185,12 @@ export interface Report {
   // Contextual information, not directly identifying the student in the report object
   contextBranch?: Branch; // Branch context of the student submitting, if applicable
   contextSemester?: Semester; // Semester context of the student submitting, if applicable
+  
+  // Student details who submitted the report
+  submittedByUid: string;
+  submittedByName?: string;
+  submittedByUsn?: string;
+
   // Admin/Faculty actions
   viewedAt?: string;
   resolvedAt?: string;
