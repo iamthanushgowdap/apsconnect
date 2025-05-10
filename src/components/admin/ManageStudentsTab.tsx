@@ -18,7 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Removed AlertDialogTrigger as it's not used directly
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -77,10 +77,10 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
               if (actor.role === 'admin') {
                 users.push(user);
               } else if (actor.role === 'faculty' && user.branch && user.semester) {
-                const facultyCanAccessBranch = actor.assignedBranches?.includes(user.branch);
                 // Faculty can access a student if EITHER their assigned semester matches the student's semester OR the faculty has no specific semesters assigned (meaning they manage all semesters for their branch)
+                const facultyCanAccessBranch = actor.assignedBranches?.includes(user.branch);
                 const facultyCanAccessSemester = !actor.assignedSemesters || actor.assignedSemesters.length === 0 || actor.assignedSemesters?.includes(user.semester);
-
+                
                 if (facultyCanAccessBranch && facultyCanAccessSemester) {
                   users.push(user);
                 }
@@ -377,7 +377,9 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Action: {dialogAction?.charAt(0).toUpperCase() + dialogAction!.slice(1)} Student</AlertDialogTitle>
+            <AlertDialogTitle>
+              {dialogAction ? `Confirm Action: ${dialogAction.charAt(0).toUpperCase()}${dialogAction.substring(1)} Student` : 'Confirm Action'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {dialogAction === 'approve' && `Are you sure you want to approve ${selectedStudent?.displayName || selectedStudent?.usn}?`}
               {dialogAction === 'reject' && `Please provide a reason for rejecting ${selectedStudent?.displayName || selectedStudent?.usn}.`}
@@ -404,7 +406,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                 className={dialogAction === 'reject' || dialogAction === 'revoke' ? "bg-destructive hover:bg-destructive/90" : "bg-green-600 hover:bg-green-700"}
                 disabled={(dialogAction === 'reject' || dialogAction === 'revoke') && !rejectionReason.trim()}
             >
-              Confirm {dialogAction?.charAt(0).toUpperCase() + dialogAction!.slice(1)}
+              Confirm {dialogAction ? `${dialogAction.charAt(0).toUpperCase()}${dialogAction.substring(1)}` : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
