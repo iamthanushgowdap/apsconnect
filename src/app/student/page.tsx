@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -26,8 +25,9 @@ import {
   ArrowRight,
   Paperclip,
   CalendarClock,
-  CreditCard, // Added CreditCard for Digital ID
-  MessageSquareWarning
+  CreditCard, 
+  MessageSquareWarning,
+  Tool
 } from "lucide-react";
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -246,7 +246,15 @@ const StudentDashboardPage = () => {
             icon={<MessageSquareWarning className="h-10 w-10 text-accent" />}
             link="/student/report-concern"
             actionText="Submit Report"
-            disabled={isRejected} // Also disable if pending? Or allow pending to report? For now, only rejected.
+            disabled={isRejected} 
+          />
+          <ActionCard
+            title="Useful Tools"
+            description="Access various utility tools like scanners and converters."
+            icon={<Tool />}
+            link="/tools"
+            actionText="Access Tools"
+            disabled={isPendingApproval || isRejected}
           />
         </div>
       </section>

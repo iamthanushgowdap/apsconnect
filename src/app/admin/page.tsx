@@ -1,9 +1,8 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock, BookOpen, ListChecks } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock, BookOpen, ListChecks, Tool } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -213,6 +212,13 @@ export default function AdminDashboardPage() {
                 icon={<Newspaper />}
                 link="/feed"
                 actionText="View Feed"
+            />
+            <StyledActionCard
+                title="Useful Tools"
+                description="Access various utility tools like scanners and converters."
+                icon={<Tool />}
+                link="/tools"
+                actionText="Access Tools"
             />
             <StyledActionCard
                 title="Site Settings"
