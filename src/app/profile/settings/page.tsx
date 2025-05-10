@@ -15,14 +15,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription as ShadCnCardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
 import type { UserProfile, Semester, NotificationPreferences } from '@/types'; 
 import { semesters as allSemesters, postCategories } from '@/types'; 
-import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft, UserSpeak, Bell } from 'lucide-react';
+import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft, UserCog, Bell } from 'lucide-react'; 
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -163,13 +164,11 @@ export default function ProfileSettingsPage() {
             form.reset({
               displayName: fetchedProfile.displayName || "",
               pronouns: fetchedProfile.pronouns || "",
-              currentEmail: fetchedProfile.email, // For verification if changing email
+              currentEmail: fetchedProfile.email, 
               notificationPreferences: fetchedProfile.notificationPreferences || defaultNotificationPreferences,
             });
             setAvatarPreview(fetchedProfile.avatarDataUrl);
           } else {
-            // This case should ideally not happen for a logged-in user
-            // For safety, redirect or show an error
             toast({ title: "Profile Error", description: "Could not load your profile data.", variant: "destructive"});
             router.push('/dashboard'); 
           }
@@ -183,7 +182,7 @@ export default function ProfileSettingsPage() {
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      if (file.size > 2 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant: "destructive" });
         return;
       }
@@ -203,7 +202,7 @@ export default function ProfileSettingsPage() {
   const removeAvatar = () => {
     setAvatarPreview(undefined);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Clear the file input
+      fileInputRef.current.value = ""; 
     }
   };
 
@@ -220,15 +219,12 @@ export default function ProfileSettingsPage() {
     let passwordChanged = false;
     let emailChanged = false;
 
-    // Update display name and pronouns
     updatedProfileData.displayName = data.displayName || userProfile.displayName;
     updatedProfileData.pronouns = data.pronouns || undefined;
     updatedProfileData.avatarDataUrl = avatarPreview;
 
-    // Handle Password Change
     if (data.newPassword) {
       if (userProfile.role === 'admin' && userProfile.email === ADMIN_EMAIL_CONST) {
-        // Special handling for default admin
         if (data.currentPassword !== (userProfile.password || ADMIN_PASSWORD_CONST) ) {
           form.setError("currentPassword", { type: "manual", message: "Incorrect current password for admin." });
           setIsSaving(false);
@@ -243,14 +239,12 @@ export default function ProfileSettingsPage() {
       passwordChanged = true;
     }
 
-    // Handle Email Change
     if (data.newEmail && data.currentEmail && data.newEmail.toLowerCase() !== data.currentEmail.toLowerCase()) {
         if (data.currentEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
             form.setError("currentEmail", { type: "manual", message: "Current email address does not match records." });
             setIsSaving(false);
             return;
         }
-        // Check if new email already exists
         if (typeof window !== 'undefined') {
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -268,28 +262,23 @@ export default function ProfileSettingsPage() {
           }
         }
         updatedProfileData.email = data.newEmail.toLowerCase();
-        // Note: UID for admin/faculty is their email. If email changes, UID should change.
-        // This requires deleting the old record and creating a new one.
         emailChanged = true;
     }
     
-    // Update notification preferences
     updatedProfileData.notificationPreferences = data.notificationPreferences || userProfile.notificationPreferences || defaultNotificationPreferences;
 
 
     try {
       if (typeof window !== 'undefined') {
-        if (emailChanged && (userProfile.role === 'admin' || userProfile.role === 'faculty')) {
-          // UID changes, so remove old and add new
-          localStorage.removeItem(`apsconnect_user_${userProfile.uid}`); // Remove old record
-          updatedProfileData.uid = updatedProfileData.email; // New UID
-          localStorage.setItem(`apsconnect_user_${updatedProfileData.uid}`, JSON.stringify(updatedProfileData));
-           // If the logged-in user themselves changed email, update mockUser and re-authenticate or redirect
+        if (emailChanged && (userProfile.role === 'admin' || userProfile.role === 'faculty' || userProfile.role === 'student')) {
+          localStorage.removeItem(`apsconnect_user_${userProfile.uid}`); 
+          const newUid = userProfile.role === 'student' ? userProfile.usn! : updatedProfileData.email;
+          updatedProfileData.uid = newUid; 
+          localStorage.setItem(`apsconnect_user_${newUid}`, JSON.stringify(updatedProfileData));
           if (authUser.uid === userProfile.uid) {
-            updateUserContext({ ...authUser, ...updatedProfileData, email: updatedProfileData.email, uid: updatedProfileData.uid, displayName: updatedProfileData.displayName, avatarDataUrl: updatedProfileData.avatarDataUrl, pronouns: updatedProfileData.pronouns, notificationPreferences: updatedProfileData.notificationPreferences });
+            updateUserContext({ ...authUser, ...updatedProfileData, email: updatedProfileData.email, uid: newUid, displayName: updatedProfileData.displayName, avatarDataUrl: updatedProfileData.avatarDataUrl, pronouns: updatedProfileData.pronouns, notificationPreferences: updatedProfileData.notificationPreferences });
           }
         } else {
-          // UID remains the same (student email change or no email change for faculty/admin)
           localStorage.setItem(`apsconnect_user_${userProfile.uid}`, JSON.stringify(updatedProfileData));
            if (authUser.uid === userProfile.uid) {
              updateUserContext({ ...authUser, ...updatedProfileData, displayName: updatedProfileData.displayName, avatarDataUrl: updatedProfileData.avatarDataUrl, pronouns: updatedProfileData.pronouns, notificationPreferences: updatedProfileData.notificationPreferences });
@@ -304,18 +293,17 @@ export default function ProfileSettingsPage() {
       });
       if (passwordChanged || (emailChanged && authUser.uid === userProfile.uid)) {
         toast({ title: "Security Change", description: "You've been logged out due to security changes. Please log in again.", duration: 5000});
-        // Wait for toast to be visible then sign out
         setTimeout(() => {
             if (typeof window !== 'undefined') localStorage.removeItem('mockUser');
             router.push('/login');
         }, 1000);
       } else {
         form.reset({
-            ...form.getValues(), // Keep other form values
-            currentPassword: "", // Clear password fields
+            ...form.getValues(),
+            currentPassword: "", 
             newPassword: "",
             confirmNewPassword: "",
-            currentEmail: updatedProfileData.email, // Update current email for next potential change
+            currentEmail: updatedProfileData.email,
             newEmail: "",
             confirmNewEmail: ""
         });
@@ -365,13 +353,12 @@ export default function ProfileSettingsPage() {
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold tracking-tight text-primary">Profile Settings</CardTitle>
-          <CardDescription>Manage your account details and preferences.</CardDescription>
+          <ShadCnCardDescription>Manage your account details and preferences.</ShadCnCardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             
-            {/* Avatar Section */}
             <div className="flex flex-col items-center space-y-4">
                 <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-lg">
                     <AvatarImage src={avatarPreview} alt={userProfile.displayName || userProfile.email || "User Avatar"} data-ai-hint="person face" />
@@ -392,11 +379,10 @@ export default function ProfileSettingsPage() {
                 </div>
             </div>
 
-            {/* Personal Information */}
             <Card className="p-6 shadow-md rounded-lg">
                 <CardHeader className="p-0 pb-4 mb-4 border-b">
                     <CardTitle className="text-lg font-semibold text-foreground flex items-center">
-                        <UserSpeak className="mr-2 h-5 w-5 text-primary"/> Personal Information
+                        <UserCog className="mr-2 h-5 w-5 text-primary"/> Personal Information
                     </CardTitle>
                 </CardHeader>
                 <div className="space-y-4">
@@ -439,7 +425,6 @@ export default function ProfileSettingsPage() {
                 </div>
             </Card>
 
-            {/* Email Change Section - For all users except default admin */}
             {!(userProfile.role === 'admin' && userProfile.email === ADMIN_EMAIL_CONST) && (
                 <Card className="p-6 shadow-md rounded-lg">
                 <CardHeader className="p-0 pb-4 mb-4 border-b">
@@ -484,7 +469,6 @@ export default function ProfileSettingsPage() {
                 </Card>
             )}
 
-            {/* Password Change Section */}
             <Card className="p-6 shadow-md rounded-lg">
                 <CardHeader className="p-0 pb-4 mb-4 border-b">
                     <CardTitle className="text-lg font-semibold text-foreground">Change Password</CardTitle>
@@ -526,7 +510,6 @@ export default function ProfileSettingsPage() {
                 </div>
             </Card>
             
-            {/* Notification Preferences */}
             <Card className="p-6 shadow-md rounded-lg">
                  <CardHeader className="p-0 pb-4 mb-4 border-b">
                     <CardTitle className="text-lg font-semibold text-foreground flex items-center">
