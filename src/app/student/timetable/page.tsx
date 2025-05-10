@@ -1,15 +1,14 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/components/auth-provider'; // User type is implicitly imported via useAuth
+import { useAuth } from '@/components/auth-provider'; 
 import { useRouter } from 'next/navigation';
 import type { TimeTable, Branch, Semester } from '@/types';
 import { TimetableView } from '@/components/timetables/timetable-view';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // CardDescription not used here
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, AlertTriangle, Info } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Info, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 const TIMETABLE_STORAGE_KEY_PREFIX = 'apsconnect_timetable_';
@@ -69,7 +68,6 @@ export default function StudentTimetablePage() {
   }
 
   if (!user || (user.role !== 'student' && user.role !== 'pending')) {
-    // This should ideally not be reached due to the useEffect redirect, but as a fallback.
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -119,6 +117,11 @@ export default function StudentTimetablePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
       <TimetableView 
         timetable={timetable} 
         isLoading={pageLoading} 
@@ -128,3 +131,4 @@ export default function StudentTimetablePage() {
     </div>
   );
 }
+

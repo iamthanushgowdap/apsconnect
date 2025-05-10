@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 export default function AdminEditPostPage() {
@@ -135,6 +135,11 @@ export default function AdminEditPostPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-4 w-4" />
+        </Button>
+      </div>
       <CreatePostForm 
         onFormSubmit={handleFormSubmit} 
         initialData={initialPostData}
@@ -146,3 +151,4 @@ export default function AdminEditPostPage() {
     </div>
   );
 }
+

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { TimetableView } from '@/components/timetables/timetable-view';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, CalendarDays, Eye, Edit } from 'lucide-react';
+import { ShieldCheck, CalendarDays, Eye, Edit, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -92,11 +91,9 @@ export default function AdminTimetablePage() {
   }, [loadTimetableForView, pageLoading, user, activeTab]);
   
   const handleTimetableUpdate = () => {
-    if (activeTab === "view") { // If currently on view tab, refresh it
+    if (activeTab === "view") { 
         loadTimetableForView();
     }
-    // If on edit tab, the form itself has the latest, no need to force refresh of form
-    // but if they switch to view tab, it will load the latest
   };
 
 
@@ -109,7 +106,6 @@ export default function AdminTimetablePage() {
   }
 
   if (!user || user.role !== 'admin') {
-    // This should ideally not be reached due to the useEffect redirect, but as a fallback.
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -126,15 +122,18 @@ export default function AdminTimetablePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-       <div className="mb-8">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
           <CalendarDays className="mr-3 h-7 w-7" />
           Timetable Management
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          View existing timetables or create/update new ones for different branches and semesters.
-        </p>
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
+      <p className="text-sm sm:text-base text-muted-foreground mb-8">
+        View existing timetables or create/update new ones for different branches and semesters.
+      </p>
 
       <Tabs defaultValue="view" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
@@ -187,3 +186,4 @@ export default function AdminTimetablePage() {
     </div>
   );
 }
+

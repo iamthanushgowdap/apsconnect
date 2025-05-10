@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -20,9 +19,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
-import type { UserProfile, Semester } from '@/types'; // Added Semester
-import { semesters as allSemesters } from '@/types'; // Added allSemesters
-import { Loader2, ShieldCheck, Camera, Trash2 } from 'lucide-react';
+import type { UserProfile, Semester } from '@/types'; 
+import { semesters as allSemesters } from '@/types'; 
+import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -147,7 +146,7 @@ export default function ProfileSettingsPage() {
             currentPassword: "",
             newPassword: "",
             confirmNewPassword: "",
-            currentEmail: "", // Keep currentEmail fields blank initially for security
+            currentEmail: "", 
             newEmail: "",
             confirmNewEmail: ""
           });
@@ -159,10 +158,10 @@ export default function ProfileSettingsPage() {
             displayName: 'Admin User',
             registrationDate: new Date().toISOString(),
             isApproved: true,
-            password: ADMIN_PASSWORD_CONST, // This is a mock password
+            password: ADMIN_PASSWORD_CONST, 
           };
           setUserProfileState(defaultAdminProfile);
-          setAvatarPreview(null); // No default avatar for hardcoded admin unless explicitly set
+          setAvatarPreview(null); 
           form.reset({
             displayName: defaultAdminProfile.displayName || "",
             currentPassword: "",
@@ -186,7 +185,7 @@ export default function ProfileSettingsPage() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      if (file.size > 2 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant: "destructive" });
         return;
       }
@@ -198,9 +197,9 @@ export default function ProfileSettingsPage() {
 
   const handleRemoveAvatar = () => {
     setSelectedFile(null);
-    setAvatarPreview(null); // This will trigger fallback
+    setAvatarPreview(null); 
     if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Clear the file input
+        fileInputRef.current.value = ""; 
     }
   };
 
@@ -217,7 +216,6 @@ export default function ProfileSettingsPage() {
     const isDisplayNameChanged = data.displayName !== undefined && data.displayName !== userProfile.displayName;
     const isPasswordChanged = !!data.newPassword;
     const isEmailChanged = !!data.newEmail;
-    // Check if avatar was explicitly removed OR a new file was selected
     const isAvatarChanged = (avatarPreview === null && userProfile.avatarDataUrl) || selectedFile;
 
 
@@ -232,8 +230,8 @@ export default function ProfileSettingsPage() {
       if (selectedFile) {
         updatedProfileData.avatarDataUrl = await readFileAsDataURL(selectedFile);
         changesMade = true;
-      } else if (avatarPreview === null && userProfile.avatarDataUrl) { // If avatarPreview is null and there was an old avatar
-        updatedProfileData.avatarDataUrl = undefined; // Remove avatar
+      } else if (avatarPreview === null && userProfile.avatarDataUrl) { 
+        updatedProfileData.avatarDataUrl = undefined; 
         changesMade = true;
       }
 
@@ -248,7 +246,6 @@ export default function ProfileSettingsPage() {
              form.setError("currentPassword", { message: "Current password is required."});
              setFormSubmitting(false); return;
         }
-        // For mock purposes, password comparison is simple. In a real app, this would involve hashing.
         const actualCurrentPassword = userProfile.password || (userProfile.uid === ADMIN_EMAIL_CONST ? ADMIN_PASSWORD_CONST : "");
         if (data.currentPassword !== actualCurrentPassword) {
           toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant: "destructive", duration: 3000 });
@@ -256,12 +253,12 @@ export default function ProfileSettingsPage() {
           setFormSubmitting(false);
           return;
         }
-        updatedProfileData.password = data.newPassword; // Store new password (mock only)
+        updatedProfileData.password = data.newPassword; 
         changesMade = true;
       }
 
-      let oldEmailKey: string | null = null;
-      let newEmailKey: string | null = null;
+      let oldStorageKey: string | null = `apsconnect_user_${userProfile.uid}`;
+      let newStorageKey: string | null = oldStorageKey;
 
       if (data.newEmail) {
         if (!data.currentEmail) {
@@ -280,7 +277,6 @@ export default function ProfileSettingsPage() {
           setFormSubmitting(false); return;
         }
 
-        // Check if the new email already exists for another user
         if (data.newEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
             let emailExistsForOtherUser = false;
             if (typeof window !== 'undefined') {
@@ -296,7 +292,6 @@ export default function ProfileSettingsPage() {
                                     break;
                                 }
                             } catch (e) {  
-                              // Ignore parse errors  
                             }
                         }
                     }
@@ -310,14 +305,11 @@ export default function ProfileSettingsPage() {
             }
         }
 
-
-        if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
-            // For admin/faculty, UID is their email. So, changing email means changing UID.
-            oldEmailKey = `apsconnect_user_${userProfile.uid}`; // Old key based on old UID (email)
-            updatedProfileData.uid = data.newEmail.toLowerCase(); // New UID is the new email
-            newEmailKey = `apsconnect_user_${updatedProfileData.uid}`; // New key based on new UID (email)
-        }
         updatedProfileData.email = data.newEmail.toLowerCase();
+        if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
+            updatedProfileData.uid = data.newEmail.toLowerCase(); 
+            newStorageKey = `apsconnect_user_${updatedProfileData.uid}`;
+        }
         changesMade = true;
       }
 
@@ -327,27 +319,22 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      // Save updated profile to localStorage
       if (typeof window !== 'undefined') {
-        if (newEmailKey && oldEmailKey && oldEmailKey !== newEmailKey && (userProfile.role === 'admin' || userProfile.role === 'faculty')) {
-          localStorage.removeItem(oldEmailKey); // Remove old profile if UID changed
-          localStorage.setItem(newEmailKey, JSON.stringify(updatedProfileData));
-        } else {
-          // For students, UID (USN) doesn't change, or if email didn't change for admin/faculty
-          localStorage.setItem(`apsconnect_user_${updatedProfileData.uid}`, JSON.stringify(updatedProfileData));
+        if (oldStorageKey && newStorageKey && oldStorageKey !== newStorageKey) {
+          localStorage.removeItem(oldStorageKey); 
         }
-
-        // Update auth context and mockUser if it exists
+        localStorage.setItem(newStorageKey!, JSON.stringify(updatedProfileData));
+        
         const updatedAuthUser: User = {
           ...authUser,
-          uid: updatedProfileData.uid, // This will be new email for admin/faculty if changed
+          uid: updatedProfileData.uid, 
           email: updatedProfileData.email,
           displayName: updatedProfileData.displayName || authUser.displayName,
-          // other fields like role, branch, usn, assignedBranches should remain from authUser
+          avatarDataUrl: updatedProfileData.avatarDataUrl,
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
-        updateUserContext(updatedAuthUser); // Update context so Navbar reflects changes
-        setUserProfileState(updatedProfileData); // Update local component state
+        updateUserContext(updatedAuthUser); 
+        setUserProfileState(updatedProfileData); 
       }
 
       toast({
@@ -355,13 +342,12 @@ export default function ProfileSettingsPage() {
         description: "Your profile details have been successfully updated.",
         duration: 3000,
       });
-      // Reset form fields for passwords and emails to blank for security
       form.reset({
         displayName: updatedProfileData.displayName || "",
         currentPassword: "", newPassword: "", confirmNewPassword: "",
         currentEmail: "", newEmail: "", confirmNewEmail: ""
       });
-      setSelectedFile(null); // Clear selected file after successful upload
+      setSelectedFile(null); 
 
     } catch (error: any) {
       toast({
@@ -383,7 +369,7 @@ export default function ProfileSettingsPage() {
     );
   }
 
-  if (!authUser || !userProfile) { // Check both authUser and userProfile
+  if (!authUser || !userProfile) { 
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Card className="max-w-md mx-auto shadow-lg">
@@ -420,7 +406,7 @@ export default function ProfileSettingsPage() {
                 className="hidden"
                 accept="image/png, image/jpeg, image/gif, image/webp"
                 onChange={handleFileChange}
-                id="avatar-upload-input" // Ensure id is unique if multiple instances
+                id="avatar-upload-input" 
               />
               {avatarPreview && (
                 <Button size="sm" variant="destructive" onClick={handleRemoveAvatar}>
@@ -464,7 +450,6 @@ export default function ProfileSettingsPage() {
                 )}
               />
 
-              {/* Password Change Section */}
               <div className="space-y-1 pt-4 border-t">
                 <h3 className="text-md font-medium text-foreground">Change Password</h3>
                 <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change password.</p>
@@ -472,9 +457,8 @@ export default function ProfileSettingsPage() {
               <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
-
-             {/* Email Change Section - Only for Admin/Faculty */}
-             {(userProfile.role === 'admin' || userProfile.role === 'faculty') && (
+             
+              {(userProfile.email) && ( 
                 <>
                     <div className="space-y-1 pt-4 border-t">
                         <h3 className="text-md font-medium text-foreground">Change Email Address</h3>
@@ -493,12 +477,13 @@ export default function ProfileSettingsPage() {
             </form>
           </Form>
           <div className="mt-6 text-center">
-            <Link href="/dashboard">
-              <Button variant="outline">Back to Dashboard</Button>
-            </Link>
+            <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+

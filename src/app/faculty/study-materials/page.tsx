@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { ShieldCheck, BookOpen, PlusCircle, Edit3, Trash2, Download, Search, Info } from 'lucide-react';
+import { ShieldCheck, BookOpen, PlusCircle, Edit3, Trash2, Download, Search, Info, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -54,11 +54,10 @@ export default function FacultyStudyMaterialsPage() {
     if (typeof window !== 'undefined') {
       const storedMaterials = localStorage.getItem(STUDY_MATERIAL_STORAGE_KEY);
       let materials: StudyMaterial[] = storedMaterials ? JSON.parse(storedMaterials) : [];
-      // Faculty can only see materials for their assigned branches
       if (memoizedFacultyAssignedBranches.length > 0) {
         materials = materials.filter(m => memoizedFacultyAssignedBranches.includes(m.branch));
       } else {
-        materials = []; // If no assigned branches, faculty sees nothing
+        materials = []; 
       }
       setAllMaterials(materials.sort((a,b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()));
     }
@@ -78,7 +77,6 @@ export default function FacultyStudyMaterialsPage() {
   }, [user, authLoading, router, memoizedFacultyAssignedBranches, filterBranch]);
 
   useEffect(() => {
-    // Fetch materials only when user context is settled and they are authorized
     if (!pageLoading && user && user.role === 'faculty') {
         fetchMaterials();
     }
@@ -116,7 +114,6 @@ export default function FacultyStudyMaterialsPage() {
     }
     setAllMaterials(updatedFullList);
 
-    // Update global localStorage (admin might modify this, faculty only adds/edits within their branches)
     if (typeof window !== 'undefined') {
         const globalMaterialsStr = localStorage.getItem(STUDY_MATERIAL_STORAGE_KEY);
         let globalMaterials: StudyMaterial[] = globalMaterialsStr ? JSON.parse(globalMaterialsStr) : [];
@@ -133,7 +130,6 @@ export default function FacultyStudyMaterialsPage() {
   };
 
   const openEditDialog = (material: StudyMaterial) => {
-    // Faculty can only edit materials they uploaded OR if it's for their assigned branch
     if (material.uploadedByUid === user?.uid || memoizedFacultyAssignedBranches.includes(material.branch)) {
         setEditingMaterial(material);
         setIsFormDialogOpen(true);
@@ -148,7 +144,6 @@ export default function FacultyStudyMaterialsPage() {
   };
 
   const confirmDeleteMaterial = (material: StudyMaterial) => {
-    // Faculty can only delete materials they uploaded OR if it's for their assigned branch
      if (material.uploadedByUid === user?.uid || memoizedFacultyAssignedBranches.includes(material.branch)) {
         setMaterialToDelete(material);
     } else {
@@ -161,7 +156,6 @@ export default function FacultyStudyMaterialsPage() {
     const updatedMaterials = allMaterials.filter(m => m.id !== materialToDelete.id);
     setAllMaterials(updatedMaterials);
     
-    // Update global localStorage
     if (typeof window !== 'undefined') {
         const globalMaterialsStr = localStorage.getItem(STUDY_MATERIAL_STORAGE_KEY);
         let globalMaterials: StudyMaterial[] = globalMaterialsStr ? JSON.parse(globalMaterialsStr) : [];
@@ -231,17 +225,20 @@ export default function FacultyStudyMaterialsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-                <BookOpen className="mr-3 h-7 w-7" /> Study Material Management
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Upload, view, and manage study materials for your assigned branches.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
+            <BookOpen className="mr-3 h-7 w-7" /> Study Material Management
+        </h1>
+        <div className="flex items-center gap-2">
+            <Button onClick={openCreateDialog}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Upload New Material
+            </Button>
+             <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
         </div>
-        <Button onClick={openCreateDialog}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Upload New Material
-        </Button>
       </div>
+      <p className="text-sm sm:text-base text-muted-foreground mb-8">Upload, view, and manage study materials for your assigned branches.</p>
 
       <Card className="shadow-lg mb-8">
         <CardHeader>
@@ -250,7 +247,6 @@ export default function FacultyStudyMaterialsPage() {
             <Select value={filterBranch} onValueChange={setFilterBranch}>
               <SelectTrigger><SelectValue placeholder="Filter by Branch" /></SelectTrigger>
               <SelectContent>
-                {/* <SelectItem value="all">All My Assigned Branches</SelectItem> */}
                 {memoizedFacultyAssignedBranches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -338,7 +334,6 @@ export default function FacultyStudyMaterialsPage() {
         </CardContent>
       </Card>
 
-       {/* Form Dialog */}
        {isFormDialogOpen && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -350,7 +345,7 @@ export default function FacultyStudyMaterialsPage() {
                     <StudyMaterialForm
                         onSubmitSuccess={handleFormSubmitSuccess}
                         initialData={editingMaterial || undefined}
-                        availableBranches={memoizedFacultyAssignedBranches} // Faculty can only select from their assigned branches
+                        availableBranches={memoizedFacultyAssignedBranches} 
                         isLoading={formSubmitting}
                         setIsLoading={setFormSubmitting}
                     />
@@ -364,8 +359,6 @@ export default function FacultyStudyMaterialsPage() {
           </div>
       )}
 
-
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!materialToDelete} onOpenChange={() => setMaterialToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

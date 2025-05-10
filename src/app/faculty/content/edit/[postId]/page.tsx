@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
 export default function FacultyEditPostPage() {
@@ -99,79 +99,66 @@ export default function FacultyEditPostPage() {
 
   if (pageLoading || authLoading) {
     return (
-      
-        
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
+      </div>
     );
   }
 
   if (!user || user.role !== 'faculty') {
     return (
-      
-        
-          
-            Access Denied
-          
-          
-            
-              
-            
-            You do not have permission to view this page.
-            
-              Go to Dashboard
-            
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 text-center">
+        <Card className="max-w-md mx-auto shadow-lg">
+          <CardHeader><CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle></CardHeader>
+          <CardContent>
+            <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+            <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
+            <Link href="/dashboard"><Button variant="outline" className="mt-6">Go to Dashboard</Button></Link>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
   
   if (errorLoadingPost) {
     return (
-      
-        
-          
-            Error Loading Post
-          
-          
-            
-              
-            
-            {errorLoadingPost}
-            
-              Back to Feed
-            
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 text-center">
+        <Card className="max-w-md mx-auto shadow-lg">
+          <CardHeader><CardTitle className="text-warning text-xl sm:text-2xl">Error Loading Post</CardTitle></CardHeader>
+          <CardContent>
+            <AlertTriangle className="h-12 w-12 sm:h-16 sm:w-16 text-warning mx-auto mb-4" />
+            <p className="text-md sm:text-lg text-muted-foreground">{errorLoadingPost}</p>
+            <Link href="/feed"><Button variant="outline" className="mt-6">Back to Feed</Button></Link>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
   
   if (!initialPostData) {
      return (
-      
-        
-          
-           Loading post data...
-        
-      
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" /> <span className="ml-2">Loading post data...</span>
+      </div>
     );
   }
 
   return (
-    
-      
-        
-          onFormSubmit={handleFormSubmit} 
-          initialData={initialPostData}
-          isLoading={formSubmitting}
-          formTitle="Faculty: Edit Your Post"
-          formDescription="Modify the details of your post. Note: Attachments will need to be re-selected if changes are needed."
-          submitButtonText="Update Post"
-        
-      
-    
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-4 w-4" />
+        </Button>
+      </div>
+      <CreatePostForm 
+        onFormSubmit={handleFormSubmit} 
+        initialData={initialPostData}
+        isLoading={formSubmitting}
+        formTitle="Faculty: Edit Your Post"
+        formDescription="Modify the details of your post. Note: Attachments will need to be re-selected if changes are needed."
+        submitButtonText="Update Post"
+      />
+    </div>
   );
 }
+

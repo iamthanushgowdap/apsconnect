@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, ArrowLeft } from 'lucide-react';
 import { NewPostToast } from '@/components/notifications/new-post-toast';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
@@ -88,45 +88,43 @@ export default function FacultyCreatePostPage() {
 
   if (pageLoading || authLoading) {
     return (
-      
-        
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <SimpleRotatingSpinner className="h-12 w-12 text-primary" />
+      </div>
     );
   }
 
   if (!user || user.role !== 'faculty') {
      return (
-      
-        
-          
-            Access Denied
-          
-          
-            
-              
-            
-            You do not have permission to view this page.
-            
-              Go to Dashboard
-            
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 text-center">
+        <Card className="w-full max-w-md mx-auto shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+            <p className="text-md sm:text-lg text-muted-foreground">You do not have permission to view this page.</p>
+            <Link href="/dashboard"><Button variant="outline" className="mt-6">Go to Dashboard</Button></Link>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    
-      
-        
-          onFormSubmit={handleFormSubmit} 
-          isLoading={formSubmitting}
-          formTitle="Faculty: Create New Post"
-          formDescription="Share updates, notes, or event information relevant to your students and branches."
-        
-      
-    
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-4 w-4" />
+        </Button>
+      </div>
+      <CreatePostForm 
+        onFormSubmit={handleFormSubmit} 
+        isLoading={formSubmitting}
+        formTitle="Faculty: Create New Post"
+        formDescription="Share updates, notes, or event information relevant to your students and branches."
+      />
+    </div>
   );
 }
+

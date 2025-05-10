@@ -25,7 +25,7 @@ import {
   Users,
   AlertTriangle,
   MoreHorizontal,
-  CalendarPlus // Icon for Add to Calendar
+  CalendarPlus 
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
@@ -106,10 +106,9 @@ export default function IndividualPostPage() {
         const allPosts: Post[] = JSON.parse(postsStr);
         const foundPost = allPosts.find(p => p.id === postId);
         if (foundPost) {
-          // Permission check
           let canView = false;
           if (!foundPost.targetBranches || foundPost.targetBranches.length === 0) {
-            canView = true; // Public post
+            canView = true; 
           } else if (user) {
             if (user.role === 'admin') {
               canView = true;
@@ -186,7 +185,7 @@ export default function IndividualPostPage() {
         localStorage.setItem('apsconnect_posts', JSON.stringify(allPostsStored));
         
         toast({title: "Post Deleted", description: `"${post.title}" has been deleted.`, duration: 3000});
-        router.push('/feed'); // Redirect after deletion
+        router.push('/feed'); 
     }
     setDeleteTargetPostId(null);
   };
@@ -223,8 +222,7 @@ export default function IndividualPostPage() {
       downloadICSFile(`${post.title.replace(/\s+/g, '_')}.ics`, icsContent);
       toast({ title: "Event Added to Calendar", description: "Check your downloads for the .ics file.", duration: 3000 });
     } else {
-      // For non-event posts, create a generic calendar entry using createdAt
-      const icsContent = generatePostEventICS(post); // generatePostEventICS handles missing event-specific dates
+      const icsContent = generatePostEventICS(post); 
       downloadICSFile(`${post.title.replace(/\s+/g, '_')}_reminder.ics`, icsContent);
       toast({ title: "Reminder Added to Calendar", description: "A reminder for this post has been generated. Check your downloads.", duration: 3000 });
     }
@@ -275,8 +273,8 @@ export default function IndividualPostPage() {
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-        <Button variant="outline" onClick={() => router.back()} className="mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        <Button variant="outline" size="icon" onClick={() => router.back()} className="mb-6" aria-label="Go back">
+            <ArrowLeft className="h-4 w-4" />
         </Button>
         <Card className="shadow-xl rounded-lg overflow-hidden">
             <CardHeader className="border-b bg-card p-6">
@@ -388,3 +386,4 @@ export default function IndividualPostPage() {
     </div>
   );
 }
+

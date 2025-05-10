@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { ShieldCheck, BookOpen, PlusCircle, Edit3, Trash2, Download, Search } from 'lucide-react';
+import { ShieldCheck, BookOpen, PlusCircle, Edit3, Trash2, Download, Search, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -145,7 +145,6 @@ export default function AdminStudyMaterialsPage() {
   };
   
   const handleDownloadAttachment = (attachment: StudyMaterial['attachments'][0]) => {
-    // This is a mock download for localStorage. Real implementation would fetch from a URL.
     toast({ title: "Download Started (Mock)", description: `Downloading ${attachment.name}... This is a mock.`, duration: 3000 });
     const blob = new Blob(["Mock file content for " + attachment.name], { type: attachment.type });
     const link = document.createElement('a');
@@ -183,21 +182,25 @@ export default function AdminStudyMaterialsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-                <BookOpen className="mr-3 h-7 w-7" /> Study Material Management
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Upload, view, and manage study materials for all branches.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
+            <BookOpen className="mr-3 h-7 w-7" /> Study Material Management
+        </h1>
+        <div className="flex items-center gap-2">
+            <Button onClick={openCreateDialog}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Upload New Material
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
         </div>
-        <Button onClick={openCreateDialog}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Upload New Material
-        </Button>
       </div>
+      <p className="text-sm sm:text-base text-muted-foreground mb-8">Upload, view, and manage study materials for all branches.</p>
+
 
       <Card className="shadow-lg mb-8">
         <CardHeader>
-          <CardTitle>Filter & Search Materials</CardTitle>
+          <CardTitle>Filter &amp; Search Materials</CardTitle>
            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
             <Select value={filterBranch} onValueChange={setFilterBranch}>
               <SelectTrigger><SelectValue placeholder="Filter by Branch" /></SelectTrigger>
@@ -290,7 +293,6 @@ export default function AdminStudyMaterialsPage() {
         </CardContent>
       </Card>
 
-      {/* Form Dialog */}
       {isFormDialogOpen && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -316,8 +318,6 @@ export default function AdminStudyMaterialsPage() {
           </div>
       )}
 
-
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!materialToDelete} onOpenChange={() => setMaterialToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

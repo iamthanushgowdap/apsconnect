@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { TimetableView } from '@/components/timetables/timetable-view';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, Info, CalendarDays, Eye, Edit } from 'lucide-react';
+import { ShieldCheck, Info, CalendarDays, Eye, Edit, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -124,15 +123,18 @@ export default function FacultyTimetablePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
           <CalendarDays className="mr-3 h-7 w-7" />
           Timetable Management
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          View existing timetables or create/update new ones for your assigned branches.
-        </p>
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
+      <p className="text-sm sm:text-base text-muted-foreground mb-8">
+        View existing timetables or create/update new ones for your assigned branches.
+      </p>
 
       <Tabs defaultValue="view" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
@@ -185,3 +187,4 @@ export default function FacultyTimetablePage() {
     </div>
   );
 }
+

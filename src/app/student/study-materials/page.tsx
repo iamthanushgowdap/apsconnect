@@ -9,7 +9,7 @@ import { StudyMaterialItem } from '@/components/study-materials/study-material-i
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCnCardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShieldCheck, BookOpen, Info, AlertTriangle, Search, Filter } from 'lucide-react';
+import { ShieldCheck, BookOpen, Info, AlertTriangle, Search, Filter, ArrowLeft } from 'lucide-react';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Input } from '@/components/ui/input';
 
@@ -138,16 +138,17 @@ export default function StudentStudyMaterialsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-                <BookOpen className="mr-3 h-7 w-7" /> Study Materials
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-                Access materials for your branch: <strong>{studentDetails.branch}</strong>, semester: <strong>{studentDetails.semester}</strong>.
-            </p>
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
+            <BookOpen className="mr-3 h-7 w-7" /> Study Materials
+        </h1>
+        <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
+      <p className="text-sm sm:text-base text-muted-foreground mb-8">
+        Access materials for your branch: <strong>{studentDetails.branch}</strong>, semester: <strong>{studentDetails.semester}</strong>.
+      </p>
       
       <Card className="shadow-lg mb-8">
         <CardHeader>
