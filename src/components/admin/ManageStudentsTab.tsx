@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -17,8 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"; // Removed AlertDialogTrigger as it's not used directly
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,6 +29,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const passwordChangeSchema = z.object({
   newPassword: z.string().min(6, "Password must be at least 6 characters."),
@@ -72,12 +74,13 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
           try {
             const user = JSON.parse(localStorage.getItem(key) || '{}') as UserProfile;
             if (user.role === 'student' || user.role === 'pending') {
-              // Admin sees all students. Faculty sees students from their assigned branches AND semesters.
               if (actor.role === 'admin') {
                 users.push(user);
               } else if (actor.role === 'faculty' && user.branch && user.semester) {
                 const facultyCanAccessBranch = actor.assignedBranches?.includes(user.branch);
-                const facultyCanAccessSemester = actor.assignedSemesters?.includes(user.semester);
+                // Faculty can access a student if EITHER their assigned semester matches the student's semester OR the faculty has no specific semesters assigned (meaning they manage all semesters for their branch)
+                const facultyCanAccessSemester = !actor.assignedSemesters || actor.assignedSemesters.length === 0 || actor.assignedSemesters?.includes(user.semester);
+
                 if (facultyCanAccessBranch && facultyCanAccessSemester) {
                   users.push(user);
                 }
@@ -100,8 +103,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
   const handleAction = () => {
     if (!selectedStudent || !dialogAction) return;
 
-    if (dialogAction === 'reject' && !rejectionReason.trim()) {
-      toast({ title: "Reason Required", description: "Please provide a reason for rejection.", variant: "destructive", duration: 3000 });
+    if ((dialogAction === 'reject' || dialogAction === 'revoke') && !rejectionReason.trim()) {
+      toast({ title: "Reason Required", description: "Please provide a reason for this action.", variant: "destructive", duration: 3000 });
       return;
     }
     
@@ -119,45 +122,49 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                         ...studentProfile, 
                         isApproved: true, 
                         role: 'student', 
-                        rejectionReason: undefined,
+                        rejectionReason: undefined, // Clear rejection reason on approval
                         approvedByUid: actor.uid,
                         approvedByDisplayName: actor.displayName || actor.email || 'System',
                         approvalDate: new Date().toISOString(),
+                        rejectedByUid: undefined, // Clear rejection details
+                        rejectedByDisplayName: undefined,
+                        rejectedDate: undefined,
                     };
                     toastMessage = `${selectedStudent.displayName || selectedStudent.usn}'s registration approved.`;
                     break;
-                case 'reject':
+                case 'reject': // This case applies when rejecting a PENDING student
                      updatedProfile = { 
                         ...studentProfile, 
                         isApproved: false, 
-                        role: 'pending', // Keep as pending even if rejected
+                        role: 'pending', 
                         rejectionReason: rejectionReason,
                         rejectedByUid: actor.uid,
                         rejectedByDisplayName: actor.displayName || actor.email || 'System',
                         rejectedDate: new Date().toISOString(),
+                        approvedByUid: undefined, // Clear approval details if any existed
+                        approvedByDisplayName: undefined,
+                        approvalDate: undefined,
                      };
                     toastMessage = `${selectedStudent.displayName || selectedStudent.usn}'s registration rejected. Reason: ${rejectionReason}`;
                     break;
-                case 'revoke': // Rejection of an already approved student
+                case 'revoke': // This case applies when an APPROVED student's access is revoked (effectively rejecting them)
                     updatedProfile = {
                         ...studentProfile,
                         isApproved: false,
                         role: 'pending',
-                        rejectionReason: rejectionReason || "Access Revoked by " + (actor.displayName || actor.role), // Default reason if none provided
+                        rejectionReason: rejectionReason || "Access Revoked by " + (actor.displayName || actor.role), 
                         rejectedByUid: actor.uid,
                         rejectedByDisplayName: actor.displayName || actor.email || 'System',
                         rejectedDate: new Date().toISOString(),
-                        // Clear approval details
                         approvedByUid: undefined, 
                         approvedByDisplayName: undefined,
                         approvalDate: undefined,
                     };
-                    toastMessage = `Access revoked for ${selectedStudent.displayName || selectedStudent.usn}.`;
+                    toastMessage = `Access revoked for ${selectedStudent.displayName || selectedStudent.usn}. Reason: ${rejectionReason}`;
                     break;
             }
 
             localStorage.setItem(studentKey, JSON.stringify(updatedProfile));
-             // Also update the mockUser if it's the student being actioned on and their status changed
             const mockUserStr = localStorage.getItem('mockUser');
             if (mockUserStr) {
                 const mockUser = JSON.parse(mockUserStr) as User;
@@ -172,7 +179,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             }
 
             toast({ title: "Action Successful", description: toastMessage, duration: 3000 });
-            fetchStudents(); // Re-fetch to update list
+            fetchStudents(); 
         } else {
             toast({ title: "Error", description: "Student profile not found.", variant: "destructive" });
         }
@@ -222,7 +229,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     return matchesSearch && matchesBranch && matchesSemester && matchesStatus;
   });
 
-  const uniqueBranches = defaultBranches; // Use admin-managed branches eventually
+  const uniqueBranches = defaultBranches; 
   const uniqueSemesters = semesters;
 
   if (isLoading) {
@@ -304,7 +311,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                        <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      {!student.isApproved && !student.rejectionReason && (
+                      {!student.isApproved && !student.rejectionReason && ( // PENDING approval
                          <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700" onClick={() => { setSelectedStudent(student); setDialogAction('approve'); }}>
@@ -314,40 +321,40 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
                             <TooltipContent><p>Approve Student</p></TooltipContent>
                         </Tooltip>
                       )}
-                       {!student.isApproved && !student.rejectionReason && (
+                       {!student.isApproved && !student.rejectionReason && ( // PENDING approval
                          <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700" onClick={() => { setSelectedStudent(student); setDialogAction('reject'); }}>
+                                <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700" onClick={() => { setSelectedStudent(student); setDialogAction('reject'); setRejectionReason(''); }}>
                                     <XCircle className="h-5 w-5" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>Reject Student</p></TooltipContent>
                         </Tooltip>
                        )}
-                      {student.isApproved && (
+                      {student.isApproved && ( // APPROVED student
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-orange-600 hover:text-orange-700" onClick={() => { setSelectedStudent(student); setDialogAction('revoke'); }}>
+                                <Button variant="ghost" size="icon" className="text-orange-600 hover:text-orange-700" onClick={() => { setSelectedStudent(student); setDialogAction('revoke'); setRejectionReason(''); }}>
                                     <ShieldAlert className="h-5 w-5" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>Revoke Approval / Reject</p></TooltipContent>
                         </Tooltip>
                       )}
-                       {student.rejectionReason && ( // If rejected, allow to re-approve (revoke rejection)
+                       {student.rejectionReason && ( // REJECTED student
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700" onClick={() => { setSelectedStudent(student); setDialogAction('approve'); }}>
                                     <CheckCircle2 className="h-5 w-5" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Re-Approve (Revoke Rejection)</p></TooltipContent>
+                            <TooltipContent><p>Re-Approve (Clear Rejection)</p></TooltipContent>
                         </Tooltip>
                        )}
                        <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" onClick={() => { setSelectedStudent(student); setDialogAction('changePassword'); passwordForm.reset(); }}>
-                                <VenetianMask className="h-5 w-5" /> {/* Using a generic icon for password */}
+                                <VenetianMask className="h-5 w-5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent><p>Change Password</p></TooltipContent>
@@ -361,8 +368,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!selectedStudent && (dialogAction === 'approve' || dialogAction === 'reject' || dialogAction === 'revoke')} onOpenChange={() => {
-        if (!selectedStudent) { // Only reset if dialog is truly closing, not just re-rendering
+      <AlertDialog open={!!selectedStudent && (dialogAction === 'approve' || dialogAction === 'reject' || dialogAction === 'revoke')} onOpenChange={(isOpen) => {
+        if (!isOpen) { 
             setDialogAction(null);
             setSelectedStudent(null);
             setRejectionReason('');
@@ -374,17 +381,17 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             <AlertDialogDescription>
               {dialogAction === 'approve' && `Are you sure you want to approve ${selectedStudent?.displayName || selectedStudent?.usn}?`}
               {dialogAction === 'reject' && `Please provide a reason for rejecting ${selectedStudent?.displayName || selectedStudent?.usn}.`}
-              {dialogAction === 'revoke' && `Are you sure you want to revoke access for ${selectedStudent?.displayName || selectedStudent?.usn}? You can optionally provide a reason.`}
+              {dialogAction === 'revoke' && `Are you sure you want to revoke access for ${selectedStudent?.displayName || selectedStudent?.usn}? You must provide a reason.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {(dialogAction === 'reject' || dialogAction === 'revoke') && (
             <div className="py-2">
-              <Label htmlFor="rejectionReason" className="text-sm font-medium">Reason {dialogAction === 'reject' ? '(Required)' : '(Optional)'}</Label>
+              <Label htmlFor="rejectionReason" className="text-sm font-medium">Reason {dialogAction === 'reject' || dialogAction === 'revoke' ? '(Required)' : '(Optional)'}</Label>
               <Textarea 
                 id="rejectionReason" 
                 value={rejectionReason} 
                 onChange={(e) => setRejectionReason(e.target.value)} 
-                placeholder={dialogAction === 'reject' ? "Enter reason for rejection..." : "Enter reason for revoking (optional)..."} 
+                placeholder={dialogAction === 'reject' ? "Enter reason for rejection..." : "Enter reason for revoking..."} 
                 className="mt-1"
                 rows={3}
               />
@@ -395,7 +402,7 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
             <AlertDialogAction 
                 onClick={handleAction} 
                 className={dialogAction === 'reject' || dialogAction === 'revoke' ? "bg-destructive hover:bg-destructive/90" : "bg-green-600 hover:bg-green-700"}
-                disabled={dialogAction === 'reject' && !rejectionReason.trim()}
+                disabled={(dialogAction === 'reject' || dialogAction === 'revoke') && !rejectionReason.trim()}
             >
               Confirm {dialogAction?.charAt(0).toUpperCase() + dialogAction!.slice(1)}
             </AlertDialogAction>
@@ -403,8 +410,8 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-        <AlertDialog open={!!selectedStudent && dialogAction === 'changePassword'} onOpenChange={() => {
-            if (dialogAction === 'changePassword' && !passwordForm.formState.isSubmitting) {
+        <AlertDialog open={!!selectedStudent && dialogAction === 'changePassword'} onOpenChange={(isOpen) => {
+            if (!isOpen && dialogAction === 'changePassword') {
                 setDialogAction(null);
                 setSelectedStudent(null);
                 passwordForm.reset();
@@ -454,3 +461,4 @@ export default function ManageStudentsTab({ actor }: ManageStudentsTabProps) {
     </TooltipProvider>
   );
 }
+
