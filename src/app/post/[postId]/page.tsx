@@ -273,7 +273,7 @@ export default function IndividualPostPage() {
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-        <Button variant="outline" size="icon" onClick={() => router.back()} className="mb-6" aria-label="Go back">
+        <Button variant="outline" size="icon" onClick={() => router.back()} className="mb-6" aria-label="Go back to previous page">
             <ArrowLeft className="h-4 w-4" />
         </Button>
         <Card className="shadow-xl rounded-lg overflow-hidden">
@@ -303,7 +303,7 @@ export default function IndividualPostPage() {
                         <span className="flex items-center gap-1"><Users className="h-4 w-4" /> For: All Branches</span>
                     )}
                     {isCalendarRelevant && (post.eventDate || post.category === 'event' || post.category === 'schedule') && (
-                      <Button variant="outline" size="sm" onClick={handleAddToCalendar} className="ml-auto">
+                      <Button variant="outline" size="sm" onClick={handleAddToCalendar} className="ml-auto" aria-label="Add to calendar">
                         <CalendarPlus className="mr-2 h-4 w-4" /> Add to Calendar
                       </Button>
                     )}
@@ -331,6 +331,7 @@ export default function IndividualPostPage() {
                         variant="outline"
                         onClick={() => handleDownloadAttachment(att)}
                         className="w-full justify-start text-left h-auto py-2 px-3"
+                        aria-label={`Download attachment: ${att.name}`}
                         >
                         <Paperclip className="h-4 w-4 mr-2 flex-shrink-0" />
                         <div className="flex flex-col overflow-hidden">
@@ -345,7 +346,7 @@ export default function IndividualPostPage() {
                 )}
             </CardContent>
             <CardFooter className="p-6 border-t flex justify-between items-center">
-                <Button variant="ghost" onClick={handleLikePost} className="group">
+                <Button variant="ghost" onClick={handleLikePost} className="group" aria-label={post.likes?.includes(user?.uid || '') ? `Unlike post: ${post.title}` : `Like post: ${post.title}`}>
                     <Heart className={`h-5 w-5 mr-2 ${post.likes?.includes(user?.uid || '') ? 'fill-red-500 text-red-500' : 'text-muted-foreground group-hover:fill-red-500/30 group-hover:text-red-500'}`} />
                     <span className="text-sm text-muted-foreground group-hover:text-red-500">{post.likes?.length || 0} {post.likes?.length === 1 ? 'Like' : 'Likes'}</span>
                 </Button>
@@ -353,7 +354,7 @@ export default function IndividualPostPage() {
                 {(canEdit || canDelete) && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" aria-label={`More actions for post: ${post.title}`}>
                             <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
                         </Button>
                         </DropdownMenuTrigger>
@@ -386,4 +387,3 @@ export default function IndividualPostPage() {
     </div>
   );
 }
-

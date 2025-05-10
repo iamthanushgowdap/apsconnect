@@ -224,6 +224,7 @@ export default function AdminStudyMaterialsPage() {
                 className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search study materials"
                 />
             </div>
           </div>
@@ -267,7 +268,7 @@ export default function AdminStudyMaterialsPage() {
                       <TableCell>
                         {material.attachments.map((att, idx) => (
                           <div key={idx} className="text-xs truncate max-w-[150px]" title={att.name}>
-                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => handleDownloadAttachment(att)}>
+                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => handleDownloadAttachment(att)} aria-label={`Download attachment ${att.name}`}>
                                 <Download className="mr-1 h-3 w-3"/> {att.name}
                             </Button>
                              ({(att.size / (1024 * 1024)).toFixed(2)} MB)
@@ -277,10 +278,10 @@ export default function AdminStudyMaterialsPage() {
                       <TableCell>{material.uploadedByDisplayName}</TableCell>
                       <TableCell>{format(new Date(material.uploadedAt), "PPp")}</TableCell>
                       <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(material)}>
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(material)} aria-label={`Edit material ${material.title}`}>
                               <Edit3 className="h-3 w-3 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span>
                           </Button>
-                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteMaterial(material)}>
+                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteMaterial(material)} aria-label={`Delete material ${material.title}`}>
                               <Trash2 className="h-3 w-3 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span>
                           </Button>
                       </TableCell>

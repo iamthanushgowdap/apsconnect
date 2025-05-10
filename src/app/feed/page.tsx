@@ -1,7 +1,8 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useAuth, User } from '@/components/auth-provider';
 import type { Post, PostCategory, UserProfile } from '@/types'; 
 import { postCategories } from '@/types'; 
@@ -227,11 +228,12 @@ export default function FeedPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         suppressHydrationWarning
+                        aria-label="Search posts"
                     />
                 </form>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" aria-label="Filter posts by category">
                         <Filter className="mr-2 h-4 w-4" /> Filter
                     </Button>
                     </DropdownMenuTrigger>

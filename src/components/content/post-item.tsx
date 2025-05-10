@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -95,7 +94,7 @@ export function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostIt
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Attachments:</h4>
             <div className="flex flex-wrap gap-2">
               {post.attachments.map((att, index) => (
-                <Button key={index} variant="outline" size="sm" onClick={() => handleDownload(att)} className="text-xs">
+                <Button key={index} variant="outline" size="sm" onClick={() => handleDownload(att)} className="text-xs" aria-label={`Download attachment ${att.name}`}>
                   <Paperclip className="h-3 w-3 mr-1.5" />
                   {att.name} ({ (att.size / (1024*1024)).toFixed(2) } MB)
                   <Download className="h-3 w-3 ml-1.5" />
@@ -107,19 +106,25 @@ export function PostItem({ post, currentUser, onLikePost, onDeletePost }: PostIt
         
         <div className="mt-3 flex items-center justify-between">
            <Link href={`/post/${post.id}`} className="w-auto">
-             <Button variant="ghost" size="sm" className="justify-between text-primary hover:bg-primary/10 group">
+             <Button variant="ghost" size="sm" className="justify-between text-primary hover:bg-primary/10 group" aria-label={`Read more about ${post.title}`}>
                 Read More <ArrowRight className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
              </Button>
            </Link>
           <div className="flex items-center space-x-2">
-             <Button variant="ghost" size="sm" onClick={() => onLikePost(post.id)} className="group text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
+             <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onLikePost(post.id)} 
+                className="group text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
+                aria-label={post.likes?.includes(currentUser?.uid || '') ? `Unlike post: ${post.title}` : `Like post: ${post.title}`}
+              >
                 <Heart className={`h-4 w-4 mr-1.5 ${post.likes?.includes(currentUser?.uid || '') ? 'fill-red-500 text-red-500' : 'group-hover:fill-red-500/30'}`} />
                 {post.likes?.length || 0}
              </Button>
             {(canEdit || canDelete) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`More actions for post: ${post.title}`}>
                        <MoreHorizontal className="h-4 w-4" /> 
                     </Button>
                   </DropdownMenuTrigger>

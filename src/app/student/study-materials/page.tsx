@@ -162,6 +162,7 @@ export default function StudentStudyMaterialsPage() {
             className="w-full sm:max-w-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Search study materials"
             />
         </CardContent>
       </Card>

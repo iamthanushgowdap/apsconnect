@@ -265,6 +265,7 @@ export default function FacultyStudyMaterialsPage() {
                 className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search study materials"
                 />
             </div>
           </div>
@@ -308,7 +309,7 @@ export default function FacultyStudyMaterialsPage() {
                        <TableCell>
                         {material.attachments.map((att, idx) => (
                           <div key={idx} className="text-xs truncate max-w-[150px]" title={att.name}>
-                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => handleDownloadAttachment(att)}>
+                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => handleDownloadAttachment(att)} aria-label={`Download attachment ${att.name}`}>
                                 <Download className="mr-1 h-3 w-3"/> {att.name}
                             </Button>
                              ({(att.size / (1024 * 1024)).toFixed(2)} MB)
@@ -318,10 +319,10 @@ export default function FacultyStudyMaterialsPage() {
                       <TableCell>{material.uploadedByDisplayName}</TableCell>
                       <TableCell>{format(new Date(material.uploadedAt), "PPp")}</TableCell>
                       <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(material)} disabled={material.uploadedByUid !== user?.uid && !memoizedFacultyAssignedBranches.includes(material.branch)}>
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(material)} disabled={material.uploadedByUid !== user?.uid && !memoizedFacultyAssignedBranches.includes(material.branch)} aria-label={`Edit material ${material.title}`}>
                               <Edit3 className="h-3 w-3 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span>
                           </Button>
-                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteMaterial(material)} disabled={material.uploadedByUid !== user?.uid && !memoizedFacultyAssignedBranches.includes(material.branch)}>
+                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteMaterial(material)} disabled={material.uploadedByUid !== user?.uid && !memoizedFacultyAssignedBranches.includes(material.branch)} aria-label={`Delete material ${material.title}`}>
                               <Trash2 className="h-3 w-3 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span>
                           </Button>
                       </TableCell>
@@ -334,7 +335,7 @@ export default function FacultyStudyMaterialsPage() {
         </CardContent>
       </Card>
 
-       {isFormDialogOpen && (
+      {isFormDialogOpen && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
                 <CardHeader className="border-b">
@@ -345,13 +346,13 @@ export default function FacultyStudyMaterialsPage() {
                     <StudyMaterialForm
                         onSubmitSuccess={handleFormSubmitSuccess}
                         initialData={editingMaterial || undefined}
-                        availableBranches={memoizedFacultyAssignedBranches} 
+                        availableBranches={managedBranches}
                         isLoading={formSubmitting}
                         setIsLoading={setFormSubmitting}
                     />
                 </CardContent>
                 <div className="border-t p-4 flex justify-end sticky bottom-0 bg-background">
-                     <Button variant="outline" onClick={() => {setIsFormDialogOpen(false); setEditingMaterial(null);}} disabled={formSubmitting}>
+                    <Button variant="outline" onClick={() => {setIsFormDialogOpen(false); setEditingMaterial(null);}} disabled={formSubmitting}>
                         Cancel
                     </Button>
                 </div>

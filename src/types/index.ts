@@ -9,6 +9,18 @@ export const defaultBranches: Branch[] = ["CSE", "ISE", "ECE", "ME", "CIVIL", "A
 export type Semester = "1st Sem" | "2nd Sem" | "3rd Sem" | "4th Sem" | "5th Sem" | "6th Sem" | "7th Sem" | "8th Sem";
 export const semesters: Semester[] = ["1st Sem", "2nd Sem", "3rd Sem", "4th Sem", "5th Sem", "6th Sem", "7th Sem", "8th Sem"];
 
+export type PostCategory = "event" | "news" | "link" | "note" | "schedule";
+export const postCategories: PostCategory[] = ["event", "news", "link", "note", "schedule"];
+
+// Notification Preferences
+export interface NotificationPreferences {
+  news: boolean;
+  events: boolean;
+  notes: boolean;
+  schedules: boolean;
+  general: boolean; // For posts not fitting other categories or targeted to all
+}
+
 // This interface represents the more detailed user profile stored in localStorage.
 export interface UserProfile {
   uid: string; // For students, USN. For faculty/admin, email.
@@ -42,10 +54,9 @@ export interface UserProfile {
   phoneNumber?: string; // Primarily for faculty, set by admin
   
   password?: string; 
+  notificationPreferences?: NotificationPreferences;
 }
 
-export type PostCategory = "event" | "news" | "link" | "note" | "schedule";
-export const postCategories: PostCategory[] = ["event", "news", "link", "note", "schedule"];
 
 export interface PostAttachment {
   name: string;

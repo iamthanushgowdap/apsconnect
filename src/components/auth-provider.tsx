@@ -1,11 +1,11 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { UserRole, Branch, UserProfile, Semester } from '@/types'; 
+import type { UserRole, Branch, UserProfile, Semester, NotificationPreferences } from '@/types'; 
 import { useToast } from '@/hooks/use-toast';
 import { SiteConfig } from '@/config/site'; 
 import { UpdateNotificationToast } from '@/components/notifications/update-notification-toast';
+import { useRouter } from 'next/navigation';
 
 
 export interface User {
@@ -21,6 +21,7 @@ export interface User {
   semester?: Semester; 
   avatarDataUrl?: string; 
   pronouns?: string;
+  notificationPreferences?: NotificationPreferences;
 }
 
 interface AuthContextType {
@@ -37,6 +38,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
+
+  const defaultNotificationPreferences: NotificationPreferences = {
+    news: true,
+    events: true,
+    notes: true,
+    schedules: true,
+    general: true,
+  };
 
 
   useEffect(() => {
@@ -45,6 +55,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const mockUserStr = typeof window !== 'undefined' ? localStorage.getItem('mockUser') : null;
       if (mockUserStr) {
         const storedUser = JSON.parse(mockUserStr) as User; 
+        // Ensure notificationPreferences are set
+        if (!storedUser.notificationPreferences) {
+          const profileKey = `apsconnect_user_${storedUser.uid}`;
+          const profileStr = typeof window !== 'undefined' ? localStorage.getItem(profileKey) : null;
+          if (profileStr) {
+            const fullProfile = JSON.parse(profileStr) as UserProfile;
+            storedUser.notificationPreferences = fullProfile.notificationPreferences || defaultNotificationPreferences;
+          } else {
+            storedUser.notificationPreferences = defaultNotificationPreferences;
+          }
+        }
         setUser(storedUser);
       } else {
         setUser(null); 
@@ -94,105 +115,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const defaultDisplayName = credentials.displayName || 
       (credentials.email ? credentials.email.split('@')[0] : 
       (credentials.usn ? `User-${credentials.usn.slice(-3)}` : 'User'));
+    
+    let userProfileData: UserProfile | null = null;
+    const profileKey = `apsconnect_user_${credentials.email?.toLowerCase() || credentials.usn?.toUpperCase()}`;
+    const profileStr = typeof window !== 'undefined' ? localStorage.getItem(profileKey) : null;
+    if (profileStr) {
+        userProfileData = JSON.parse(profileStr) as UserProfile;
+    }
+
 
     if (credentials.role === 'admin' && credentials.email) {
-      const adminProfileKey = `apsconnect_user_${credentials.email.toLowerCase()}`;
-      const adminProfileStr = typeof window !== 'undefined' ? localStorage.getItem(adminProfileKey) : null;
-      let adminProfile: UserProfile | null = null;
-      if (adminProfileStr) {
-        adminProfile = JSON.parse(adminProfileStr);
-      }
-
       newUser = {
         uid: credentials.email, 
         email: credentials.email,
-        displayName: adminProfile?.displayName || defaultDisplayName,
+        displayName: userProfileData?.displayName || defaultDisplayName,
         role: credentials.role,
-        avatarDataUrl: adminProfile?.avatarDataUrl,
-        pronouns: adminProfile?.pronouns,
+        avatarDataUrl: userProfileData?.avatarDataUrl,
+        pronouns: userProfileData?.pronouns,
+        notificationPreferences: userProfileData?.notificationPreferences || defaultNotificationPreferences,
       };
     } else if (credentials.role === 'faculty' && credentials.email && credentials.password) {
-      const facultyUserKey = `apsconnect_user_${credentials.email.toLowerCase()}`;
-      const facultyUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(facultyUserKey) : null;
-
-      if (facultyUserDataStr) {
-        const facultyProfile = JSON.parse(facultyUserDataStr) as UserProfile;
-        if (facultyProfile.role === 'faculty' && facultyProfile.password === credentials.password) {
+      if (userProfileData && userProfileData.role === 'faculty' && userProfileData.password === credentials.password) {
           newUser = {
-            uid: facultyProfile.uid,
-            email: facultyProfile.email,
-            displayName: facultyProfile.displayName || defaultDisplayName,
+            uid: userProfileData.uid,
+            email: userProfileData.email,
+            displayName: userProfileData.displayName || defaultDisplayName,
             role: 'faculty',
-            branch: facultyProfile.assignedBranches && facultyProfile.assignedBranches.length > 0 ? facultyProfile.assignedBranches[0] : undefined,
-            assignedBranches: facultyProfile.assignedBranches,
-            assignedSemesters: facultyProfile.assignedSemesters,
-            avatarDataUrl: facultyProfile.avatarDataUrl,
-            pronouns: facultyProfile.pronouns,
+            branch: userProfileData.assignedBranches && userProfileData.assignedBranches.length > 0 ? userProfileData.assignedBranches[0] : undefined,
+            assignedBranches: userProfileData.assignedBranches,
+            assignedSemesters: userProfileData.assignedSemesters,
+            avatarDataUrl: userProfileData.avatarDataUrl,
+            pronouns: userProfileData.pronouns,
+            notificationPreferences: userProfileData.notificationPreferences || defaultNotificationPreferences,
           };
         } else {
           setIsLoading(false);
           throw new Error("Invalid faculty credentials or account not found.");
         }
-      } else {
-        setIsLoading(false);
-        throw new Error("Faculty account not found.");
-      }
     } else if (credentials.role === 'student' && credentials.usn) {
-       const registeredUserKey = `apsconnect_user_${credentials.usn.toUpperCase()}`;
-       const registeredUserDataStr = typeof window !== 'undefined' ? localStorage.getItem(registeredUserKey) : null;
-       let studentEmail: string | null = null;
-       let studentDisplayName: string | null = defaultDisplayName;
-       let studentBranch: Branch | undefined = undefined; 
-       let studentSemester: Semester | undefined = undefined;
-       let studentAvatar: string | undefined = undefined;
-       let studentPronouns: string | undefined = undefined;
-       let isApproved = false;
-       let currentRole: UserRole = 'pending';
-       let rejectionReason: string | undefined = undefined;
-
-
-       if(registeredUserDataStr){
-         const registeredUserData = JSON.parse(registeredUserDataStr) as UserProfile;
-         if (registeredUserData.isApproved && registeredUserData.role === 'student') {
-           if (credentials.password !== registeredUserData.password) {
+       if(userProfileData){
+         if (userProfileData.isApproved && userProfileData.role === 'student') {
+           if (credentials.password !== userProfileData.password) {
              setIsLoading(false);
              throw new Error("Invalid student credentials.");
            }
-         } else if (!registeredUserData.isApproved && registeredUserData.role === 'pending' && credentials.password !== registeredUserData.password) {
+         } else if (!userProfileData.isApproved && userProfileData.role === 'pending' && credentials.password !== userProfileData.password) {
            // Allow login for pending users even if password check is initially for approved
-           // This allows them to see pending/rejected status
-           // If strict password check for pending is needed, adjust here
          }
 
-
-         studentEmail = registeredUserData.email;
-         studentDisplayName = registeredUserData.displayName || defaultDisplayName;
-         isApproved = registeredUserData.isApproved;
-         currentRole = registeredUserData.role; 
-         studentBranch = registeredUserData.branch; 
-         studentSemester = registeredUserData.semester;
-         studentAvatar = registeredUserData.avatarDataUrl;
-         studentPronouns = registeredUserData.pronouns;
-         if (!isApproved && registeredUserData.rejectionReason) {
-            rejectionReason = registeredUserData.rejectionReason;
-         }
+        newUser = {
+            uid: credentials.usn.toUpperCase(), 
+            usn: credentials.usn.toUpperCase(),
+            email: userProfileData.email, 
+            displayName: userProfileData.displayName || defaultDisplayName,
+            role: userProfileData.role, 
+            branch: userProfileData.branch, 
+            semester: userProfileData.semester,
+            avatarDataUrl: userProfileData.avatarDataUrl,
+            pronouns: userProfileData.pronouns,
+            rejectionReason: userProfileData.rejectionReason,
+            notificationPreferences: userProfileData.notificationPreferences || defaultNotificationPreferences,
+        };
        } else {
           setIsLoading(false);
           throw new Error("Student account not found. Please register first.");
        }
-
-      newUser = {
-        uid: credentials.usn.toUpperCase(), 
-        usn: credentials.usn.toUpperCase(),
-        email: studentEmail, 
-        displayName: studentDisplayName,
-        role: currentRole, 
-        branch: studentBranch, 
-        semester: studentSemester,
-        avatarDataUrl: studentAvatar,
-        pronouns: studentPronouns,
-        rejectionReason,
-      };
     } else {
       setIsLoading(false);
       throw new Error("Invalid credentials for signIn: email/USN or password missing for role, or role not specified.");
@@ -213,7 +200,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('mockUser');
     }
     setUser(null);
-    router.push('/login');
+    router.push('/login'); // Navigate to login page after sign out
     setIsLoading(false);
   };
 
@@ -239,4 +226,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

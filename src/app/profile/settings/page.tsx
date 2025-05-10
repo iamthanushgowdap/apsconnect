@@ -20,15 +20,24 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
-import type { UserProfile, Semester } from '@/types'; 
-import { semesters as allSemesters } from '@/types'; 
-import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft, UserSpeak } from 'lucide-react';
+import type { UserProfile, Semester, NotificationPreferences } from '@/types'; 
+import { semesters as allSemesters, postCategories } from '@/types'; 
+import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft, UserSpeak, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
 
 const ADMIN_EMAIL_CONST = "admin@gmail.com";
 const ADMIN_PASSWORD_CONST = "admin123";
+
+const defaultNotificationPreferences: NotificationPreferences = {
+  news: true,
+  events: true,
+  notes: true,
+  schedules: true,
+  general: true,
+};
 
 
 const profileSchema = z.object({
@@ -40,6 +49,13 @@ const profileSchema = z.object({
   currentEmail: z.string().email({ message: "Invalid current email address." }).optional().or(z.literal('')),
   newEmail: z.string().email({ message: "Invalid new email address." }).optional().or(z.literal('')),
   confirmNewEmail: z.string().optional().or(z.literal('')),
+  notificationPreferences: z.object({
+    news: z.boolean(),
+    events: z.boolean(),
+    notes: z.boolean(),
+    schedules: z.boolean(),
+    general: z.boolean(),
+  }).optional(),
 })
 .superRefine((data, ctx) => {
   if (data.newPassword) {
@@ -112,14 +128,11 @@ export default function ProfileSettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user: authUser, isLoading: authLoading, updateUserContext } = useAuth();
-
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -129,249 +142,192 @@ export default function ProfileSettingsPage() {
       currentPassword: "",
       newPassword: "",
       confirmNewPassword: "",
-      currentEmail: "", 
+      currentEmail: "",
       newEmail: "",
       confirmNewEmail: "",
+      notificationPreferences: defaultNotificationPreferences,
     },
   });
 
   useEffect(() => {
     if (!authLoading) {
-      if (authUser && typeof window !== 'undefined') {
-        const profileKey = `apsconnect_user_${authUser.uid}`;
-        const profileStr = localStorage.getItem(profileKey);
-        if (profileStr) {
-          const parsedProfile = JSON.parse(profileStr) as UserProfile;
-          setUserProfileState(parsedProfile);
-          setAvatarPreview(parsedProfile.avatarDataUrl || null);
-          form.reset({
-            displayName: parsedProfile.displayName || "",
-            pronouns: parsedProfile.pronouns || "",
-            currentPassword: "",
-            newPassword: "",
-            confirmNewPassword: "",
-            currentEmail: "", 
-            newEmail: "",
-            confirmNewEmail: ""
-          });
-        } else if (authUser.role === 'admin' && authUser.uid === ADMIN_EMAIL_CONST) {
-           const defaultAdminProfile: UserProfile = {
-            uid: ADMIN_EMAIL_CONST,
-            email: ADMIN_EMAIL_CONST,
-            role: 'admin',
-            displayName: 'Admin User',
-            pronouns: '',
-            registrationDate: new Date().toISOString(),
-            isApproved: true,
-            password: ADMIN_PASSWORD_CONST, 
-          };
-          setUserProfileState(defaultAdminProfile);
-          setAvatarPreview(null); 
-          form.reset({
-            displayName: defaultAdminProfile.displayName || "",
-            pronouns: defaultAdminProfile.pronouns || "",
-            currentPassword: "",
-            newPassword: "",
-            confirmNewPassword: "",
-            currentEmail: "",
-            newEmail: "",
-            confirmNewEmail: ""
-          });
-        } else {
-          toast({ title: "Profile Error", description: "User profile not found. Please log in again.", variant: "destructive", duration: 3000 });
-          router.push('/login');
-        }
-      } else if (!authUser) {
+      if (!authUser) {
         router.push('/login');
+      } else {
+        if (typeof window !== 'undefined') {
+          const profileKey = `apsconnect_user_${authUser.uid}`;
+          const profileStr = localStorage.getItem(profileKey);
+          if (profileStr) {
+            const fetchedProfile = JSON.parse(profileStr) as UserProfile;
+            setUserProfile(fetchedProfile);
+            form.reset({
+              displayName: fetchedProfile.displayName || "",
+              pronouns: fetchedProfile.pronouns || "",
+              currentEmail: fetchedProfile.email, // For verification if changing email
+              notificationPreferences: fetchedProfile.notificationPreferences || defaultNotificationPreferences,
+            });
+            setAvatarPreview(fetchedProfile.avatarDataUrl);
+          } else {
+            // This case should ideally not happen for a logged-in user
+            // For safety, redirect or show an error
+            toast({ title: "Profile Error", description: "Could not load your profile data.", variant: "destructive"});
+            router.push('/dashboard'); 
+          }
+        }
+        setPageLoading(false);
       }
-      setPageLoading(false);
     }
   }, [authUser, authLoading, router, form, toast]);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { 
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({ title: "File too large", description: "Avatar image must be less than 2MB.", variant: "destructive" });
         return;
       }
-      setSelectedFile(file);
-      const dataUrl = await readFileAsDataURL(file);
-      setAvatarPreview(dataUrl);
+      if (!['image/png', 'image/jpeg', 'image/gif'].includes(file.type)) {
+        toast({ title: "Invalid File Type", description: "Please upload a PNG, JPG, or GIF.", variant: "destructive" });
+        return;
+      }
+      try {
+        const dataUrl = await readFileAsDataURL(file);
+        setAvatarPreview(dataUrl);
+      } catch (error) {
+        toast({ title: "Error processing image", variant: "destructive" });
+      }
     }
   };
-
-  const handleRemoveAvatar = () => {
-    setSelectedFile(null);
-    setAvatarPreview(null); 
+  
+  const removeAvatar = () => {
+    setAvatarPreview(undefined);
     if (fileInputRef.current) {
-        fileInputRef.current.value = ""; 
+      fileInputRef.current.value = ""; // Clear the file input
     }
   };
 
 
   async function onSubmit(data: ProfileFormValues) {
-    if (!authUser || !userProfile) {
-        toast({ title: "Error", description: "User session or profile not found.", variant: "destructive", duration: 3000 });
-        return;
+    setIsSaving(true);
+    if (!userProfile || !authUser) {
+      toast({ title: "Error", description: "User session not found.", variant: "destructive" });
+      setIsSaving(false);
+      return;
     }
 
-    let changesMade = false;
-    const updatedProfileData = { ...userProfile };
+    let updatedProfileData = { ...userProfile };
+    let passwordChanged = false;
+    let emailChanged = false;
 
-    const isDisplayNameChanged = data.displayName !== undefined && data.displayName !== userProfile.displayName;
-    const isPronounsChanged = data.pronouns !== undefined && data.pronouns !== (userProfile.pronouns || "");
-    const isPasswordChanged = !!data.newPassword;
-    const isEmailChanged = !!data.newEmail;
-    const isAvatarChanged = (avatarPreview === null && userProfile.avatarDataUrl) || selectedFile;
+    // Update display name and pronouns
+    updatedProfileData.displayName = data.displayName || userProfile.displayName;
+    updatedProfileData.pronouns = data.pronouns || undefined;
+    updatedProfileData.avatarDataUrl = avatarPreview;
 
-
-    if (!isDisplayNameChanged && !isPronounsChanged && !isPasswordChanged && !isEmailChanged && !isAvatarChanged) {
-        toast({ title: "No Changes", description: "Please provide new information to update.", variant: "default", duration: 3000});
+    // Handle Password Change
+    if (data.newPassword) {
+      if (userProfile.role === 'admin' && userProfile.email === ADMIN_EMAIL_CONST) {
+        // Special handling for default admin
+        if (data.currentPassword !== (userProfile.password || ADMIN_PASSWORD_CONST) ) {
+          form.setError("currentPassword", { type: "manual", message: "Incorrect current password for admin." });
+          setIsSaving(false);
+          return;
+        }
+      } else if (data.currentPassword !== userProfile.password) {
+        form.setError("currentPassword", { type: "manual", message: "Incorrect current password." });
+        setIsSaving(false);
         return;
+      }
+      updatedProfileData.password = data.newPassword;
+      passwordChanged = true;
     }
 
-    setFormSubmitting(true);
+    // Handle Email Change
+    if (data.newEmail && data.currentEmail && data.newEmail.toLowerCase() !== data.currentEmail.toLowerCase()) {
+        if (data.currentEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
+            form.setError("currentEmail", { type: "manual", message: "Current email address does not match records." });
+            setIsSaving(false);
+            return;
+        }
+        // Check if new email already exists
+        if (typeof window !== 'undefined') {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('apsconnect_user_') && key !== `apsconnect_user_${userProfile.uid}`) {
+              const otherProfileStr = localStorage.getItem(key);
+              if (otherProfileStr) {
+                const otherProfile = JSON.parse(otherProfileStr) as UserProfile;
+                if (otherProfile.email.toLowerCase() === data.newEmail.toLowerCase()) {
+                  form.setError("newEmail", { type: "manual", message: "This email address is already in use." });
+                  setIsSaving(false);
+                  return;
+                }
+              }
+            }
+          }
+        }
+        updatedProfileData.email = data.newEmail.toLowerCase();
+        // Note: UID for admin/faculty is their email. If email changes, UID should change.
+        // This requires deleting the old record and creating a new one.
+        emailChanged = true;
+    }
+    
+    // Update notification preferences
+    updatedProfileData.notificationPreferences = data.notificationPreferences || userProfile.notificationPreferences || defaultNotificationPreferences;
+
 
     try {
-      if (selectedFile) {
-        updatedProfileData.avatarDataUrl = await readFileAsDataURL(selectedFile);
-        changesMade = true;
-      } else if (avatarPreview === null && userProfile.avatarDataUrl) { 
-        updatedProfileData.avatarDataUrl = undefined; 
-        changesMade = true;
-      }
-
-
-      if (isDisplayNameChanged) {
-        updatedProfileData.displayName = data.displayName;
-        changesMade = true;
-      }
-
-      if (isPronounsChanged) {
-        updatedProfileData.pronouns = data.pronouns || undefined;
-        changesMade = true;
-      }
-
-      if (data.newPassword) {
-        if (!data.currentPassword) {
-             form.setError("currentPassword", { message: "Current password is required."});
-             setFormSubmitting(false); return;
-        }
-        const actualCurrentPassword = userProfile.password || (userProfile.uid === ADMIN_EMAIL_CONST ? ADMIN_PASSWORD_CONST : "");
-        if (data.currentPassword !== actualCurrentPassword) {
-          toast({ title: "Incorrect Password", description: "The current password you entered is incorrect.", variant: "destructive", duration: 3000 });
-          form.setError("currentPassword", { message: "Incorrect current password." });
-          setFormSubmitting(false);
-          return;
-        }
-        updatedProfileData.password = data.newPassword; 
-        changesMade = true;
-      }
-
-      let oldStorageKey: string | null = `apsconnect_user_${userProfile.uid}`;
-      let newStorageKey: string | null = oldStorageKey;
-
-      if (data.newEmail) {
-        if (!data.currentEmail) {
-            form.setError("currentEmail", { message: "Current email is required."});
-            setFormSubmitting(false); return;
-        }
-        if (data.currentEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
-          toast({ title: "Incorrect Email", description: "The current email you entered is incorrect.", variant: "destructive", duration: 3000 });
-          form.setError("currentEmail", { message: "Incorrect current email." });
-          setFormSubmitting(false);
-          return;
-        }
-         if (data.newEmail.toLowerCase() === userProfile.email.toLowerCase()) {
-          toast({ title: "Same Email", description: "New email cannot be the same as the current email.", variant: "destructive", duration: 3000});
-          form.setError("newEmail", { message: "New email cannot be the same as the current email." });
-          setFormSubmitting(false); return;
-        }
-
-        if (data.newEmail.toLowerCase() !== userProfile.email.toLowerCase()) {
-            let emailExistsForOtherUser = false;
-            if (typeof window !== 'undefined') {
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.startsWith('apsconnect_user_')) {
-                        const profileStr = localStorage.getItem(key);
-                        if (profileStr) {
-                            try {
-                                const existingUserProfile = JSON.parse(profileStr) as UserProfile;
-                                if (existingUserProfile.email && existingUserProfile.email.toLowerCase() === data.newEmail.toLowerCase() && existingUserProfile.uid !== userProfile.uid) {
-                                    emailExistsForOtherUser = true;
-                                    break;
-                                }
-                            } catch (e) {  
-                            }
-                        }
-                    }
-                }
-            }
-            if (emailExistsForOtherUser) {
-                toast({ title: "Update Failed", description: "This email address is already in use by another account.", variant: "destructive", duration: 3000 });
-                form.setError("newEmail", { message: "Email already in use." });
-                setFormSubmitting(false);
-                return;
-            }
-        }
-
-        updatedProfileData.email = data.newEmail.toLowerCase();
-        if (userProfile.role === 'admin' || userProfile.role === 'faculty') {
-            updatedProfileData.uid = data.newEmail.toLowerCase(); 
-            newStorageKey = `apsconnect_user_${updatedProfileData.uid}`;
-        }
-        changesMade = true;
-      }
-
-      if (!changesMade) {
-        toast({ title: "No Effective Changes", description: "Profile information is already up to date.", duration: 3000 });
-        setFormSubmitting(false);
-        return;
-      }
-
       if (typeof window !== 'undefined') {
-        if (oldStorageKey && newStorageKey && oldStorageKey !== newStorageKey) {
-          localStorage.removeItem(oldStorageKey); 
+        if (emailChanged && (userProfile.role === 'admin' || userProfile.role === 'faculty')) {
+          // UID changes, so remove old and add new
+          localStorage.removeItem(`apsconnect_user_${userProfile.uid}`); // Remove old record
+          updatedProfileData.uid = updatedProfileData.email; // New UID
+          localStorage.setItem(`apsconnect_user_${updatedProfileData.uid}`, JSON.stringify(updatedProfileData));
+           // If the logged-in user themselves changed email, update mockUser and re-authenticate or redirect
+          if (authUser.uid === userProfile.uid) {
+            updateUserContext({ ...authUser, ...updatedProfileData, email: updatedProfileData.email, uid: updatedProfileData.uid, displayName: updatedProfileData.displayName, avatarDataUrl: updatedProfileData.avatarDataUrl, pronouns: updatedProfileData.pronouns, notificationPreferences: updatedProfileData.notificationPreferences });
+          }
+        } else {
+          // UID remains the same (student email change or no email change for faculty/admin)
+          localStorage.setItem(`apsconnect_user_${userProfile.uid}`, JSON.stringify(updatedProfileData));
+           if (authUser.uid === userProfile.uid) {
+             updateUserContext({ ...authUser, ...updatedProfileData, displayName: updatedProfileData.displayName, avatarDataUrl: updatedProfileData.avatarDataUrl, pronouns: updatedProfileData.pronouns, notificationPreferences: updatedProfileData.notificationPreferences });
+           }
         }
-        localStorage.setItem(newStorageKey!, JSON.stringify(updatedProfileData));
-        
-        const updatedAuthUser: User = {
-          ...authUser,
-          uid: updatedProfileData.uid, 
-          email: updatedProfileData.email,
-          displayName: updatedProfileData.displayName || authUser.displayName,
-          avatarDataUrl: updatedProfileData.avatarDataUrl,
-          pronouns: updatedProfileData.pronouns,
-        };
-        localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
-        updateUserContext(updatedAuthUser); 
-        setUserProfileState(updatedProfileData); 
       }
 
       toast({
         title: "Profile Updated",
-        description: "Your profile details have been successfully updated.",
+        description: "Your profile settings have been saved.",
         duration: 3000,
       });
-      form.reset({
-        displayName: updatedProfileData.displayName || "",
-        pronouns: updatedProfileData.pronouns || "",
-        currentPassword: "", newPassword: "", confirmNewPassword: "",
-        currentEmail: "", newEmail: "", confirmNewEmail: ""
-      });
-      setSelectedFile(null); 
-
+      if (passwordChanged || (emailChanged && authUser.uid === userProfile.uid)) {
+        toast({ title: "Security Change", description: "You've been logged out due to security changes. Please log in again.", duration: 5000});
+        // Wait for toast to be visible then sign out
+        setTimeout(() => {
+            if (typeof window !== 'undefined') localStorage.removeItem('mockUser');
+            router.push('/login');
+        }, 1000);
+      } else {
+        form.reset({
+            ...form.getValues(), // Keep other form values
+            currentPassword: "", // Clear password fields
+            newPassword: "",
+            confirmNewPassword: "",
+            currentEmail: updatedProfileData.email, // Update current email for next potential change
+            newEmail: "",
+            confirmNewEmail: ""
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Update Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
-        duration: 3000,
       });
     } finally {
-      setFormSubmitting(false);
+      setIsSaving(false);
     }
   }
 
@@ -383,15 +339,15 @@ export default function ProfileSettingsPage() {
     );
   }
 
-  if (!authUser || !userProfile) { 
+  if (!authUser || !userProfile) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto shadow-lg">
+        <Card className="w-full max-w-md mx-auto shadow-xl">
           <CardHeader><CardTitle className="text-destructive text-xl sm:text-2xl">Access Denied</CardTitle></CardHeader>
           <CardContent>
             <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
             <p className="text-md sm:text-lg text-muted-foreground">You must be logged in to view this page.</p>
-            <Link href="/login"><Button variant="outline" className="mt-6">Login</Button></Link>
+            <Link href="/login"><Button variant="outline" className="mt-6">Go to Login</Button></Link>
           </CardContent>
         </Card>
       </div>
@@ -401,118 +357,217 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+            <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+        </div>
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
-        <CardHeader className="items-center text-center sm:text-left">
-           <div className="flex flex-col items-center gap-4">
-            <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-              <AvatarImage src={avatarPreview || undefined} alt={userProfile.displayName || "User"} data-ai-hint="person avatar" />
-              <AvatarFallback className="text-3xl bg-muted text-muted-foreground">
-                 {getProfileInitials(userProfile)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex gap-2 mt-2">
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <Camera className="mr-2 h-4 w-4" /> Change Photo
-              </Button>
-              <Input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/png, image/jpeg, image/gif, image/webp"
-                onChange={handleFileChange}
-                id="avatar-upload-input" 
-              />
-              {avatarPreview && (
-                <Button size="sm" variant="destructive" onClick={handleRemoveAvatar}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Remove
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="mt-4">
-            <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-primary text-center">{userProfile.displayName || "User Profile"}</CardTitle>
-            <CardDescription className="text-base sm:text-lg text-center text-muted-foreground">
-              Email: {userProfile.email}
-            </CardDescription>
-            {userProfile.pronouns && (
-                <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
-                    Pronouns: {userProfile.pronouns}
-                </CardDescription>
-            )}
-            {userProfile.role === 'student' && userProfile.usn && (
-                 <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
-                    USN: {userProfile.usn}
-                </CardDescription>
-            )}
-             {userProfile.role === 'student' && userProfile.semester && (
-                 <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
-                    Semester: {userProfile.semester}
-                </CardDescription>
-            )}
-          </div>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold tracking-tight text-primary">Profile Settings</CardTitle>
+          <CardDescription>Manage your account details and preferences.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center space-y-4">
+                <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-lg">
+                    <AvatarImage src={avatarPreview} alt={userProfile.displayName || userProfile.email || "User Avatar"} data-ai-hint="person face" />
+                    <AvatarFallback className="text-4xl bg-muted text-muted-foreground">
+                        {getProfileInitials(userProfile)}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        <Camera className="mr-2 h-4 w-4"/> Change Photo
+                    </Button>
+                    <input type="file" ref={fileInputRef} onChange={handleAvatarChange} accept="image/png, image/jpeg, image/gif" className="hidden" />
+                    {avatarPreview && (
+                         <Button type="button" variant="destructive" size="sm" onClick={removeAvatar}>
+                            <Trash2 className="mr-2 h-4 w-4"/> Remove
+                        </Button>
+                    )}
+                </div>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="displayName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Display Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your Name" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="pronouns"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pronouns (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., she/her, he/him, they/them" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Personal Information */}
+            <Card className="p-6 shadow-md rounded-lg">
+                <CardHeader className="p-0 pb-4 mb-4 border-b">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                        <UserSpeak className="mr-2 h-5 w-5 text-primary"/> Personal Information
+                    </CardTitle>
+                </CardHeader>
+                <div className="space-y-4">
+                    {userProfile.role === 'student' && userProfile.usn && (
+                        <FormItem>
+                            <FormLabel className="text-sm">University Seat Number (USN)</FormLabel>
+                            <Input value={userProfile.usn} disabled className="bg-muted/50 text-muted-foreground" />
+                            <FormDescription className="text-xs">Your USN cannot be changed.</FormDescription>
+                        </FormItem>
+                    )}
+                    {userProfile.role === 'student' && userProfile.semester && (
+                        <FormItem>
+                            <FormLabel className="text-sm">Semester</FormLabel>
+                            <Input value={userProfile.semester} disabled className="bg-muted/50 text-muted-foreground" />
+                            <FormDescription className="text-xs">Your semester is managed by the administration.</FormDescription>
+                        </FormItem>
+                    )}
+                    <FormField
+                        control={form.control}
+                        name="displayName"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">Full Name</FormLabel>
+                            <FormControl><Input placeholder="Your full name" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="pronouns"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">Pronouns (Optional)</FormLabel>
+                            <FormControl><Input placeholder="e.g., she/her, he/him" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+            </Card>
 
-              <div className="space-y-1 pt-4 border-t">
-                <h3 className="text-md font-medium text-foreground">Change Password</h3>
-                <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change password.</p>
-              </div>
-              <FormField control={form.control} name="currentPassword" render={({ field }) => (<FormItem><FormLabel>Current Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="current-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
-             
-              {(userProfile.email && userProfile.role !== 'student') && ( 
-                <>
-                    <div className="space-y-1 pt-4 border-t">
-                        <h3 className="text-md font-medium text-foreground">Change Email Address</h3>
-                        <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change your email. Students cannot change their email.</p>
-                    </div>
-                    <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} value={field.value || ""} autoComplete="email"/></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="confirmNewEmail" render={({ field }) => (<FormItem><FormLabel>Confirm New Email</FormLabel><FormControl><Input type="email" placeholder="Confirm new email" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>)} />
-                </>
-             )}
+            {/* Email Change Section - For all users except default admin */}
+            {!(userProfile.role === 'admin' && userProfile.email === ADMIN_EMAIL_CONST) && (
+                <Card className="p-6 shadow-md rounded-lg">
+                <CardHeader className="p-0 pb-4 mb-4 border-b">
+                    <CardTitle className="text-lg font-semibold text-foreground">Change Email Address</CardTitle>
+                </CardHeader>
+                <div className="space-y-4">
+                     <FormField
+                        control={form.control}
+                        name="currentEmail"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">Current Email Address</FormLabel>
+                            <FormControl><Input type="email" placeholder="your-current@example.com" {...field} disabled /></FormControl>
+                             <FormDescription className="text-xs">This is your current registered email. To change, fill below.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="newEmail"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">New Email Address</FormLabel>
+                            <FormControl><Input type="email" placeholder="your-new@example.com" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="confirmNewEmail"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">Confirm New Email Address</FormLabel>
+                            <FormControl><Input type="email" placeholder="Confirm new email" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                </Card>
+            )}
 
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={formSubmitting}>
-                {formSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {formSubmitting ? "Updating..." : "Update Profile"}
-              </Button>
+            {/* Password Change Section */}
+            <Card className="p-6 shadow-md rounded-lg">
+                <CardHeader className="p-0 pb-4 mb-4 border-b">
+                    <CardTitle className="text-lg font-semibold text-foreground">Change Password</CardTitle>
+                </CardHeader>
+                <div className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">Current Password</FormLabel>
+                            <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">New Password</FormLabel>
+                            <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="confirmNewPassword"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm">Confirm New Password</FormLabel>
+                            <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+            </Card>
+            
+            {/* Notification Preferences */}
+            <Card className="p-6 shadow-md rounded-lg">
+                 <CardHeader className="p-0 pb-4 mb-4 border-b">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                        <Bell className="mr-2 h-5 w-5 text-primary"/> Notification Preferences
+                    </CardTitle>
+                </CardHeader>
+                 <div className="space-y-3">
+                    {(Object.keys(defaultNotificationPreferences) as Array<keyof NotificationPreferences>).map((key) => (
+                        <FormField
+                            key={key}
+                            control={form.control}
+                            name={`notificationPreferences.${key}`}
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-muted/20">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-sm">
+                                            {key.charAt(0).toUpperCase() + key.slice(1)} Updates
+                                        </FormLabel>
+                                        <FormDescription className="text-xs">
+                                            Receive notifications for new {key}.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    ))}
+                </div>
+            </Card>
+
+
+            <Button type="submit" className="w-full" disabled={isSaving}>
+                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
+            </Button>
             </form>
           </Form>
-          <div className="mt-6 text-center">
-            <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
-                <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

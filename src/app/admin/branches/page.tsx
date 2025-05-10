@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -245,6 +244,7 @@ export default function BranchManagementPage() {
               className="pl-8 w-full sm:w-1/2 lg:w-1/3"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search branches or faculty"
             />
           </div>
         </CardHeader>
@@ -259,7 +259,7 @@ export default function BranchManagementPage() {
                 <Card key={branch} className="border-l-4 border-primary/70">
                   <CardHeader className="flex flex-row justify-between items-center pb-3 pt-4 px-4">
                     <CardTitle className="text-lg sm:text-xl">{branch}</CardTitle>
-                    <Button variant="destructive" size="sm" onClick={() => confirmDeleteBranch(branch)}>
+                    <Button variant="destructive" size="sm" onClick={() => confirmDeleteBranch(branch)} aria-label={`Delete branch ${branch}`}>
                       <Trash2 className="mr-0 sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Delete</span>
                     </Button>
                   </CardHeader>
