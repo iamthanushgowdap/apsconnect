@@ -6,11 +6,11 @@ import { useAuth, User } from '@/components/auth-provider';
 import type { Post, PostCategory, UserProfile } from '@/types'; 
 import { postCategories } from '@/types'; 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Import Input
+import { Input } from '@/components/ui/input'; 
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Filter, ArrowRight, Search as SearchIcon } from 'lucide-react'; // Added SearchIcon
+import { FileText, Filter, ArrowRight, Search as SearchIcon, ArrowLeft } from 'lucide-react'; 
 import { parseISO } from 'date-fns';
-import { useRouter } from 'next/navigation'; // Import useRouter for search navigation
+import { useRouter } from 'next/navigation'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,8 +41,8 @@ export default function FeedPage() {
   const [deleteTargetPostId, setDeleteTargetPostId] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeFilters, setActiveFilters] = useState<PostCategory[]>(postCategories); 
-  const [searchQuery, setSearchQuery] = useState(''); // State for search input
-  const router = useRouter(); // For navigating to search page
+  const [searchQuery, setSearchQuery] = useState(''); 
+  const router = useRouter(); 
 
   const markPostsAsSeen = useCallback(() => {
     if (!user || posts.length === 0) return;
@@ -208,92 +208,99 @@ export default function FeedPage() {
   }
   
   return (
-    <div className="mx-auto my-10 max-w-2xl rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-8 shadow-lg bg-card text-card-foreground">
-      <div className="mb-4 flex flex-col sm:flex-row justify-between sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
-        <p className="text-xl font-bold text-gray-700 dark:text-white">Activity Feed</p>
-        <div className="flex items-center gap-2 mt-2 sm:mt-0">
-            <form onSubmit={handleSearchSubmit} className="relative flex-grow sm:flex-grow-0">
-                <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search posts..."
-                    className="pl-8 h-9 text-sm w-full sm:w-auto"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    suppressHydrationWarning
-                />
-            </form>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                    <Filter className="mr-2 h-4 w-4" /> Filter
-                </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {postCategories.map(category => (
-                    <DropdownMenuCheckboxItem
-                    key={category}
-                    checked={activeFilters.includes(category)}
-                    onCheckedChange={() => handleFilterChange(category)}
-                    >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </DropdownMenuCheckboxItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSelectAllFilters}>Select All</DropdownMenuItem>
-                <DropdownMenuItem onClick={handleClearAllFilters}>Clear All (Show All)</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+    <div className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+            <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
         </div>
-      </div>
-      <div>
-        {posts.length === 0 ? (
-          <div className="text-center py-10">
-            <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-lg text-muted-foreground"> No Posts Yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-               {activeFilters.length > 0 && activeFilters.length < postCategories.length ? "No posts match your current filters." :
-               user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
-            </p>
-            { (user?.role === 'admin' || user?.role === 'faculty') && (
-              <Button asChild className="mt-6">
-                <Link href={user.role === 'admin' ? "/admin/posts/new" : "/faculty/content/new"}>Create New Post</Link>
-              </Button>
+        <div className="mx-auto max-w-2xl rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-8 shadow-lg bg-card text-card-foreground">
+        <div className="mb-4 flex flex-col sm:flex-row justify-between sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+            <p className="text-xl font-bold text-gray-700 dark:text-white">Activity Feed</p>
+            <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                <form onSubmit={handleSearchSubmit} className="relative flex-grow sm:flex-grow-0">
+                    <SearchIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Search posts..."
+                        className="pl-8 h-9 text-sm w-full sm:w-auto"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        suppressHydrationWarning
+                    />
+                </form>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                        <Filter className="mr-2 h-4 w-4" /> Filter
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {postCategories.map(category => (
+                        <DropdownMenuCheckboxItem
+                        key={category}
+                        checked={activeFilters.includes(category)}
+                        onCheckedChange={() => handleFilterChange(category)}
+                        >
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSelectAllFilters}>Select All</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleClearAllFilters}>Clear All (Show All)</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </div>
+        <div>
+            {posts.length === 0 ? (
+            <div className="text-center py-10">
+                <FileText className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-lg text-muted-foreground"> No Posts Yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                {activeFilters.length > 0 && activeFilters.length < postCategories.length ? "No posts match your current filters." :
+                user ? "There are no posts matching your view criteria. Check back later!" : "Login to see personalized posts or check if general posts are available."}
+                </p>
+                { (user?.role === 'admin' || user?.role === 'faculty') && (
+                <Button asChild className="mt-6">
+                    <Link href={user.role === 'admin' ? "/admin/posts/new" : "/faculty/content/new"}>Create New Post</Link>
+                </Button>
+                )}
+            </div>
+            ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {posts.map(post => (
+                <PostItem 
+                    key={post.id} 
+                    post={post} 
+                    currentUser={user} 
+                    onLikePost={handleLikePost}
+                    onDeletePost={confirmDeletePost}
+                />
+                ))}
+            </div>
             )}
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {posts.map(post => (
-              <PostItem 
-                key={post.id} 
-                post={post} 
-                currentUser={user} 
-                onLikePost={handleLikePost}
-                onDeletePost={confirmDeletePost}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
 
-      <AlertDialog open={!!deleteTargetPostId} onOpenChange={() => setDeleteTargetPostId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteTargetPostId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeletePost} className="bg-destructive hover:bg-destructive/90">
-                Confirm Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={!!deleteTargetPostId} onOpenChange={() => setDeleteTargetPostId(null)}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                <AlertDialogDescription>
+                Are you sure you want to delete this post? This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteTargetPostId(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeletePost} className="bg-destructive hover:bg-destructive/90">
+                    Confirm Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </div>
     </div>
   );
 }
