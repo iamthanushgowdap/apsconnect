@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -29,7 +30,6 @@ import {
 import type { Post } from "@/types";
 import { DownloadAppSection } from "@/components/layout/download-app-section";
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
-import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 import { RecentPostItem } from '@/components/dashboard/RecentPostItem';
 import { ActionCard } from '@/components/dashboard/ActionCard';
 
@@ -229,8 +229,8 @@ export default function StudentDashboardPage() {
           )}
         </section>
       )}
-      <AdminEditableContentBlock />
       <DownloadAppSection />
     </div>
   );
 }
+

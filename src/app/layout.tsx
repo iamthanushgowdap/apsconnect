@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -6,7 +7,6 @@ import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { AuthProvider } from '@/components/auth-provider';
 import { SiteConfig } from '@/config/site';
-import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -64,7 +64,6 @@ export default function RootLayout({
           <main className="flex-grow container mx-auto px-4 py-8">
             {children}
           </main>
-          <AdminEditableContentBlock />
           <Footer />
         </AuthProvider>
         <Toaster />
@@ -72,3 +71,4 @@ export default function RootLayout({
     </html>
   );
 }
+
