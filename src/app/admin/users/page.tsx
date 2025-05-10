@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, Users, Briefcase } from "lucide-react";
-import ManageStudentsTab from "@/app/admin/users/manage-students-tab"; // Using alias path
+import ManageStudentsTab from "@/components/admin/ManageStudentsTab"; // Using alias path for moved component
 import ManageFacultyTab from "@/app/admin/users/manage-faculty-tab";
 import { SimpleRotatingSpinner } from "@/components/ui/loading-spinners";
 
