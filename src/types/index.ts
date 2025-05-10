@@ -171,3 +171,25 @@ export interface SearchResults {
   timetables: TimeTable[];
   studyMaterials: StudyMaterial[];
 }
+
+// Anonymous Reporting System Types
+export type ReportRecipientType = 'faculty' | 'admin';
+export type ReportStatus = 'new' | 'viewed' | 'resolved' | 'archived';
+
+export interface Report {
+  id: string;
+  recipientType: ReportRecipientType;
+  reportContent: string;
+  submittedAt: string; // ISO Date string
+  status: ReportStatus;
+  // Contextual information, not directly identifying the student in the report object
+  contextBranch?: Branch; // Branch context of the student submitting, if applicable
+  contextSemester?: Semester; // Semester context of the student submitting, if applicable
+  // Admin/Faculty actions
+  viewedAt?: string;
+  resolvedAt?: string;
+  resolvedByUid?: string;
+  resolutionNotes?: string;
+}
+
+export const REPORT_STORAGE_KEY = 'apsconnect_reports';

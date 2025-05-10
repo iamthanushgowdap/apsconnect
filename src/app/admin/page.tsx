@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock, BookOpen } from "lucide-react";
+import { BarChart3, FilePlus2, Users, Settings, ShieldCheck, UserCircle, ArrowRight, Newspaper, CalendarClock, BookOpen, ListChecks } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -199,6 +199,13 @@ export default function AdminDashboardPage() {
                 icon={<BarChart3 />}
                 link="/admin/branches" 
                 actionText="Manage Branches"
+            />
+            <StyledActionCard
+                title="View Student Reports"
+                description="Review and manage reports submitted by students."
+                icon={<ListChecks />}
+                link="/admin/reports"
+                actionText="View Reports"
             />
              <StyledActionCard
                 title="Activity Feed"

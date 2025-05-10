@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -25,7 +26,8 @@ import {
   ArrowRight,
   Paperclip,
   CalendarClock,
-  CreditCard // Added CreditCard for Digital ID
+  CreditCard, // Added CreditCard for Digital ID
+  MessageSquareWarning
 } from "lucide-react";
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -238,6 +240,14 @@ const StudentDashboardPage = () => {
             actionText="View Digital ID"
             disabled={isPendingApproval || isRejected}
           />
+           <ActionCard
+            title="Report a Concern"
+            description="Submit anonymous feedback or report issues to faculty/admin."
+            icon={<MessageSquareWarning className="h-10 w-10 text-accent" />}
+            link="/student/report-concern"
+            actionText="Submit Report"
+            disabled={isRejected} // Also disable if pending? Or allow pending to report? For now, only rejected.
+          />
         </div>
       </section>
       
@@ -307,4 +317,3 @@ function ActionCard({ title, description, icon, link, actionText, disabled = fal
 }
 
 export default StudentDashboardPage;
-

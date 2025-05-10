@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, BookOpen, CreditCard } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, UserCircle, BarChart3, FilePlus2, Users, Home, CalendarClock, Search, BookOpen, CreditCard, MessageSquareWarning, ListChecks } from 'lucide-react';
 import React from 'react'; 
 
 // Redefine NavItem here if it's specific to SiteConfig or ensure it's imported correctly
@@ -67,6 +67,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "Manage Timetables", href: "/admin/timetables", icon: CalendarClock },
     { title: "Study Materials", href: "/admin/study-materials", icon: BookOpen },
     { title: "Branch Management", href: "/admin/branches", icon: BarChart3 },
+    { title: "View Reports", href: "/admin/reports", icon: ListChecks },
     { title: "Site Settings", href: "/admin/settings", icon: Settings },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
@@ -76,6 +77,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "Create Content", href: "/faculty/content/new", icon: FilePlus2 },
     { title: "Manage Timetables", href: "/faculty/timetables", icon: CalendarClock },
     { title: "Study Materials", href: "/faculty/study-materials", icon: BookOpen },
+    { title: "View Reports", href: "/faculty/reports", icon: ListChecks },
     { title: "Activity Feed", href: "/feed", icon: Newspaper },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
@@ -85,6 +87,7 @@ export const SiteConfigData: SiteConfig = {
     { title: "View Timetable", href: "/student/timetable", icon: CalendarClock },
     { title: "Study Materials", href: "/student/study-materials", icon: BookOpen },
     { title: "Digital ID", href: "/student/digital-id", icon: CreditCard },
+    { title: "Report a Concern", href: "/student/report-concern", icon: MessageSquareWarning },
     { title: "My Profile", href: "/profile/settings", icon: UserCircle },
   ],
 };
@@ -117,4 +120,3 @@ export const TermsOfServicePage = (): React.ReactElement => {
     )
   );
 };
-
