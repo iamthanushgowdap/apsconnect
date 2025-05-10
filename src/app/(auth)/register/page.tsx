@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +48,7 @@ const registerSchema = z.object({
     }),
   branch: z.string({ required_error: "Please select your branch." }),
   semester: z.string({ required_error: "Please select your semester." }) as z.ZodSchema<Semester>,
+  pronouns: z.string().max(50, { message: "Pronouns cannot exceed 50 characters." }).optional().or(z.literal('')),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -92,6 +94,7 @@ export default function RegisterPage() {
       usnSuffix: "",
       branch: undefined,
       semester: undefined,
+      pronouns: "",
     },
   });
 
@@ -152,6 +155,7 @@ export default function RegisterPage() {
             usn: fullUsn,
             branch: data.branch,
             semester: data.semester,
+            pronouns: data.pronouns || undefined,
             registrationDate: new Date().toISOString(),
             isApproved: false,
             password: data.password, // Store password (mock only)
@@ -167,6 +171,7 @@ export default function RegisterPage() {
             usn: fullUsn,
             branch: data.branch,
             semester: data.semester,
+            pronouns: data.pronouns || undefined,
         }));
       }
 
@@ -321,6 +326,19 @@ export default function RegisterPage() {
                   )}
                 />
               </div>
+               <FormField
+                control={form.control}
+                name="pronouns"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Pronouns (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., she/her, he/him, they/them" {...field} className="text-sm sm:text-base" suppressHydrationWarning/>
+                    </FormControl>
+                    <FormMessage className="text-xs sm:text-sm"/>
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="password"

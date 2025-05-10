@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -15,15 +16,17 @@ export interface User {
   branch?: Branch; 
   usn?: string; 
   assignedBranches?: Branch[]; 
-  assignedSemesters?: Semester[]; // Added assignedSemesters
+  assignedSemesters?: Semester[]; 
   rejectionReason?: string; 
   semester?: Semester; 
+  avatarDataUrl?: string; 
+  pronouns?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; semester?: Semester; password?: string }) => Promise<User>; 
+  signIn: (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; semester?: Semester; password?: string; pronouns?: string; }) => Promise<User>; 
   signOut: () => Promise<void>;
   updateUserContext: (updatedUser: User) => void; 
 }
@@ -83,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   }, [toast]); 
 
-  const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; semester?: Semester; password?: string }): Promise<User> => {
+  const signIn = async (credentials: { email?: string; usn?: string; role: UserRole; displayName?: string; branch?: Branch; semester?: Semester; password?: string; pronouns?: string }): Promise<User> => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -93,11 +96,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (credentials.usn ? `User-${credentials.usn.slice(-3)}` : 'User'));
 
     if (credentials.role === 'admin' && credentials.email) {
+      const adminProfileKey = `apsconnect_user_${credentials.email.toLowerCase()}`;
+      const adminProfileStr = typeof window !== 'undefined' ? localStorage.getItem(adminProfileKey) : null;
+      let adminProfile: UserProfile | null = null;
+      if (adminProfileStr) {
+        adminProfile = JSON.parse(adminProfileStr);
+      }
+
       newUser = {
         uid: credentials.email, 
         email: credentials.email,
-        displayName: defaultDisplayName,
+        displayName: adminProfile?.displayName || defaultDisplayName,
         role: credentials.role,
+        avatarDataUrl: adminProfile?.avatarDataUrl,
+        pronouns: adminProfile?.pronouns,
       };
     } else if (credentials.role === 'faculty' && credentials.email && credentials.password) {
       const facultyUserKey = `apsconnect_user_${credentials.email.toLowerCase()}`;
@@ -113,7 +125,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             role: 'faculty',
             branch: facultyProfile.assignedBranches && facultyProfile.assignedBranches.length > 0 ? facultyProfile.assignedBranches[0] : undefined,
             assignedBranches: facultyProfile.assignedBranches,
-            assignedSemesters: facultyProfile.assignedSemesters, // Populate assignedSemesters
+            assignedSemesters: facultyProfile.assignedSemesters,
+            avatarDataUrl: facultyProfile.avatarDataUrl,
+            pronouns: facultyProfile.pronouns,
           };
         } else {
           setIsLoading(false);
@@ -130,6 +144,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
        let studentDisplayName: string | null = defaultDisplayName;
        let studentBranch: Branch | undefined = undefined; 
        let studentSemester: Semester | undefined = undefined;
+       let studentAvatar: string | undefined = undefined;
+       let studentPronouns: string | undefined = undefined;
        let isApproved = false;
        let currentRole: UserRole = 'pending';
        let rejectionReason: string | undefined = undefined;
@@ -155,6 +171,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          currentRole = registeredUserData.role; 
          studentBranch = registeredUserData.branch; 
          studentSemester = registeredUserData.semester;
+         studentAvatar = registeredUserData.avatarDataUrl;
+         studentPronouns = registeredUserData.pronouns;
          if (!isApproved && registeredUserData.rejectionReason) {
             rejectionReason = registeredUserData.rejectionReason;
          }
@@ -171,6 +189,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: currentRole, 
         branch: studentBranch, 
         semester: studentSemester,
+        avatarDataUrl: studentAvatar,
+        pronouns: studentPronouns,
         rejectionReason,
       };
     } else {
@@ -193,6 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('mockUser');
     }
     setUser(null);
+    router.push('/login');
     setIsLoading(false);
   };
 
@@ -218,3 +239,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

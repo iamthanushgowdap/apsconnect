@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -21,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/components/auth-provider';
 import type { UserProfile, Semester } from '@/types'; 
 import { semesters as allSemesters } from '@/types'; 
-import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft } from 'lucide-react';
+import { Loader2, ShieldCheck, Camera, Trash2, ArrowLeft, UserSpeak } from 'lucide-react';
 import Link from 'next/link';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +33,7 @@ const ADMIN_PASSWORD_CONST = "admin123";
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }).optional().or(z.literal('')),
+  pronouns: z.string().max(50, { message: "Pronouns cannot exceed 50 characters." }).optional().or(z.literal('')),
   currentPassword: z.string().optional(),
   newPassword: z.string().optional(),
   confirmNewPassword: z.string().optional(),
@@ -123,10 +125,11 @@ export default function ProfileSettingsPage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       displayName: "",
+      pronouns: "",
       currentPassword: "",
       newPassword: "",
       confirmNewPassword: "",
-      currentEmail: "",
+      currentEmail: "", 
       newEmail: "",
       confirmNewEmail: "",
     },
@@ -143,6 +146,7 @@ export default function ProfileSettingsPage() {
           setAvatarPreview(parsedProfile.avatarDataUrl || null);
           form.reset({
             displayName: parsedProfile.displayName || "",
+            pronouns: parsedProfile.pronouns || "",
             currentPassword: "",
             newPassword: "",
             confirmNewPassword: "",
@@ -156,6 +160,7 @@ export default function ProfileSettingsPage() {
             email: ADMIN_EMAIL_CONST,
             role: 'admin',
             displayName: 'Admin User',
+            pronouns: '',
             registrationDate: new Date().toISOString(),
             isApproved: true,
             password: ADMIN_PASSWORD_CONST, 
@@ -164,6 +169,7 @@ export default function ProfileSettingsPage() {
           setAvatarPreview(null); 
           form.reset({
             displayName: defaultAdminProfile.displayName || "",
+            pronouns: defaultAdminProfile.pronouns || "",
             currentPassword: "",
             newPassword: "",
             confirmNewPassword: "",
@@ -214,12 +220,13 @@ export default function ProfileSettingsPage() {
     const updatedProfileData = { ...userProfile };
 
     const isDisplayNameChanged = data.displayName !== undefined && data.displayName !== userProfile.displayName;
+    const isPronounsChanged = data.pronouns !== undefined && data.pronouns !== (userProfile.pronouns || "");
     const isPasswordChanged = !!data.newPassword;
     const isEmailChanged = !!data.newEmail;
     const isAvatarChanged = (avatarPreview === null && userProfile.avatarDataUrl) || selectedFile;
 
 
-    if (!isDisplayNameChanged && !isPasswordChanged && !isEmailChanged && !isAvatarChanged) {
+    if (!isDisplayNameChanged && !isPronounsChanged && !isPasswordChanged && !isEmailChanged && !isAvatarChanged) {
         toast({ title: "No Changes", description: "Please provide new information to update.", variant: "default", duration: 3000});
         return;
     }
@@ -236,8 +243,13 @@ export default function ProfileSettingsPage() {
       }
 
 
-      if (data.displayName !== undefined && data.displayName !== userProfile.displayName) {
+      if (isDisplayNameChanged) {
         updatedProfileData.displayName = data.displayName;
+        changesMade = true;
+      }
+
+      if (isPronounsChanged) {
+        updatedProfileData.pronouns = data.pronouns || undefined;
         changesMade = true;
       }
 
@@ -331,6 +343,7 @@ export default function ProfileSettingsPage() {
           email: updatedProfileData.email,
           displayName: updatedProfileData.displayName || authUser.displayName,
           avatarDataUrl: updatedProfileData.avatarDataUrl,
+          pronouns: updatedProfileData.pronouns,
         };
         localStorage.setItem('mockUser', JSON.stringify(updatedAuthUser));
         updateUserContext(updatedAuthUser); 
@@ -344,6 +357,7 @@ export default function ProfileSettingsPage() {
       });
       form.reset({
         displayName: updatedProfileData.displayName || "",
+        pronouns: updatedProfileData.pronouns || "",
         currentPassword: "", newPassword: "", confirmNewPassword: "",
         currentEmail: "", newEmail: "", confirmNewEmail: ""
       });
@@ -420,6 +434,11 @@ export default function ProfileSettingsPage() {
             <CardDescription className="text-base sm:text-lg text-center text-muted-foreground">
               Email: {userProfile.email}
             </CardDescription>
+            {userProfile.pronouns && (
+                <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
+                    Pronouns: {userProfile.pronouns}
+                </CardDescription>
+            )}
             {userProfile.role === 'student' && userProfile.usn && (
                  <CardDescription className="text-base sm:text-lg text-center mt-1 text-muted-foreground">
                     USN: {userProfile.usn}
@@ -449,6 +468,19 @@ export default function ProfileSettingsPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="pronouns"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pronouns (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., she/her, he/him, they/them" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="space-y-1 pt-4 border-t">
                 <h3 className="text-md font-medium text-foreground">Change Password</h3>
@@ -458,11 +490,11 @@ export default function ProfileSettingsPage() {
               <FormField control={form.control} name="newPassword" render={({ field }) => (<FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="confirmNewPassword" render={({ field }) => (<FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} value={field.value || ""} autoComplete="new-password" /></FormControl><FormMessage /></FormItem>)} />
              
-              {(userProfile.email) && ( 
+              {(userProfile.email && userProfile.role !== 'student') && ( 
                 <>
                     <div className="space-y-1 pt-4 border-t">
                         <h3 className="text-md font-medium text-foreground">Change Email Address</h3>
-                        <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change your email.</p>
+                        <p className="text-xs text-muted-foreground">Leave blank if you do not wish to change your email. Students cannot change their email.</p>
                     </div>
                     <FormField control={form.control} name="currentEmail" render={({ field }) => (<FormItem><FormLabel>Current Email ({userProfile.email})</FormLabel><FormControl><Input type="email" placeholder="Enter your current email" {...field} value={field.value || ""} autoComplete="email"/></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="newEmail" render={({ field }) => (<FormItem><FormLabel>New Email</FormLabel><FormControl><Input type="email" placeholder="Enter new email" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>)} />

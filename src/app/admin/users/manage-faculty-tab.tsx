@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -40,11 +41,12 @@ const BRANCH_STORAGE_KEY = 'apsconnect_managed_branches';
 const facultyFormSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
+  pronouns: z.string().max(50, "Pronouns too long.").optional().or(z.literal('')),
   phoneNumber: z.string().min(10, "Phone number must be at least 10 digits.").optional().or(z.literal('')),
   password: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')),
   confirmPassword: z.string().optional().or(z.literal('')),
   assignedBranches: z.array(z.string()).min(1, "At least one branch must be selected."),
-  assignedSemesters: z.array(z.string()).optional(), // Optional, but if provided, must be an array of strings (Semester type)
+  assignedSemesters: z.array(z.string()).optional(), 
   facultyTitle: z.string().optional().or(z.literal('')),
 }).refine(data => {
   if (data.password || data.confirmPassword) {
@@ -72,6 +74,7 @@ export default function ManageFacultyTab() {
     defaultValues: {
       displayName: "",
       email: "",
+      pronouns: "",
       phoneNumber: "",
       password: "",
       confirmPassword: "",
@@ -177,6 +180,7 @@ export default function ManageFacultyTab() {
         uid: data.email.toLowerCase(),
         displayName: data.displayName,
         email: data.email.toLowerCase(),
+        pronouns: data.pronouns || undefined,
         phoneNumber: data.phoneNumber || undefined,
         password: data.password ? data.password : (existingProfileData?.password || data.password!),
         assignedBranches: data.assignedBranches,
@@ -205,6 +209,7 @@ export default function ManageFacultyTab() {
     form.reset({
       displayName: faculty.displayName || "",
       email: faculty.email,
+      pronouns: faculty.pronouns || "",
       phoneNumber: faculty.phoneNumber || "",
       assignedBranches: faculty.assignedBranches || [],
       assignedSemesters: faculty.assignedSemesters || [],
@@ -217,9 +222,10 @@ export default function ManageFacultyTab() {
 
   const openCreateDialog = () => {
     setEditingFaculty(null);
-    form.reset({ // Reset with defaults including empty assignedSemesters
+    form.reset({ 
         displayName: "",
         email: "",
+        pronouns: "",
         phoneNumber: "",
         password: "",
         confirmPassword: "",
@@ -257,6 +263,7 @@ export default function ManageFacultyTab() {
     return (
       faculty.displayName?.toLowerCase().includes(searchLower) ||
       faculty.email.toLowerCase().includes(searchLower) ||
+      faculty.pronouns?.toLowerCase().includes(searchLower) ||
       faculty.assignedBranches?.some(b => b.toLowerCase().includes(searchLower)) ||
       faculty.assignedSemesters?.some(s => s.toLowerCase().includes(searchLower)) ||
       faculty.facultyTitle?.toLowerCase().includes(searchLower) ||
@@ -309,6 +316,17 @@ export default function ManageFacultyTab() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl><Input type="email" placeholder="jane.doe@example.com" {...field} disabled={!!editingFaculty} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pronouns"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pronouns (Optional)</FormLabel>
+                    <FormControl><Input placeholder="e.g., she/her, he/him" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -498,6 +516,7 @@ export default function ManageFacultyTab() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Title/Role</TableHead>
+                  <TableHead>Pronouns</TableHead>
                   <TableHead>Branches</TableHead>
                   <TableHead>Semesters</TableHead>
                   <TableHead>Phone</TableHead>
@@ -510,6 +529,7 @@ export default function ManageFacultyTab() {
                     <TableCell>{faculty.displayName || 'N/A'}</TableCell>
                     <TableCell>{faculty.email}</TableCell>
                     <TableCell>{faculty.facultyTitle || 'N/A'}</TableCell>
+                    <TableCell>{faculty.pronouns || 'N/A'}</TableCell>
                     <TableCell>
                         {faculty.assignedBranches && faculty.assignedBranches.length > 0
                           ? faculty.assignedBranches.map(b => <Badge key={b} variant="outline" className="mr-1 mb-1">{b}</Badge>)

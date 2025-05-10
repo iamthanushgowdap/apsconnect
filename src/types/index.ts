@@ -16,6 +16,7 @@ export interface UserProfile {
   displayName?: string;
   role: UserRole;
   avatarDataUrl?: string; // Stores the profile picture as a base64 data URI
+  pronouns?: string; // e.g., "he/him", "she/her", "they/them"
   
   // Student-specific fields
   usn?: string; // University Seat Number for students

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -5,7 +6,7 @@ import type { UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Briefcase, Award, GraduationCap, Users, BookOpen } from 'lucide-react';
+import { Mail, Briefcase, Award, GraduationCap, Users, BookOpen, UserSpeak } from 'lucide-react';
 import { getInitials } from '@/components/content/post-item-utils';
 
 interface UserProfileCardProps {
@@ -29,6 +30,7 @@ export function UserProfileCard({ profile }: UserProfileCardProps) {
               {profile.role}
             </Badge>
             {profile.usn && <span className="text-xs text-muted-foreground">USN: {profile.usn}</span>}
+             {profile.pronouns && <span className="text-xs text-muted-foreground ml-1">({profile.pronouns})</span>}
           </CardDescription>
         </div>
       </CardHeader>
