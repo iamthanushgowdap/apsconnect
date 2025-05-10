@@ -6,7 +6,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { AuthProvider } from '@/components/auth-provider';
 import { SiteConfig } from '@/config/site';
-// Removed import for AdminEditableContentBlock as it's moved to specific pages
+import { AdminEditableContentBlock } from '@/components/layout/admin-editable-content-block';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -18,13 +18,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Simplified metadata to address potential SSR issues
 export const metadata: Metadata = {
-  title: {
-    default: SiteConfig.name,
-    template: `%s | ${SiteConfig.name}`,
-  },
-  description: SiteConfig.description,
-  // Add more metadata later like icons, openGraph, etc.
+  title: "APSConnect", // Using a plain string
+  description: "A modern platform for college communication and engagement for APS.", // Using a plain string
+  // ogImage and other specific metadata can be added back once the root SSR issue is resolved.
 };
 
 export default function RootLayout({
@@ -63,10 +61,10 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-background text-foreground`}>
         <AuthProvider>
           <Navbar />
-          {/* AdminEditableContentBlock removed from here */}
           <main className="flex-grow container mx-auto px-4 py-8">
             {children}
           </main>
+          <AdminEditableContentBlock />
           <Footer />
         </AuthProvider>
         <Toaster />
