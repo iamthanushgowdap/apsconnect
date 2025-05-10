@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -27,7 +28,7 @@ import {
   CalendarClock,
   CreditCard, 
   MessageSquareWarning,
-  Tool
+  Wrench // Changed from Tool
 } from "lucide-react";
 import type { Post } from "@/types";
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -251,7 +252,7 @@ const StudentDashboardPage = () => {
           <ActionCard
             title="Useful Tools"
             description="Access various utility tools like scanners and converters."
-            icon={<Tool />}
+            icon={<Wrench />} // Changed from Tool
             link="/tools"
             actionText="Access Tools"
             disabled={isPendingApproval || isRejected}
@@ -324,4 +325,4 @@ function ActionCard({ title, description, icon, link, actionText, disabled = fal
   );
 }
 
-export default StudentDashboardPage;
+// export default StudentDashboardPage; // Removed default export to avoid conflict as StudentDashboardPage is already default export

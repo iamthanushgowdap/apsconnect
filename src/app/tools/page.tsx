@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Tool, ScanLine, QrCode, Calculator, Scale, FileImage, FileText, FileArchive, Camera, UploadCloud, X, ArrowLeft } from 'lucide-react';
+import { Wrench, ScanLine, QrCode, Calculator, Scale, FileImage, FileText, FileArchive, Camera, UploadCloud, X, ArrowLeft } from 'lucide-react'; // Changed Tool to Wrench
 import { useRouter } from 'next/navigation';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
@@ -267,7 +268,7 @@ export default function UsefulToolsPage() {
                 <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-primary flex items-center">
-                <Tool className="mr-3 h-7 w-7" /> Useful Tools
+                <Wrench className="mr-3 h-7 w-7" /> Useful Tools {/* Changed Tool to Wrench */}
             </h1>
         </div>
       </div>

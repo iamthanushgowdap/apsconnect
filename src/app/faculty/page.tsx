@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, ShieldCheck, FileText, FilePlus2, ArrowRight, Newspaper, CalendarClock, BookOpen, ListChecks, Tool } from "lucide-react";
+import { Users, UserCircle, ShieldCheck, FileText, FilePlus2, ArrowRight, Newspaper, CalendarClock, BookOpen, ListChecks, Wrench } from "lucide-react"; // Changed Tool to Wrench
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -116,7 +117,7 @@ export default function FacultyDashboardPage() {
              <StyledActionCard
                 title="Useful Tools"
                 description="Access various utility tools like scanners and converters."
-                icon={<Tool />}
+                icon={<Wrench />} // Changed from Tool
                 link="/tools"
                 actionText="Access Tools"
             />
