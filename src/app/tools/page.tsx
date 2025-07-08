@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Wrench, ScanLine, QrCode, Calculator, Scale, FileImage, FileText, FileArchive, Camera, UploadCloud, X, ArrowLeft, Download, Maximize, Compress } from 'lucide-react';
+import { Wrench, ScanLine, QrCode, Calculator, Scale, FileImage, FileText, FileArchive, Camera, UploadCloud, X, ArrowLeft, Download, Maximize, Shrink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SimpleRotatingSpinner } from '@/components/ui/loading-spinners';
 
@@ -625,7 +624,7 @@ export default function UsefulToolsPage() {
             {activeTool === 'fileCompression' && (
               <div className="space-y-6">
                 <Card className="p-4">
-                    <CardHeader className="p-0 pb-2"><CardTitle className="text-lg flex items-center"><Compress className="mr-2 h-5 w-5 text-primary"/> Compress to ZIP</CardTitle></CardHeader>
+                    <CardHeader className="p-0 pb-2"><CardTitle className="text-lg flex items-center"><Shrink className="mr-2 h-5 w-5 text-primary"/> Compress to ZIP</CardTitle></CardHeader>
                     <CardContent className="p-0 pt-2">
                         <Input type="file" multiple onChange={(e) => setFilesToZip(e.target.files)} className="mb-3" />
                         <Button onClick={createZipArchive} disabled={isZipping || !filesToZip || filesToZip.length === 0 || !window.JSZip} className="w-full">
@@ -684,7 +683,7 @@ export default function UsefulToolsPage() {
                         if (btn === 'C') clearCalculatorDisplay();
                         else if (btn === '←') calculatorBackspace();
                         else if (btn === '=') calculateResult();
-                        else appendToDisplay(btn);
+                        else appendToCalculatorDisplay(btn);
                       }}
                       variant={['+', '-', '*', '/', '=', 'C', '←'].includes(btn) || btn.includes('(') ? "secondary" : "outline"}
                       className="text-lg p-3 sm:p-4 aspect-square shadow-sm hover:shadow-md transition-shadow"
